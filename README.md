@@ -71,18 +71,24 @@ Not implemented yet: AI agents, OpenRouter, RAG, document upload, legal response
 
 ## Run Backend
 
-Install backend dependencies in a local Python environment:
+Create and use the project Python environment:
+
+```bash
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe -m venv .venv
+```
+
+Install backend dependencies:
 
 ```bash
 cd backend
-python -m pip install -e ".[dev]"
+..\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
 Start the API:
 
 ```bash
 cd backend
-python -m uvicorn app.main:app --reload
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 Health check:
@@ -95,7 +101,7 @@ GET http://127.0.0.1:8000/health
 
 ```bash
 cd backend
-python -m pytest
+..\.venv\Scripts\python.exe -m pytest
 ```
 
 ## Run Frontend

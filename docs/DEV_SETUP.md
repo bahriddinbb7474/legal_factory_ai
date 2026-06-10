@@ -4,18 +4,26 @@ Stage 1 creates a minimal runnable backend and frontend foundation.
 
 ## Backend
 
-Install dependencies in a local Python environment:
+Use the project virtual environment for backend commands.
+
+Create `.venv` from the installed Python:
+
+```bash
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe -m venv .venv
+```
+
+Install dependencies:
 
 ```bash
 cd backend
-python -m pip install -e ".[dev]"
+..\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
 Run the API:
 
 ```bash
 cd backend
-python -m uvicorn app.main:app --reload
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
 Check health:
@@ -37,8 +45,10 @@ Run tests:
 
 ```bash
 cd backend
-python -m pytest
+..\.venv\Scripts\python.exe -m pytest
 ```
+
+If a new PowerShell window can find Python in PATH, `python` may also work. The stable project command is still `.venv\Scripts\python.exe`.
 
 ## Frontend
 

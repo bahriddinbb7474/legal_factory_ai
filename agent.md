@@ -178,6 +178,33 @@ Examples:
 
 ### Python
 
+For this repository, prefer the project virtual environment:
+
+```bash
+.venv\Scripts\python.exe
+```
+
+Run backend checks from `backend/` with:
+
+```bash
+..\.venv\Scripts\python.exe -m pytest
+```
+
+If `.venv` does not exist yet, create it from the installed Python:
+
+```bash
+C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe -m venv .venv
+```
+
+Then install backend dev dependencies:
+
+```bash
+cd backend
+..\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```
+
+Only use plain `python` after confirming it is available in PATH. If PATH is not refreshed in the current shell, use the explicit `.venv\Scripts\python.exe` command.
+
 Prefer project virtual environment or documented Python path.
 
 Possible checks:
