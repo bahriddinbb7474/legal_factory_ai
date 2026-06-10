@@ -57,17 +57,21 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 1 foundation.
+Current status: Stage 2 core backend models and API.
 
 Implemented foundation:
 
 - minimal FastAPI backend structure;
 - `GET /health` endpoint;
-- backend health test;
+- SQLAlchemy async DB foundation;
+- core backend models for users, roles, chats, messages, agents, documents, approvals, cost records, and audit logs;
+- Alembic initial migration;
+- simple agents, chats, messages, and chat costs API endpoints;
+- backend tests using SQLite in-memory;
 - minimal Next.js frontend page;
 - development setup documentation.
 
-Not implemented yet: AI agents, OpenRouter, RAG, document upload, legal response logic, database models, approval workflow, and Telegram.
+Not implemented yet: AI agent execution, OpenRouter, RAG, document upload, legal response logic, approval workflow behavior, and Telegram.
 
 ## Run Backend
 
@@ -103,6 +107,17 @@ GET http://127.0.0.1:8000/health
 cd backend
 ..\.venv\Scripts\python.exe -m pytest
 ```
+
+## Run Database Migrations
+
+When PostgreSQL is available and `DATABASE_URL` is configured:
+
+```bash
+cd backend
+..\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+Backend tests do not require PostgreSQL; they use SQLite in-memory.
 
 ## Run Frontend
 

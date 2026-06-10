@@ -1,6 +1,6 @@
 # Development Setup
 
-Stage 1 creates a minimal runnable backend and frontend foundation.
+Stage 2 creates a minimal runnable backend and frontend foundation, plus core backend models and chat API endpoints.
 
 ## Backend
 
@@ -50,6 +50,30 @@ cd backend
 
 If a new PowerShell window can find Python in PATH, `python` may also work. The stable project command is still `.venv\Scripts\python.exe`.
 
+## Database
+
+Runtime database target:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/legal_factory_ai
+```
+
+The backend normalizes `postgresql://` to the async SQLAlchemy driver form internally. PostgreSQL is not required for tests; tests override the DB session with SQLite in-memory.
+
+Run Alembic migrations when PostgreSQL is available:
+
+```bash
+cd backend
+..\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+Create a future migration after model changes:
+
+```bash
+cd backend
+..\.venv\Scripts\python.exe -m alembic revision --autogenerate -m "describe change"
+```
+
 ## Frontend
 
 Install dependencies:
@@ -75,6 +99,6 @@ npm run build
 
 ## Current Scope
 
-Implemented: backend health endpoint, backend test, minimal Next.js page, and development documentation.
+Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, Alembic initial migration, backend tests, minimal Next.js page, and development documentation.
 
-Not implemented: AI agents, OpenRouter, RAG, document upload, legal logic, database, approval workflow, and Telegram.
+Not implemented: AI agent execution, OpenRouter, RAG, document upload, legal response logic, approval workflow behavior, and Telegram.
