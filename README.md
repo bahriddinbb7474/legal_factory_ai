@@ -54,3 +54,69 @@ Legal Factory AI is an assistant only. It does not replace a live lawyer, direct
 ## Legal Warning
 
 The system must not provide final legal conclusions without reliable sources. If a source is not found, the answer must clearly say that a final legal conclusion cannot be given and must be checked by a lawyer or responsible specialist.
+
+## Project Status
+
+Current status: Stage 1 foundation.
+
+Implemented foundation:
+
+- minimal FastAPI backend structure;
+- `GET /health` endpoint;
+- backend health test;
+- minimal Next.js frontend page;
+- development setup documentation.
+
+Not implemented yet: AI agents, OpenRouter, RAG, document upload, legal response logic, database models, approval workflow, and Telegram.
+
+## Run Backend
+
+Install backend dependencies in a local Python environment:
+
+```bash
+cd backend
+python -m pip install -e ".[dev]"
+```
+
+Start the API:
+
+```bash
+cd backend
+python -m uvicorn app.main:app --reload
+```
+
+Health check:
+
+```bash
+GET http://127.0.0.1:8000/health
+```
+
+## Run Backend Tests
+
+```bash
+cd backend
+python -m pytest
+```
+
+## Run Frontend
+
+Install frontend dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+Start the frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Build the frontend:
+
+```bash
+cd frontend
+npm run build
+```
