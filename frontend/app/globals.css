@@ -340,7 +340,9 @@ button {
 
 .sidebar-profile {
   align-items: center;
+  background: var(--panel);
   border-radius: 10px;
+  gap: 9px;
   margin-top: auto;
   min-height: 46px;
   padding: 8px 4px 0;
@@ -356,15 +358,23 @@ button {
 }
 
 .sidebar-profile strong {
+  display: block;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-profile span {
   color: var(--muted);
+  display: block;
   font-size: 14px;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-area {
