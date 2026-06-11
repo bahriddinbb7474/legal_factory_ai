@@ -339,13 +339,32 @@ button {
 }
 
 .sidebar-profile {
+  align-items: center;
+  border-radius: 10px;
   margin-top: auto;
+  min-height: 46px;
+  padding: 8px 4px 0;
 }
 
 .profile-button {
   border: 0;
   flex: 0 0 auto;
+  font-size: 11px;
+  height: 28px;
   padding: 0;
+  width: 28px;
+}
+
+.sidebar-profile strong {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.sidebar-profile span {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 .chat-area {

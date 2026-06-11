@@ -169,11 +169,11 @@ export default function Sidebar() {
 
       <div className="profile-strip sidebar-profile">
         <button className="avatar profile-button" aria-label="Профиль пользователя" type="button">
-          B
+          BB
         </button>
         <div>
           <strong>Bahriddin Boboev</strong>
-          <span>Director</span>
+          <span>фин.директор</span>
         </div>
       </div>
     </aside>
