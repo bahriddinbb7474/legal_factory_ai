@@ -1,55 +1,9 @@
-const recentChats = [
-  "Проверка договора поставки",
-  "Ответ налоговой по запросу",
-  "Импортный контракт Китай",
-  "Долг клиента Navoiy Kabel",
-  "HR приказ о дисциплине",
-  "Письмо в таможенный орган",
-  "Протокол разногласий",
-  "Служебная записка директору",
-  "Шаблон претензии клиенту",
-  "Проверка условий оплаты",
-];
+import Sidebar from "./components/Sidebar";
 
 export default function HomePage() {
   return (
     <main className="workspace-shell">
-      <aside className="sidebar">
-        <div className="sidebar-head">
-          <div className="brand-mark">LF</div>
-          <button className="icon-button" aria-label="Свернуть меню">
-            ||
-          </button>
-        </div>
-
-        <nav className="primary-nav" aria-label="Основная навигация">
-          <button className="nav-item active">+ Новый чат</button>
-          <button className="nav-item">Поиск чатов</button>
-          <button className="nav-item">Библиотека</button>
-          <button className="nav-item">Документы</button>
-          <button className="nav-item">Approval</button>
-          <button className="nav-item">Настройки</button>
-        </nav>
-
-        <section className="history-section">
-          <h2>Недавнее</h2>
-          <div className="history-list">
-            {recentChats.map((chat, index) => (
-              <button className={index === 1 ? "history-item selected" : "history-item"} key={chat}>
-                {chat}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="profile-strip">
-          <div className="avatar">B</div>
-          <div>
-            <strong>Bahriddin Boboev</strong>
-            <span>Director</span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar />
 
       <section className="chat-area">
         <header className="topbar">
