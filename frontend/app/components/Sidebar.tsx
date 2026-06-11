@@ -106,7 +106,7 @@ export default function Sidebar() {
           const query = searchBySection[section.id] ?? "";
           const visibleChats = section.chats
             .filter((chat) => chat.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, isExpanded ? section.chats.length : 3);
+            .slice(0, isExpanded ? section.chats.length : 2);
 
           return (
             <section className={isExpanded ? "workspace-section expanded" : "workspace-section"} key={section.id}>
