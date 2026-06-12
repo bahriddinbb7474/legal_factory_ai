@@ -578,14 +578,42 @@ button {
   border-radius: 999px;
   color: #fff;
   display: inline-flex;
-  font-size: 20px;
-  font-weight: 600;
   height: 38px;
   justify-content: center;
   line-height: 1;
   min-width: 38px;
   padding: 0;
   width: 38px;
+}
+
+.send-arrow {
+  display: block;
+  height: 17px;
+  position: relative;
+  width: 17px;
+}
+
+.send-arrow::before {
+  background: #fff;
+  border-radius: 999px;
+  content: "";
+  height: 14px;
+  left: 8px;
+  position: absolute;
+  top: 3px;
+  width: 2px;
+}
+
+.send-arrow::after {
+  border-left: 2px solid #fff;
+  border-top: 2px solid #fff;
+  content: "";
+  height: 8px;
+  left: 4px;
+  position: absolute;
+  top: 2px;
+  transform: rotate(45deg);
+  width: 8px;
 }
 
 .disclaimer {

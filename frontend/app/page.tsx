@@ -77,7 +77,7 @@ export default function HomePage() {
             </button>
             <input aria-label="Сообщение" placeholder="Спросите Legal Factory AI" />
             <button type="button" className="voice-button" aria-label="Отправить">
-              ↑
+              <span className="send-arrow" aria-hidden="true" />
             </button>
           </form>
           <div className="agent-row" aria-label="Выбор агента">
