@@ -543,7 +543,7 @@ button {
 
 .agent-row {
   gap: 8px;
-  margin-bottom: 8px;
+  margin-top: 8px;
 }
 
 .agent-chip {
@@ -573,11 +573,19 @@ button {
 }
 
 .voice-button {
+  align-items: center;
   background: #111;
   border-radius: 999px;
   color: #fff;
-  min-height: 38px;
-  padding: 0 14px;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 600;
+  height: 38px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 38px;
+  padding: 0;
+  width: 38px;
 }
 
 .disclaimer {

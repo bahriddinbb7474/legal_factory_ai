@@ -71,23 +71,20 @@ export default function HomePage() {
         </div>
 
         <div className="composer-wrap">
-          <div className="agent-row" aria-label="Выбор агента">
-            <button className="agent-chip active">Agent 1 Fast</button>
-            <button className="agent-chip">Agent 2 Strong</button>
-            <button className="agent-chip">Agent 3 Reviewer</button>
-          </div>
           <form className="composer">
             <button type="button" className="icon-button" aria-label="Добавить файл">
               +
             </button>
             <input aria-label="Сообщение" placeholder="Спросите Legal Factory AI" />
-            <button type="button" className="compact-button">
-              Расширенное
-            </button>
             <button type="button" className="voice-button" aria-label="Отправить">
-              Send
+              ↑
             </button>
           </form>
+          <div className="agent-row" aria-label="Выбор агента">
+            <button className="agent-chip active">Agent 1 Fast</button>
+            <button className="agent-chip">Agent 2 Strong</button>
+            <button className="agent-chip">Agent 3 Reviewer</button>
+          </div>
           <p className="disclaimer">Legal Factory AI может ошибаться. Важные выводы проверяются ответственным специалистом.</p>
         </div>
       </section>
