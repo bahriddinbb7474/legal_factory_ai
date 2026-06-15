@@ -57,7 +57,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 2 v2 OpenRouter lawyer integration and model settings.
+Current status: Stage 3 v2 document upload and secure processing foundation.
 
 Implemented foundation:
 
@@ -76,8 +76,17 @@ Implemented foundation:
 - backend tests using SQLite in-memory;
 - Next.js chat workspace connected to backend chat/invoke endpoints;
 - development setup documentation.
+- StorageProvider abstraction with local `data/uploads/` storage;
+- upload API for PDF, DOCX, XLSX, TXT, JPG/JPEG, PNG, and WEBP;
+- extracted text storage for documents, with image OCR routed through a separate configurable vision model;
+- chat-document and message-document linking;
+- prompt-injection protection through explicit untrusted document context blocks;
+- backend role checks for document access;
+- sensitive-document provider enforcement;
+- audit logs for upload/open/download/link/use/denial events;
+- upload UI from the chat composer plus right-side extracted-text preview.
 
-Not implemented yet: RAG, document upload, final legal source enforcement, approval workflow behavior, real document export, production auth/admin permissions, and Telegram.
+Not implemented yet: RAG over laws, final legal source enforcement, approval workflow behavior, real document export, production auth/admin permissions, and Telegram.
 
 ## Run Backend
 
@@ -158,6 +167,9 @@ OpenRouter real calls require:
 
 ```env
 OPENROUTER_API_KEY=
+DOCUMENT_VISION_MODEL=
+DOCUMENT_VISION_PROVIDER=
+MAX_UPLOAD_SIZE_MB=25
 ```
 
 Without the key, automated tests still pass through mocks, and the UI shows a clear backend/OpenRouter error instead of calling a real provider.

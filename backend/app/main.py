@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.admin import router as admin_router
 from app.api.agents import router as agents_router
 from app.api.chats import router as chats_router
+from app.api.documents import chat_router as chat_documents_router
+from app.api.documents import router as documents_router
 from app.api.health import router as health_router
 from app.core.config import settings
 
@@ -19,4 +21,6 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(agents_router)
 app.include_router(chats_router)
+app.include_router(documents_router)
+app.include_router(chat_documents_router)
 app.include_router(admin_router)

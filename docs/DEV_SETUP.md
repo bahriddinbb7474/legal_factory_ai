@@ -1,6 +1,6 @@
 # Development Setup
 
-Stage 2 v2 creates a runnable backend/frontend foundation with core chat APIs, OpenRouter lawyer invocation, and model settings.
+Stage 3 v2 creates a runnable backend/frontend foundation with core chat APIs, OpenRouter lawyer invocation, model settings, document upload, local file storage, and text extraction.
 
 ## Backend
 
@@ -49,10 +49,24 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_TIMEOUT_SECONDS=30
 OPENROUTER_APP_REFERER=
 OPENROUTER_APP_TITLE=Legal Factory AI
+OPENROUTER_MAX_OUTPUT_TOKENS=1200
 CORS_ORIGINS=http://127.0.0.1:3000,http://localhost:3000
 ```
 
 Do not commit real API keys. If `OPENROUTER_API_KEY` is empty, real lawyer invocation returns a clear service error; tests use a fake gateway.
+
+Document processing configuration in `.env`:
+
+```env
+DOCUMENT_VISION_MODEL=
+DOCUMENT_VISION_PROVIDER=
+MAX_UPLOAD_SIZE_MB=25
+XLSX_MAX_ROWS=1000
+DEV_CURRENT_USER_ROLE=admin
+DEV_CURRENT_USER_ID=1
+```
+
+`DOCUMENT_VISION_MODEL` and `DOCUMENT_VISION_PROVIDER` are optional. If they are empty, image uploads are accepted only as stored files and OCR extraction is marked as failed until a vision model is configured.
 
 Run tests:
 
@@ -78,6 +92,15 @@ Run Alembic migrations when PostgreSQL is available:
 ```bash
 cd backend
 ..\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+For local migration checks without PostgreSQL, a temporary SQLite database can be used:
+
+```powershell
+cd backend
+$env:DATABASE_URL="sqlite+aiosqlite:///E:/Projects/Projects_5/legal_factory_ai/data/local_migration_check.db"
+..\.venv\Scripts\python.exe -m alembic upgrade head
+Remove-Item Env:\DATABASE_URL
 ```
 
 Create a future migration after model changes:
@@ -116,8 +139,18 @@ cd frontend
 npm run build
 ```
 
+## Documents
+
+Uploaded source files and extracted text are stored locally under:
+
+```text
+data/uploads/
+```
+
+The folder is ignored by git. Stage 3 supports PDF, DOCX, XLSX, TXT, JPG, PNG, and WebP. Extracted text is saved once and reused by lawyer calls so image OCR is not repeated on every chat message.
+
 ## Current Scope
 
-Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, OpenRouter gateway foundation, mock-tested lawyer invocation, admin model/provider endpoints, Alembic migrations, backend tests, connected Next.js chat workspace, and model settings UI.
+Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, OpenRouter gateway foundation, mock-tested lawyer invocation, admin model/provider endpoints, document upload APIs, local document storage, text extraction, basic role/sensitivity checks, Alembic migrations, backend tests, connected Next.js chat workspace, document chips, and model settings UI.
 
-Not implemented: RAG, document upload, final legal source enforcement, approval workflow behavior, production admin auth, and Telegram.
+Not implemented: RAG/vector search, production OCR hardening, real document export, final legal source enforcement, approval workflow behavior, production admin auth, and Telegram.

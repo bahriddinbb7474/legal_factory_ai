@@ -1,12 +1,12 @@
 # UI Concept
 
-Stage 1 v2 defines a practical web workspace for Legal Factory AI. The current UI is a clickable skeleton with mock data only; it does not call AI agents, OpenRouter, RAG, file upload, or backend chat logic yet.
+Stage 3 v2 keeps the same practical workspace shape from Stage 1 v2 and adds document upload/preview behavior. The UI is still a skeleton for the first product version: it demonstrates the workflow and connects to backend document APIs, but final production editing/export logic is deferred.
 
 ## Layout
 
 - Left sidebar: project workspace for `Kabel Tech Energy`, grouped by legal sections.
-- Center: primary chat workspace with a wide reading area and a matching wide message composer.
-- Right side: document preview/editor panel, closed by default and opened only from a generated document card or verdict action.
+- Center: primary chat workspace with a wide reading area and a matching message composer.
+- Right side: document preview/editor panel, closed by default and opened from a generated document card or uploaded document.
 - Top bar: current section plus shortened chat title, and a compact `Расходы: $0.00` button.
 - Bottom of sidebar: user profile block with avatar, name, and short role.
 
@@ -24,14 +24,14 @@ The sidebar is section-based, not a global application menu. It contains:
 
 Each section has a small compose icon for creating a future new chat inside that section. By default each section shows one recent chat so the full workspace and user profile remain visible. Expanded sections can show more chats and a local search field when the list is longer.
 
-There is no separate large `Новый чат` button in Stage 1 v2.
+There is no separate large `Новый чат` button.
 
 ## Chat Workspace
 
 The central chat is the main working surface:
 
 - When the right document panel is closed, the chat uses the available space after the sidebar.
-- Chat content, answer cards, and the composer share the same visual width.
+- Chat content, answer cards, document chips, and the composer share the same visual width.
 - The header format is `Раздел · начало названия чата…`.
 - Messages use Russian interface labels.
 - Lawyer messages show a compact marker such as `Ю1 · 14:32`, not the full model name.
@@ -44,7 +44,27 @@ The composer has one active lawyer at a time:
 - `Юрист 2 · Claude Sonnet`
 - `Юрист 3 · Арбитр · Gemini Pro`
 
-The model is shown on the selection button. Future message submission should send the user's message only to the selected lawyer, while that lawyer can read the current chat history, other lawyers' messages, and the latest user message.
+The model is shown on the selection button. Future message submission sends the user's message only to the selected lawyer, while that lawyer can read the current chat history, other lawyers' messages, and the latest user message.
+
+## Document Upload
+
+The `+` button in the composer opens local file selection for:
+
+- PDF;
+- DOCX;
+- XLSX;
+- TXT;
+- JPG/PNG/WebP images.
+
+After selecting a file, the user confirms metadata in a compact modal:
+
+- category;
+- sensitivity;
+- counterparty;
+- document number;
+- document date.
+
+Uploaded documents appear as chips above the composer. A chip opens the right document panel with metadata and extracted text. The remove action unlinks the document from the current chat.
 
 ## Response Card
 
@@ -64,11 +84,22 @@ The response card does not include a document editing button. Editing belongs to
 The document panel behaves like a Claude-style artifact area:
 
 - closed by default;
-- opens from the document card or verdict placeholder;
+- opens from the document card, verdict placeholder, or uploaded document chip;
 - takes about half of the workspace when open;
 - narrows the chat automatically;
 - can be closed from the panel header;
-- currently shows a mock DOCX-style document preview.
+- shows either the mock DOCX-style preview or uploaded document metadata/extracted text.
+
+For uploaded documents, the panel shows:
+
+- filename;
+- category;
+- sensitivity;
+- extraction/OCR status;
+- original file download link;
+- extracted text preview.
+
+Toolbar actions are currently UI-stage controls: edit mode, download menu, send-back-to-chat menu, and close.
 
 ## Design Direction
 

@@ -12,8 +12,15 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_timeout_seconds: float = 30.0
+    openrouter_max_output_tokens: int = 1200
     openrouter_app_referer: str = ""
     openrouter_app_title: str = "Legal Factory AI"
+    document_vision_model: str = ""
+    document_vision_provider: str = ""
+    max_upload_size_mb: int = 25
+    xlsx_max_rows: int = 1000
+    dev_current_user_role: str = "admin"
+    dev_current_user_id: int = 1
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
 
     model_config = SettingsConfigDict(

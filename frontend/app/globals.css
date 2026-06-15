@@ -649,6 +649,45 @@ button {
   width: 100%;
 }
 
+.hidden-file-input {
+  display: none;
+}
+
+.uploaded-documents {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.uploaded-document-chip {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 8px 10px;
+}
+
+.uploaded-document-chip > button:first-child {
+  min-width: 0;
+  text-align: left;
+}
+
+.uploaded-document-chip strong,
+.uploaded-document-chip span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uploaded-document-chip span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .agent-row {
   gap: 8px;
   justify-content: flex-start;
@@ -765,6 +804,47 @@ button {
 
 .model-modal {
   width: min(1100px, 94vw);
+}
+
+.upload-modal {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  width: min(560px, 92vw);
+}
+
+.upload-form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.upload-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.upload-form label span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.upload-form input,
+.upload-form select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.upload-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .settings-header {
@@ -1005,7 +1085,18 @@ input:disabled {
   white-space: nowrap;
 }
 
-.document-dropdown button:hover {
+.document-dropdown a {
+  border-radius: 7px;
+  color: #222;
+  font-size: 14px;
+  min-height: 34px;
+  padding: 8px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.document-dropdown button:hover,
+.document-dropdown a:hover {
   background: var(--panel-strong);
 }
 
@@ -1071,6 +1162,17 @@ input:disabled {
 .document-editor:focus {
   border-color: #b8b8b8;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+
+.extracted-text {
+  background: #fafafa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: 14px/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
 }
 
 .document-page table {

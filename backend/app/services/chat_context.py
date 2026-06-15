@@ -10,12 +10,16 @@ AUTHOR_LABELS = {
 }
 
 
-def build_chat_context(messages: list[Message]) -> str:
+def build_chat_context(messages: list[Message], document_context: str = "") -> str:
     lines: list[str] = []
     for message in messages:
         author = AUTHOR_LABELS.get(message.author_type, message.author_type)
         model_suffix = f" (модель: {message.model_id})" if message.model_id else ""
         lines.append(f"{author}{model_suffix}: {message.content}")
+    if document_context:
+        lines.append("")
+        lines.append("Документы, связанные с текущим чатом:")
+        lines.append(document_context)
     return "\n".join(lines)
 
 

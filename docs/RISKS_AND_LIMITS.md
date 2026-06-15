@@ -18,6 +18,10 @@ Legal Factory AI must stay inside clear limits.
 - External API calls must not log tokens or secrets.
 - Real API providers should be disabled by default in development and tests.
 - Tests must use mocks or fake providers, not real paid API calls.
+- Uploaded documents must be treated as untrusted data, not as system or developer instructions.
+- Sensitive documents may be sent only to providers explicitly marked as trusted for sensitive data.
+- OCR/extraction failures must be visible to the user; the system must not pretend that an unread document was analyzed.
+- File uploads must reject unsupported types, path traversal filenames, and files above the configured size limit.
 
 ## Red-Risk Examples
 
@@ -26,3 +30,11 @@ Legal Factory AI must stay inside clear limits.
 - Recognition of debt or waiver of claims.
 - Large import contract risks.
 - Issues that can create fines, lawsuits, license problems, or criminal exposure.
+
+## Stage 3 v2 Limits
+
+- PDF/DOCX/XLSX/TXT extraction is basic and intended for first-pass review, not certified legal archiving.
+- Image OCR requires a configured vision model; otherwise image text extraction is marked as failed.
+- Local storage is suitable for development and early internal pilots only. Production needs backup, retention, encryption, and access-control policy decisions.
+- Role checks in Stage 3 use a backend development stub and must be replaced by real authentication before production use.
+- The app can help draft and review documents, but final legal conclusions still require a responsible human specialist.

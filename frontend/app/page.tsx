@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useMemo, useState } from "react";
 
 import Sidebar from "./components/Sidebar";
 
@@ -49,6 +49,29 @@ type OpenRouterModel = {
   supports_zdr: boolean;
   supports_vision: boolean;
   is_available: boolean;
+};
+
+type UploadedDocument = {
+  id: number;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+  category: string;
+  suggested_category: string;
+  sensitivity: "normal" | "internal" | "sensitive";
+  counterparty?: string | null;
+  document_number?: string | null;
+  document_date?: string | null;
+  extraction_status: string;
+  ocr_status: string;
+};
+
+type UploadForm = {
+  category: string;
+  sensitivity: "normal" | "internal" | "sensitive";
+  counterparty: string;
+  document_number: string;
+  document_date: string;
 };
 
 const fallbackAgents: Agent[] = [
@@ -135,6 +158,19 @@ export default function HomePage() {
   const [documentBody, setDocumentBody] = useState(initialDocumentBody);
   const [openDocumentMenu, setOpenDocumentMenu] = useState<"download" | "reply" | null>(null);
   const [isCostOpen, setIsCostOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploadForm, setUploadForm] = useState<UploadForm>({
+    category: "",
+    sensitivity: "internal",
+    counterparty: "",
+    document_number: "",
+    document_date: "",
+  });
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<UploadedDocument | null>(null);
+  const [selectedDocumentText, setSelectedDocumentText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
@@ -307,6 +343,93 @@ export default function HomePage() {
     setSelectedAgentForSettings(null);
   }
 
+  function handleFileSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setPendingFile(file);
+    setUploadForm({
+      category: "",
+      sensitivity: "internal",
+      counterparty: "",
+      document_number: "",
+      document_date: "",
+    });
+    event.target.value = "";
+  }
+
+  async function uploadPendingFile() {
+    if (!pendingFile || isUploading) {
+      return;
+    }
+    setIsUploading(true);
+    setApiStatus("");
+    try {
+      const nextChatId = await ensureChat();
+      const form = new FormData();
+      form.append("file", pendingFile);
+      form.append("sensitivity", uploadForm.sensitivity);
+      form.append("chat_id", String(nextChatId));
+      if (uploadForm.category) form.append("category", uploadForm.category);
+      if (uploadForm.counterparty) form.append("counterparty", uploadForm.counterparty);
+      if (uploadForm.document_number) form.append("document_number", uploadForm.document_number);
+      if (uploadForm.document_date) form.append("document_date", uploadForm.document_date);
+
+      const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+        method: "POST",
+        body: form,
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Не удалось загрузить документ." }));
+        throw new Error(error.detail ?? "Не удалось загрузить документ.");
+      }
+      const payload = await response.json();
+      setUploadedDocuments((current) => {
+        if (current.some((document) => document.id === payload.document.id)) {
+          return current;
+        }
+        return [...current, payload.document];
+      });
+      setPendingFile(null);
+      setApiStatus(payload.extraction_error ? `Документ сохранен, обработка: ${payload.extraction_error}` : "Документ загружен и привязан к чату.");
+    } catch (error) {
+      setApiStatus(error instanceof Error ? error.message : "Не удалось загрузить документ.");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function openUploadedDocument(document: UploadedDocument) {
+    setSelectedDocument(document);
+    setIsDocumentOpen(true);
+    setIsDocumentEditing(false);
+    setOpenDocumentMenu(null);
+    setSelectedDocumentText("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/documents/${document.id}/content`);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Текст документа пока недоступен." }));
+        throw new Error(error.detail ?? "Текст документа пока недоступен.");
+      }
+      const payload = await response.json();
+      setSelectedDocumentText(payload.extracted_text);
+    } catch (error) {
+      setSelectedDocumentText(error instanceof Error ? error.message : "Текст документа пока недоступен.");
+    }
+  }
+
+  async function removeDocumentFromChat(documentId: number) {
+    if (chatId !== null) {
+      await fetch(`${API_BASE_URL}/api/chats/${chatId}/documents/${documentId}`, { method: "DELETE" }).catch(() => undefined);
+    }
+    setUploadedDocuments((current) => current.filter((document) => document.id !== documentId));
+    if (selectedDocument?.id === documentId) {
+      setSelectedDocument(null);
+      setIsDocumentOpen(false);
+    }
+  }
+
   function closeDocumentPanel() {
     setIsDocumentOpen(false);
     setIsDocumentEditing(false);
@@ -421,8 +544,30 @@ export default function HomePage() {
         </div>
 
         <div className="composer-wrap">
+          {uploadedDocuments.length ? (
+            <div className="uploaded-documents">
+              {uploadedDocuments.map((document) => (
+                <div className="uploaded-document-chip" key={document.id}>
+                  <button type="button" onClick={() => openUploadedDocument(document)}>
+                    <strong>{document.original_filename}</strong>
+                    <span>{document.category} · {document.sensitivity} · {document.extraction_status}</span>
+                  </button>
+                  <button type="button" aria-label="Убрать документ из чата" onClick={() => removeDocumentFromChat(document.id)}>
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <input
+            ref={fileInputRef}
+            className="hidden-file-input"
+            type="file"
+            accept=".pdf,.docx,.xlsx,.txt,.jpg,.jpeg,.png,.webp"
+            onChange={handleFileSelection}
+          />
           <form className="composer" onSubmit={handleSubmit}>
-            <button type="button" className="icon-button" aria-label="Добавить файл">
+            <button type="button" className="icon-button" aria-label="Добавить файл" onClick={() => fileInputRef.current?.click()}>
               +
             </button>
             <input
@@ -463,8 +608,8 @@ export default function HomePage() {
         <aside className="document-pane">
           <header className="document-header">
             <div>
-              <strong>Письмо клиенту о задолженности</strong>
-              <span>Документ · DOCX</span>
+              <strong>{selectedDocument?.original_filename ?? "Письмо клиенту о задолженности"}</strong>
+              <span>{selectedDocument ? `${selectedDocument.mime_type} · ${selectedDocument.extraction_status}` : "Документ · DOCX"}</span>
             </div>
             <div className="document-actions">
               <div className="document-action-group">
@@ -488,8 +633,14 @@ export default function HomePage() {
                   </button>
                   {openDocumentMenu === "download" ? (
                     <div className="document-dropdown">
-                      <button type="button">Скачать Word (.docx)</button>
-                      <button type="button">Скачать PDF (.pdf)</button>
+                      {selectedDocument ? (
+                        <a href={`${API_BASE_URL}/api/documents/${selectedDocument.id}/download`}>Скачать оригинал</a>
+                      ) : (
+                        <>
+                          <button type="button">Скачать Word (.docx)</button>
+                          <button type="button">Скачать PDF (.pdf)</button>
+                        </>
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -514,40 +665,136 @@ export default function HomePage() {
           </header>
           <div className="document-stage">
             <article className="document-page">
-              <div className="document-band">ЧЕРНОВИК</div>
-              <h2>ООО “KABEL TECH ENERGY”</h2>
-              <p className="doc-center">111116, Республика Узбекистан, Ташкентская область</p>
-              <section>
-                <h3>Письмо о задолженности</h3>
-                {isDocumentEditing ? (
-                  <textarea className="document-editor" aria-label="Текст документа" value={documentBody} onChange={(event) => setDocumentBody(event.target.value)} />
-                ) : (
-                  <p>{documentBody}</p>
-                )}
-              </section>
-              <table>
-                <tbody>
-                  <tr>
-                    <th>Клиент</th>
-                    <td>ООО “Example Cable Trade”</td>
-                  </tr>
-                  <tr>
-                    <th>Договор</th>
-                    <td>N 14/25 от 10.06.2026</td>
-                  </tr>
-                  <tr>
-                    <th>Риск</th>
-                    <td>Жёлтый: требуется проверка бухгалтерии</td>
-                  </tr>
-                </tbody>
-              </table>
-              <section>
-                <h3>Практический вывод для завода</h3>
-                <p>Письмо можно использовать как черновик. Перед отправкой нужно сверить сумму, срок оплаты и полномочия подписанта.</p>
-              </section>
+              {selectedDocument ? (
+                <>
+                  <div className="document-band">ЗАГРУЖЕННЫЙ ДОКУМЕНТ</div>
+                  <h2>{selectedDocument.original_filename}</h2>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th>Категория</th>
+                        <td>{selectedDocument.category}</td>
+                      </tr>
+                      <tr>
+                        <th>Предложено</th>
+                        <td>{selectedDocument.suggested_category}</td>
+                      </tr>
+                      <tr>
+                        <th>Чувствительность</th>
+                        <td>{selectedDocument.sensitivity}</td>
+                      </tr>
+                      <tr>
+                        <th>OCR / extraction</th>
+                        <td>{selectedDocument.ocr_status} / {selectedDocument.extraction_status}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <section>
+                    <h3>Извлечённый текст</h3>
+                    <pre className="extracted-text">{selectedDocumentText || "Загрузка текста..."}</pre>
+                  </section>
+                </>
+              ) : (
+                <>
+                  <div className="document-band">ЧЕРНОВИК</div>
+                  <h2>ООО “KABEL TECH ENERGY”</h2>
+                  <p className="doc-center">111116, Республика Узбекистан, Ташкентская область</p>
+                  <section>
+                    <h3>Письмо о задолженности</h3>
+                    {isDocumentEditing ? (
+                      <textarea className="document-editor" aria-label="Текст документа" value={documentBody} onChange={(event) => setDocumentBody(event.target.value)} />
+                    ) : (
+                      <p>{documentBody}</p>
+                    )}
+                  </section>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th>Клиент</th>
+                        <td>ООО “Example Cable Trade”</td>
+                      </tr>
+                      <tr>
+                        <th>Договор</th>
+                        <td>N 14/25 от 10.06.2026</td>
+                      </tr>
+                      <tr>
+                        <th>Риск</th>
+                        <td>Жёлтый: требуется проверка бухгалтерии</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <section>
+                    <h3>Практический вывод для завода</h3>
+                    <p>Письмо можно использовать как черновик. Перед отправкой нужно сверить сумму, срок оплаты и полномочия подписанта.</p>
+                  </section>
+                </>
+              )}
             </article>
           </div>
         </aside>
+      ) : null}
+
+      {pendingFile ? (
+        <div className="modal-backdrop">
+          <section className="upload-modal">
+            <header className="settings-header">
+              <div>
+                <strong>Загрузка документа</strong>
+                <span>{pendingFile.name}</span>
+              </div>
+              <button className="document-icon-button" onClick={() => setPendingFile(null)} type="button" aria-label="Закрыть загрузку">
+                ×
+              </button>
+            </header>
+            <div className="upload-form">
+              <label>
+                <span>Категория</span>
+                <select value={uploadForm.category} onChange={(event) => setUploadForm((current) => ({ ...current, category: event.target.value }))}>
+                  <option value="">Определить автоматически</option>
+                  <option value="local_contract">Обычный договор</option>
+                  <option value="import_contract">Импортный контракт</option>
+                  <option value="client_debt">Долги / претензии</option>
+                  <option value="tax_letter">ГНИ / налоговое письмо</option>
+                  <option value="government_letter">Госорган</option>
+                  <option value="hr_document">HR / кадры</option>
+                  <option value="order">Приказ</option>
+                  <option value="occupational_safety">Охрана труда</option>
+                  <option value="certificate">Сертификат</option>
+                  <option value="template">Шаблон</option>
+                  <option value="other">Прочее</option>
+                </select>
+              </label>
+              <label>
+                <span>Чувствительность</span>
+                <select value={uploadForm.sensitivity} onChange={(event) => setUploadForm((current) => ({ ...current, sensitivity: event.target.value as UploadForm["sensitivity"] }))}>
+                  <option value="normal">Обычный</option>
+                  <option value="internal">Внутренний</option>
+                  <option value="sensitive">Чувствительный</option>
+                </select>
+              </label>
+              <label>
+                <span>Контрагент</span>
+                <input value={uploadForm.counterparty} onChange={(event) => setUploadForm((current) => ({ ...current, counterparty: event.target.value }))} />
+              </label>
+              <label>
+                <span>Номер документа</span>
+                <input value={uploadForm.document_number} onChange={(event) => setUploadForm((current) => ({ ...current, document_number: event.target.value }))} />
+              </label>
+              <label>
+                <span>Дата документа</span>
+                <input type="date" value={uploadForm.document_date} onChange={(event) => setUploadForm((current) => ({ ...current, document_date: event.target.value }))} />
+              </label>
+              <div className="upload-actions">
+                <button className="compact-button" type="button" onClick={() => setPendingFile(null)}>
+                  Отменить
+                </button>
+                <button className="agent-chip active" type="button" onClick={uploadPendingFile} disabled={isUploading}>
+                  {isUploading ? "Загрузка..." : "Загрузить"}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       ) : null}
 
       {isSettingsOpen ? (

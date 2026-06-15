@@ -97,3 +97,54 @@ Admin API:
 - `POST /api/admin/openrouter/models/refresh`
 
 Stage 2 v2 still does not implement RAG, document upload, final legal source enforcement, production admin auth, or Telegram.
+
+## Stage 3 v2 Document Processing Flow
+
+Stage 3 v2 adds secure document upload and extracted-text context:
+
+1. The frontend uploads a file through `POST /api/documents/upload`.
+2. Backend validates extension, MIME type, size, sensitivity, and path traversal.
+3. `LocalStorageProvider` stores the original file once under a UUID-based storage key in `data/uploads/`.
+4. Backend computes SHA-256 and reuses an existing document record when the same file content is uploaded again.
+5. `DocumentExtractor` extracts text from TXT, text PDFs, DOCX, and XLSX. Images use a separate OpenRouter vision configuration only once at upload time.
+6. Extracted text is saved as a separate text object in storage.
+7. Documents can be linked to one or more chats through `chat_documents`.
+8. When a lawyer is invoked, linked document text is appended to chat context inside marked `<UNTRUSTED_DOCUMENT>` blocks.
+9. Full document text is not copied into `Message`.
+10. Used documents are recorded through `message_documents`.
+
+New API surface:
+
+- `POST /api/documents/upload`
+- `GET /api/documents`
+- `GET /api/documents/{document_id}`
+- `GET /api/documents/{document_id}/content`
+- `GET /api/documents/{document_id}/download`
+- `DELETE /api/documents/{document_id}`
+- `POST /api/chats/{chat_id}/documents/{document_id}`
+- `DELETE /api/chats/{chat_id}/documents/{document_id}`
+- `GET /api/chats/{chat_id}/documents`
+
+Document categories:
+
+- `local_contract`
+- `import_contract`
+- `client_debt`
+- `tax_letter`
+- `government_letter`
+- `hr_document`
+- `order`
+- `occupational_safety`
+- `certificate`
+- `template`
+- `other`
+
+Sensitivity values:
+
+- `normal`
+- `internal`
+- `sensitive`
+
+If a chat contains a `sensitive` document, the selected provider must be enabled, allowlisted, and trusted for sensitive documents. This check is enforced on the backend before any OpenRouter request.
+
+SQLite remains for local development and tests only. PostgreSQL remains the production database target.

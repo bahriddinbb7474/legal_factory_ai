@@ -73,6 +73,7 @@ class Chat(Base, TimestampMixin):
     owner: Mapped[Optional["User"]] = relationship(back_populates="chats")
     messages: Mapped[list["Message"]] = relationship(back_populates="chat", cascade="all, delete-orphan")
     documents: Mapped[list["Document"]] = relationship(back_populates="chat")
+    chat_documents: Mapped[list["ChatDocument"]] = relationship(back_populates="chat", cascade="all, delete-orphan")
     approvals: Mapped[list["Approval"]] = relationship(back_populates="chat")
     cost_records: Mapped[list["CostRecord"]] = relationship(back_populates="chat")
 
@@ -94,6 +95,7 @@ class Message(Base, TimestampMixin):
 
     chat: Mapped["Chat"] = relationship(back_populates="messages")
     agent: Mapped[Optional["Agent"]] = relationship(back_populates="messages")
+    message_documents: Mapped[list["MessageDocument"]] = relationship(back_populates="message", cascade="all, delete-orphan")
 
 
 class ProviderConfig(Base, TimestampMixin):
@@ -132,8 +134,49 @@ class Document(Base, TimestampMixin):
     file_type: Mapped[str] = mapped_column(String(64), nullable=False)
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(500), default="", nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    file_hash: Mapped[str] = mapped_column(String(64), default="", index=True, nullable=False)
+    category: Mapped[str] = mapped_column(String(64), default="other", index=True, nullable=False)
+    suggested_category: Mapped[str] = mapped_column(String(64), default="other", nullable=False)
+    counterparty: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    document_number: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    document_date: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    sensitivity: Mapped[str] = mapped_column(String(32), default="normal", index=True, nullable=False)
+    uploaded_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    extraction_status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
+    extracted_text_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    ocr_status: Mapped[str] = mapped_column(String(32), default="not_required", nullable=False)
 
     chat: Mapped[Optional["Chat"]] = relationship(back_populates="documents")
+    chat_documents: Mapped[list["ChatDocument"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    message_documents: Mapped[list["MessageDocument"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+
+
+class ChatDocument(Base):
+    __tablename__ = "chat_documents"
+
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"), primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), primary_key=True)
+    added_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    chat: Mapped["Chat"] = relationship(back_populates="chat_documents")
+    document: Mapped["Document"] = relationship(back_populates="chat_documents")
+
+
+class MessageDocument(Base):
+    __tablename__ = "message_documents"
+
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id"), primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), primary_key=True)
+    usage_type: Mapped[str] = mapped_column(String(32), default="attached", primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    message: Mapped["Message"] = relationship(back_populates="message_documents")
+    document: Mapped["Document"] = relationship(back_populates="message_documents")
 
 
 class Approval(Base, TimestampMixin):
