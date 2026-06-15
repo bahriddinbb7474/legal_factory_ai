@@ -73,7 +73,7 @@ const workspaceSections: WorkspaceSection[] = [
 ];
 
 export default function Sidebar() {
-  const [expandedSection, setExpandedSection] = useState("contracts");
+  const [expandedSection, setExpandedSection] = useState("");
   const [activeChat, setActiveChat] = useState("Проверка договора поставки N258");
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
 

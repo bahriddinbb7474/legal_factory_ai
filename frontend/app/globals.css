@@ -41,9 +41,13 @@ button {
 .workspace-shell {
   background: var(--bg);
   display: grid;
-  grid-template-columns: 260px minmax(480px, 1fr) minmax(380px, 480px);
+  grid-template-columns: 260px minmax(640px, 1fr);
   height: 100vh;
   overflow: hidden;
+}
+
+.workspace-shell.document-open {
+  grid-template-columns: 260px minmax(520px, 1fr) minmax(480px, 46vw);
 }
 
 .sidebar {
@@ -379,12 +383,29 @@ button {
 
 .chat-area {
   display: grid;
+  grid-template-columns: minmax(24px, 0.8fr) minmax(min(100%, 850px), 1000px) minmax(24px, 1.2fr);
   grid-template-rows: 56px 1fr auto;
   min-width: 0;
 }
 
+.workspace-shell.document-open .chat-area {
+  grid-template-columns: minmax(18px, 0.5fr) minmax(min(100%, 620px), 900px) minmax(18px, 0.7fr);
+}
+
 .topbar {
+  grid-column: 2;
   padding: 10px 18px;
+}
+
+.chat-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-actions,
@@ -405,25 +426,25 @@ button {
 .conversation {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  margin: 0 auto;
-  max-width: 760px;
+  gap: 24px;
+  grid-column: 2;
+  max-width: none;
   overflow: auto;
-  padding: 48px 24px 24px;
+  padding: 48px 28px 24px;
   width: 100%;
 }
 
 .message {
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .user-message {
   align-self: flex-end;
   background: #f4f4f4;
   border-radius: 18px;
-  max-width: 620px;
-  padding: 12px 16px;
+  max-width: min(760px, 86%);
+  padding: 14px 18px;
 }
 
 .user-message p,
@@ -434,21 +455,33 @@ button {
 .assistant-message {
   border: 1px solid var(--line);
   border-radius: 18px;
-  padding: 14px 16px;
+  padding: 18px 20px;
 }
 
 .assistant-message h1 {
-  font-size: 20px;
+  font-size: 22px;
   letter-spacing: 0;
   margin: 12px 0 8px;
 }
 
 .message-toolbar {
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .pill-button {
   font-weight: 600;
+}
+
+.assistant-meta {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.verdict-button {
+  margin-left: auto;
 }
 
 .risk-badge {
@@ -496,6 +529,17 @@ button {
   padding: 12px;
 }
 
+.document-card-button {
+  align-items: center;
+  display: flex;
+  text-align: left;
+  width: 100%;
+}
+
+.document-card-button:hover {
+  background: var(--soft);
+}
+
 .doc-icon {
   align-items: center;
   border: 1px solid var(--line);
@@ -535,25 +579,33 @@ button {
 }
 
 .composer-wrap {
-  margin: 0 auto;
-  max-width: 760px;
-  padding: 12px 24px 8px;
+  grid-column: 2;
+  max-width: none;
+  padding: 12px 28px 8px;
   width: 100%;
 }
 
 .agent-row {
   gap: 8px;
+  justify-content: flex-start;
   margin-top: 8px;
 }
 
 .agent-chip {
   color: var(--muted);
   font-size: 13px;
+  min-height: 30px;
 }
 
 .agent-chip.active {
-  background: #f1f1f1;
-  color: var(--text);
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.agent-chip.active:hover {
+  background: #111;
+  color: #fff;
 }
 
 .composer {
@@ -561,13 +613,14 @@ button {
   border-radius: 24px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.08);
   gap: 8px;
-  min-height: 54px;
-  padding: 8px;
+  min-height: 58px;
+  padding: 9px;
 }
 
 .composer input {
   border: 0;
   flex: 1;
+  font-size: 16px;
   min-width: 100px;
   outline: 0;
 }
@@ -709,11 +762,20 @@ button {
 
 @media (max-width: 1180px) {
   .workspace-shell {
+    grid-template-columns: 64px minmax(420px, 1fr);
+  }
+
+  .workspace-shell.document-open {
     grid-template-columns: 64px minmax(420px, 1fr) minmax(340px, 420px);
   }
 
   .sidebar {
     padding: 12px 8px;
+  }
+
+  .chat-area,
+  .workspace-shell.document-open .chat-area {
+    grid-template-columns: minmax(16px, 1fr) minmax(0, 920px) minmax(16px, 1fr);
   }
 
   .nav-item,
