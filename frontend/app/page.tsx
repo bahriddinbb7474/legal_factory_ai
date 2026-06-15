@@ -56,30 +56,30 @@ const fallbackAgents: Agent[] = [
     id: 1,
     code: "lawyer_1",
     display_name: "Юрист 1",
-    provider_code: "qwen",
-    model_name: "qwen/qwen3.7-plus",
-    input_price_per_1m: "0.320000",
-    output_price_per_1m: "1.280000",
+    provider_code: "novita",
+    model_name: "inclusionai/ling-2.6-flash",
+    input_price_per_1m: "0.010000",
+    output_price_per_1m: "0.030000",
     supports_zdr: false,
   },
   {
     id: 2,
     code: "lawyer_2",
     display_name: "Юрист 2",
-    provider_code: "deepseek",
-    model_name: "deepseek/deepseek-r1",
-    input_price_per_1m: "0.800000",
-    output_price_per_1m: "0.800000",
+    provider_code: "cloudflare",
+    model_name: "ibm-granite/granite-4.0-h-micro",
+    input_price_per_1m: "0.017000",
+    output_price_per_1m: "0.112000",
     supports_zdr: false,
   },
   {
     id: 3,
     code: "lawyer_3",
     display_name: "Юрист 3 · Арбитр",
-    provider_code: "google",
-    model_name: "google/gemini-flash-1.5",
-    input_price_per_1m: "0.075000",
-    output_price_per_1m: "0.300000",
+    provider_code: "novita/fp4",
+    model_name: "openai/gpt-oss-20b",
+    input_price_per_1m: "0.040000",
+    output_price_per_1m: "0.150000",
     supports_zdr: false,
   },
 ];
@@ -96,8 +96,8 @@ const initialMessages: ChatMessage[] = [
     author_type: "agent1",
     content:
       "Можно направить клиенту мягкое письмо с требованием сверки и оплаты. Финальное признание долга или уступки по срокам оплаты давать нельзя без проверки договора и бухгалтерии.",
-    model_id: "qwen/qwen3.7-plus",
-    provider_code: "qwen",
+    model_id: "inclusionai/ling-2.6-flash",
+    provider_code: "novita",
     input_tokens: 0,
     output_tokens: 0,
     cost_usd: "0.000000",
@@ -134,9 +134,29 @@ export default function HomePage() {
   const [isDocumentEditing, setIsDocumentEditing] = useState(false);
   const [documentBody, setDocumentBody] = useState(initialDocumentBody);
   const [openDocumentMenu, setOpenDocumentMenu] = useState<"download" | "reply" | null>(null);
+  const [isCostOpen, setIsCostOpen] = useState(false);
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
+  const costBreakdown = useMemo(() => {
+    const rows = new Map<string, { label: string; input: number; output: number; cost: number }>();
+    messages
+      .filter((message) => message.author_type.startsWith("agent"))
+      .forEach((message) => {
+        const key = `${message.author_type}-${message.provider_code ?? ""}-${message.model_id ?? ""}`;
+        const row = rows.get(key) ?? {
+          label: `${authorMeta[message.author_type]} · ${message.provider_code ?? "провайдер не указан"} · ${message.model_id ?? "модель не указана"}`,
+          input: 0,
+          output: 0,
+          cost: 0,
+        };
+        row.input += message.input_tokens ?? 0;
+        row.output += message.output_tokens ?? 0;
+        row.cost += Number(message.cost_usd ?? 0);
+        rows.set(key, row);
+      });
+    return [...rows.values()];
+  }, [messages]);
 
   const filteredModels = useMemo(() => {
     const allowlistedProviders = new Set(providers.filter((provider) => provider.is_allowlisted).map((provider) => provider.provider_code));
@@ -251,6 +271,10 @@ export default function HomePage() {
         throw new Error("Список моделей OpenRouter недоступен.");
       }
       setModels(await response.json());
+      const providersResponse = await fetch(`${API_BASE_URL}/api/admin/providers`);
+      if (providersResponse.ok) {
+        setProviders(await providersResponse.json());
+      }
     } catch (error) {
       setSettingsError(error instanceof Error ? error.message : "Не удалось загрузить модели.");
       setModels([]);
@@ -307,9 +331,31 @@ export default function HomePage() {
         <header className="topbar">
           <h1 className="chat-title">Долги / претензии · Письмо клиенту о задолженности…</h1>
           <div className="topbar-actions">
-            <button className="compact-button" type="button">
-              Расходы: ${totalCost.toFixed(2)}
-            </button>
+            <div className="cost-menu-wrap">
+              <button className="compact-button" onClick={() => setIsCostOpen((current) => !current)} type="button" aria-expanded={isCostOpen}>
+                Расходы: ${totalCost.toFixed(6)}
+              </button>
+              {isCostOpen ? (
+                <div className="cost-dropdown">
+                  <strong>Детализация расходов</strong>
+                  {costBreakdown.length ? (
+                    costBreakdown.map((row) => (
+                      <div className="cost-row" key={row.label}>
+                        <span>{row.label}</span>
+                        <small>{row.input} input / {row.output} output</small>
+                        <b>${row.cost.toFixed(6)}</b>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="empty-costs">Пока нет реальных расходов.</span>
+                  )}
+                  <div className="cost-total">
+                    <span>Итого</span>
+                    <b>${totalCost.toFixed(6)}</b>
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <button className="icon-button" aria-label="Свернуть" type="button">
               ^
             </button>
@@ -579,7 +625,7 @@ export default function HomePage() {
             {settingsError ? <p className="settings-error">{settingsError}</p> : null}
             <div className="model-list">
               {filteredModels.map((model) => (
-                <article className="model-row" key={model.model_id}>
+                <article className="model-row" key={`${model.model_id}-${model.provider}`}>
                   <div>
                     <strong>{model.name}</strong>
                     <span>{model.model_id} · {model.provider}</span>

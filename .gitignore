@@ -29,6 +29,7 @@ data/uploads/*
 data/internal_docs/*
 data/legal_sources/*
 data/templates/*
+data/*.db
 !data/uploads/.gitkeep
 !data/internal_docs/.gitkeep
 !data/legal_sources/.gitkeep

@@ -46,6 +46,7 @@ class OpenRouterGateway:
                 "only": [agent.provider_code],
                 "require_parameters": True,
             },
+            "max_tokens": 450,
         }
         if agent.supports_zdr:
             payload["provider"]["zdr"] = True

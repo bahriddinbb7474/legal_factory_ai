@@ -426,6 +426,58 @@ button {
   gap: 8px;
 }
 
+.cost-menu-wrap {
+  position: relative;
+}
+
+.cost-dropdown {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.12);
+  display: grid;
+  gap: 8px;
+  min-width: 340px;
+  padding: 12px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 10;
+}
+
+.cost-dropdown > strong {
+  font-size: 14px;
+}
+
+.cost-row,
+.cost-total {
+  display: grid;
+  gap: 2px;
+}
+
+.cost-row {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.cost-row span,
+.cost-row small,
+.empty-costs {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cost-row b,
+.cost-total b {
+  font-size: 13px;
+}
+
+.cost-total {
+  grid-template-columns: 1fr auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .compact-button,
 .pill-button,
 .agent-chip {

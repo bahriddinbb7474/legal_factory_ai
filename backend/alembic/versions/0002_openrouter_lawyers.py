@@ -70,7 +70,8 @@ def upgrade() -> None:
     # Safe while no production data exists. Existing assistant messages are treated as lawyer_1.
     op.add_column("messages", sa.Column("author_type", sa.String(length=32), nullable=True))
     op.execute("UPDATE messages SET author_type = CASE WHEN role = 'assistant' THEN 'agent1' ELSE role END")
-    op.alter_column("messages", "author_type", nullable=False)
+    with op.batch_alter_table("messages") as batch_op:
+        batch_op.alter_column("author_type", existing_type=sa.String(length=32), nullable=False)
     op.add_column("messages", sa.Column("model_id", sa.String(length=255), nullable=True))
     op.add_column("messages", sa.Column("provider_code", sa.String(length=64), nullable=True))
     op.add_column("messages", sa.Column("input_tokens", sa.Integer(), server_default="0", nullable=False))
