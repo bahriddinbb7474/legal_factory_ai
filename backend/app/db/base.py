@@ -48,8 +48,15 @@ class Agent(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     code: Mapped[str] = mapped_column(String(32), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    provider_code: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    system_prompt: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    role_type: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    input_price_per_1m: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)
+    output_price_per_1m: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)
+    supports_zdr: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     messages: Mapped[list["Message"]] = relationship(back_populates="agent")
     cost_records: Mapped[list["CostRecord"]] = relationship(back_populates="agent")
@@ -76,11 +83,44 @@ class Message(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False)
+    author_type: Mapped[str] = mapped_column(String(32), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     agent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("agents.id"), nullable=True)
+    model_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    provider_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cost_usd: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)
 
     chat: Mapped["Chat"] = relationship(back_populates="messages")
     agent: Mapped[Optional["Agent"]] = relationship(back_populates="messages")
+
+
+class ProviderConfig(Base, TimestampMixin):
+    __tablename__ = "provider_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    provider_code: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_allowlisted: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    supports_zdr: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_trusted_for_sensitive: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class ModelConfig(Base, TimestampMixin):
+    __tablename__ = "model_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    agent_code: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    provider_code: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    input_price_per_1m: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)
+    output_price_per_1m: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)
+    max_context_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    supports_structured_output: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    supports_vision: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
 class Document(Base, TimestampMixin):
@@ -115,6 +155,8 @@ class CostRecord(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"), nullable=False)
     agent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("agents.id"), nullable=True)
+    provider_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    model_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cost_usd: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)

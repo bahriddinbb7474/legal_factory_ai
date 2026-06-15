@@ -57,7 +57,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 2 core backend models and API.
+Current status: Stage 2 v2 OpenRouter lawyer integration and model settings.
 
 Implemented foundation:
 
@@ -67,11 +67,17 @@ Implemented foundation:
 - core backend models for users, roles, chats, messages, agents, documents, approvals, cost records, and audit logs;
 - Alembic initial migration;
 - simple agents, chats, messages, and chat costs API endpoints;
+- OpenRouter gateway foundation with mockable tests and no real provider calls in automated checks;
+- three configurable lawyers: fast lawyer, independent analyst, and arbiter;
+- one shared chat where the user manually invokes only one selected lawyer per request;
+- provider allowlist and the rule that Lawyer 1 and Lawyer 2 must use different providers;
+- dynamic OpenRouter model list endpoint for admin settings;
+- model settings UI from the user profile area;
 - backend tests using SQLite in-memory;
-- minimal Next.js frontend page;
+- Next.js chat workspace connected to backend chat/invoke endpoints;
 - development setup documentation.
 
-Not implemented yet: AI agent execution, OpenRouter, RAG, document upload, legal response logic, approval workflow behavior, and Telegram.
+Not implemented yet: RAG, document upload, final legal source enforcement, approval workflow behavior, real document export, production auth/admin permissions, and Telegram.
 
 ## Run Backend
 
@@ -141,3 +147,17 @@ Build the frontend:
 cd frontend
 npm run build
 ```
+
+Frontend expects the backend at:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+OpenRouter real calls require:
+
+```env
+OPENROUTER_API_KEY=
+```
+
+Without the key, automated tests still pass through mocks, and the UI shows a clear backend/OpenRouter error instead of calling a real provider.

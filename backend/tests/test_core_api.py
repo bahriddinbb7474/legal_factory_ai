@@ -3,7 +3,8 @@ def test_list_agents(client) -> None:
 
     assert response.status_code == 200
     agents = response.json()
-    assert [agent["code"] for agent in agents] == ["agent_1", "agent_2", "agent_3"]
+    assert [agent["code"] for agent in agents] == ["lawyer_1", "lawyer_2", "lawyer_3"]
+    assert agents[0]["provider_code"] != agents[1]["provider_code"]
 
 
 def test_create_chat(client) -> None:
@@ -31,6 +32,7 @@ def test_create_and_list_chat_messages(client) -> None:
     assert messages_response.status_code == 200
     messages = messages_response.json()
     assert len(messages) == 1
+    assert messages[0]["author_type"] == "user"
     assert messages[0]["role"] == "user"
 
 

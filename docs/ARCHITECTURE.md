@@ -57,4 +57,43 @@ The first implementation should avoid complex enterprise infrastructure. Redis, 
 6. RAG retrieves relevant sources when available.
 7. The answer is returned with sources, risk level, confidence, cost, and approval requirement.
 
-Stage 2 only implements the storage/API foundation. It does not call OpenRouter, generate AI answers, upload files, run RAG, or send Telegram messages.
+## Stage 2 v2 OpenRouter Lawyer Flow
+
+Stage 2 v2 adds one shared chat with manual invocation of exactly one selected lawyer:
+
+1. User writes a message.
+2. Frontend stores it in the chat.
+3. User-selected lawyer is invoked through `POST /api/chats/{chat_id}/invoke`.
+4. Backend builds the full chat context with explicit authors:
+   - `Пользователь`
+   - `Юрист 1`
+   - `Юрист 2`
+   - `Юрист 3`
+   - `Система`
+5. Backend loads the lawyer model/provider settings from DB.
+6. OpenRouter gateway sends one request with `provider.only`.
+7. Backend stores the answer with `author_type`, `model_id`, `provider_code`, token counts, and cost.
+
+Automated tests mock OpenRouter. Real calls require `OPENROUTER_API_KEY`.
+
+New data entities:
+
+- `ProviderConfig`
+- `ModelConfig`
+
+Updated entities:
+
+- `Agent` stores provider, model, system prompt, role type, prices, and ZDR support.
+- `Message` stores `author_type`, `model_id`, `provider_code`, tokens, and cost.
+- `CostRecord` stores provider/model usage.
+
+Admin API:
+
+- `GET /api/admin/agents`
+- `PATCH /api/admin/agents/{agent_code}`
+- `GET /api/admin/providers`
+- `PATCH /api/admin/providers/{provider_code}`
+- `GET /api/admin/openrouter/models`
+- `POST /api/admin/openrouter/models/refresh`
+
+Stage 2 v2 still does not implement RAG, document upload, final legal source enforcement, production admin auth, or Telegram.

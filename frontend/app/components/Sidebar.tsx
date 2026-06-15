@@ -72,7 +72,11 @@ const workspaceSections: WorkspaceSection[] = [
   },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  onOpenSettings?: () => void;
+};
+
+export default function Sidebar({ onOpenSettings }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState("");
   const [activeChat, setActiveChat] = useState("Проверка договора поставки N258");
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
@@ -168,13 +172,18 @@ export default function Sidebar() {
       </div>
 
       <div className="profile-strip sidebar-profile">
-        <button className="avatar profile-button" aria-label="Профиль пользователя" type="button">
+        <button
+          className="avatar profile-button"
+          onClick={onOpenSettings}
+          aria-label="Профиль / Настройки"
+          type="button"
+        >
           BB
         </button>
-        <div>
+        <button className="profile-copy" onClick={onOpenSettings} type="button">
           <strong>Bahriddin Boboev</strong>
           <span>фин.директор</span>
-        </div>
+        </button>
       </div>
     </aside>
   );

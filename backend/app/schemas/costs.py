@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict
 class CostRecordCreate(BaseModel):
     chat_id: int
     agent_id: int | None = None
+    provider_code: str | None = None
+    model_id: str | None = None
     input_tokens: int = 0
     output_tokens: int = 0
     cost_usd: Decimal = Decimal("0")

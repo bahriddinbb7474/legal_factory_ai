@@ -1,6 +1,6 @@
 # Development Setup
 
-Stage 2 creates a minimal runnable backend and frontend foundation, plus core backend models and chat API endpoints.
+Stage 2 v2 creates a runnable backend/frontend foundation with core chat APIs, OpenRouter lawyer invocation, and model settings.
 
 ## Backend
 
@@ -40,6 +40,19 @@ Expected response:
   "app": "Legal Factory AI"
 }
 ```
+
+OpenRouter configuration in `.env`:
+
+```env
+OPENROUTER_API_KEY=
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_TIMEOUT_SECONDS=30
+OPENROUTER_APP_REFERER=
+OPENROUTER_APP_TITLE=Legal Factory AI
+CORS_ORIGINS=http://127.0.0.1:3000,http://localhost:3000
+```
+
+Do not commit real API keys. If `OPENROUTER_API_KEY` is empty, real lawyer invocation returns a clear service error; tests use a fake gateway.
 
 Run tests:
 
@@ -90,6 +103,12 @@ cd frontend
 npm run dev
 ```
 
+The frontend calls the backend through:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
 Build production assets:
 
 ```bash
@@ -99,6 +118,6 @@ npm run build
 
 ## Current Scope
 
-Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, Alembic initial migration, backend tests, minimal Next.js page, and development documentation.
+Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, OpenRouter gateway foundation, mock-tested lawyer invocation, admin model/provider endpoints, Alembic migrations, backend tests, connected Next.js chat workspace, and model settings UI.
 
-Not implemented: AI agent execution, OpenRouter, RAG, document upload, legal response logic, approval workflow behavior, and Telegram.
+Not implemented: RAG, document upload, final legal source enforcement, approval workflow behavior, production admin auth, and Telegram.

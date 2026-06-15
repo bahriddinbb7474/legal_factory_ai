@@ -1,38 +1,63 @@
 # AI Agents
 
-Legal Factory AI uses three legal agents. The user interface may show all three, but the system should prefer automatic risk-based escalation so ordinary users do not need to understand model complexity.
+Legal Factory AI Stage 2 v2 uses one shared chat and three configurable legal agents. The user manually selects exactly one lawyer before sending/invoking. The backend must not call two or three lawyers in one request.
 
-## Agent 1: Fast Low-Cost Lawyer
+## Shared Chat Rule
 
-Purpose:
+Every invoked lawyer receives the full current chat context, with explicit authors:
 
-- answer simple questions;
-- draft simple letters;
-- summarize documents;
-- identify whether a question may require deeper review.
+- `Пользователь`
+- `Юрист 1`
+- `Юрист 2`
+- `Юрист 3`
+- `Система`
 
-## Agent 2: Strong Legal Analyst
+This prevents mixing authors and lets Lawyer 2 compare with Lawyer 1, while Lawyer 3 can act as arbiter.
 
-Purpose:
+## Lawyer 1
 
-- analyze contracts and serious legal questions;
-- compare facts with sources;
-- produce structured legal conclusions;
-- handle yellow-risk and selected red-risk matters.
+Role: fast practical lawyer.
 
-## Agent 3: Reviewer / Critic
+- quick and practical analysis;
+- reads the full chat history;
+- does not present itself as an advocate;
+- does not invent sources;
+- answers in ordinary text until Stage 3/4 legal source enforcement;
+- defaults to Russian unless the user requests another language in the chat message.
 
-Purpose:
+## Lawyer 2
 
-- review Agent 2 answers;
-- search for weak assumptions;
-- flag missing sources;
-- challenge risky conclusions before approval.
+Role: strong independent analyst.
 
-## Risk-Based Escalation
+If Lawyer 1 has already answered, Lawyer 2 should structure the answer as:
 
-- Green risk: Agent 1 can answer.
-- Yellow risk: Agent 1 answers and recommends Agent 2 review.
-- Red risk: Agent 2 and Agent 3 must review, and approval is required from the director, chief accountant, external lawyer, or responsible specialist.
+- agrees with Lawyer 1 on;
+- disagrees with Lawyer 1 on;
+- reasons.
 
-Every agent must follow the legal response format with source, document number, revision date, article or clause, quote, practical conclusion, confidence, and approval requirement.
+If Lawyer 1 has not answered yet, Lawyer 2 gives an independent opinion and states that there is nothing to compare yet.
+
+## Lawyer 3
+
+Role: arbiter.
+
+Lawyer 3 should:
+
+- identify disputed points;
+- say whose position is stronger for each point;
+- explain why;
+- formulate the final verdict;
+- list unresolved or unconfirmed questions.
+
+The future rule `unconfirmed source dispute -> red risk + approval` is prepared in prompts but enforced later.
+
+## Provider Rules
+
+- Lawyers are configured through OpenRouter model settings.
+- Lawyer 1 and Lawyer 2 must use different providers.
+- Providers must be enabled and allowlisted before use.
+- ZDR support is stored now; sensitive-document enforcement is Stage 3/4.
+
+## Costs
+
+Each real invocation stores model, provider, input tokens, output tokens, and calculated USD cost.
