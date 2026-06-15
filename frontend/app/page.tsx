@@ -10,9 +10,15 @@ const lawyers = [
   { id: "lawyer-3", short: "Ю3", label: "Юрист 3 · Арбитр · Gemini Pro" },
 ];
 
+const initialDocumentBody =
+  "Уважаемые партнеры, просим провести сверку взаиморасчетов и подтвердить срок оплаты задолженности по договору поставки.";
+
 export default function HomePage() {
   const [selectedLawyer, setSelectedLawyer] = useState(lawyers[0].id);
   const [isDocumentOpen, setIsDocumentOpen] = useState(false);
+  const [isDocumentEditing, setIsDocumentEditing] = useState(false);
+  const [documentBody, setDocumentBody] = useState(initialDocumentBody);
+  const [openDocumentMenu, setOpenDocumentMenu] = useState<"download" | "reply" | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -22,10 +28,41 @@ export default function HomePage() {
       setSelectedLawyer(nextLawyer.id);
     }
     setIsDocumentOpen(params.get("document") === "open");
+    setIsDocumentEditing(params.get("mode") === "edit");
+    const menu = params.get("menu");
+    if (menu === "download" || menu === "reply") {
+      setOpenDocumentMenu(menu);
+    }
   }, []);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+  }
+
+  function closeDocumentPanel() {
+    setIsDocumentOpen(false);
+    setIsDocumentEditing(false);
+    setOpenDocumentMenu(null);
+  }
+
+  function startDocumentEditing() {
+    setIsDocumentEditing(true);
+    setOpenDocumentMenu(null);
+  }
+
+  function saveDocumentChanges() {
+    setIsDocumentEditing(false);
+    setOpenDocumentMenu(null);
+  }
+
+  function cancelDocumentChanges() {
+    setDocumentBody(initialDocumentBody);
+    setIsDocumentEditing(false);
+    setOpenDocumentMenu(null);
+  }
+
+  function toggleDocumentMenu(menu: "download" | "reply") {
+    setOpenDocumentMenu((currentMenu) => (currentMenu === menu ? null : menu));
   }
 
   return (
@@ -134,11 +171,88 @@ export default function HomePage() {
               <span>Документ · DOCX</span>
             </div>
             <div className="document-actions">
-              <button className="icon-button" aria-label="Скачать">
-                v
-              </button>
-              <button className="icon-button" onClick={() => setIsDocumentOpen(false)} aria-label="Закрыть документ">
-                x
+              <div className="document-action-group">
+                {isDocumentEditing ? (
+                  <>
+                    <button
+                      className="document-icon-button"
+                      onClick={saveDocumentChanges}
+                      title="Сохранить изменения"
+                      type="button"
+                      aria-label="Сохранить изменения"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      className="document-icon-button cancel-edit-button"
+                      onClick={cancelDocumentChanges}
+                      title="Отменить изменения"
+                      type="button"
+                      aria-label="Отменить изменения"
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="document-icon-button"
+                    onClick={startDocumentEditing}
+                    title="Редактировать документ"
+                    type="button"
+                    aria-label="Редактировать документ"
+                  >
+                    ✎
+                  </button>
+                )}
+
+                <div className="document-menu-wrap">
+                  <button
+                    className="document-icon-button"
+                    onClick={() => toggleDocumentMenu("download")}
+                    title="Скачать документ"
+                    type="button"
+                    aria-label="Скачать документ"
+                    aria-expanded={openDocumentMenu === "download"}
+                  >
+                    ⇩
+                  </button>
+                  {openDocumentMenu === "download" ? (
+                    <div className="document-dropdown">
+                      <button type="button">Скачать Word (.docx)</button>
+                      <button type="button">Скачать PDF (.pdf)</button>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="document-menu-wrap">
+                  <button
+                    className="document-icon-button"
+                    onClick={() => toggleDocumentMenu("reply")}
+                    title="Отправить документ в чат"
+                    type="button"
+                    aria-label="Отправить документ в чат"
+                    aria-expanded={openDocumentMenu === "reply"}
+                  >
+                    ↩
+                  </button>
+                  {openDocumentMenu === "reply" ? (
+                    <div className="document-dropdown">
+                      <button type="button">Отправить Юристу 1</button>
+                      <button type="button">Отправить Юристу 2</button>
+                      <button type="button">Отправить Юристу 3</button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              <span className="document-action-separator" aria-hidden="true" />
+              <button
+                className="document-icon-button document-close-button"
+                onClick={closeDocumentPanel}
+                title="Закрыть документ"
+                type="button"
+                aria-label="Закрыть документ"
+              >
+                ×
               </button>
             </div>
           </header>
@@ -151,10 +265,16 @@ export default function HomePage() {
 
               <section>
                 <h3>Письмо о задолженности</h3>
-                <p>
-                  Уважаемые партнеры, просим провести сверку взаиморасчетов и подтвердить срок оплаты
-                  задолженности по договору поставки.
-                </p>
+                {isDocumentEditing ? (
+                  <textarea
+                    className="document-editor"
+                    aria-label="Текст документа"
+                    value={documentBody}
+                    onChange={(event) => setDocumentBody(event.target.value)}
+                  />
+                ) : (
+                  <p>{documentBody}</p>
+                )}
               </section>
 
               <table>

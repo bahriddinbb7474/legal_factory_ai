@@ -696,6 +696,81 @@ button {
   font-size: 14px;
 }
 
+.document-actions {
+  position: relative;
+}
+
+.document-action-group {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.document-action-separator {
+  background: var(--line);
+  height: 22px;
+  margin: 0 4px;
+  width: 1px;
+}
+
+.document-icon-button {
+  align-items: center;
+  border-radius: 8px;
+  color: #333;
+  display: inline-flex;
+  font-size: 18px;
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 32px;
+  padding: 0;
+}
+
+.document-icon-button:hover {
+  background: var(--panel-strong);
+}
+
+.cancel-edit-button {
+  color: #5c5c5c;
+}
+
+.document-close-button {
+  color: #111;
+}
+
+.document-menu-wrap {
+  position: relative;
+}
+
+.document-dropdown {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.12);
+  display: grid;
+  gap: 2px;
+  min-width: 210px;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 5;
+}
+
+.document-dropdown button {
+  border-radius: 7px;
+  color: #222;
+  font-size: 14px;
+  min-height: 34px;
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.document-dropdown button:hover {
+  background: var(--panel-strong);
+}
+
 .document-stage {
   overflow: auto;
   padding: 34px 18px;
@@ -740,6 +815,24 @@ button {
 
 .document-page p {
   line-height: 1.5;
+}
+
+.document-editor {
+  border: 1px solid #d5d5d5;
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+  min-height: 120px;
+  outline: 0;
+  padding: 10px 12px;
+  resize: vertical;
+  width: 100%;
+}
+
+.document-editor:focus {
+  border-color: #b8b8b8;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
 }
 
 .document-page table {
