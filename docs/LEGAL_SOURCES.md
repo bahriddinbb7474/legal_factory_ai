@@ -172,6 +172,12 @@ Chunk inspection:
 4. Use `Reindex` after metadata or source text preparation changes.
 5. Run retrieval/citation smoke checks before moving the source to `active`.
 
+Stage 7.4 chunking note:
+
+- the legal chunker supports article, point, subpoint, numbered clause, annex, Uzbek `band`/`ilova`, and size-fallback chunking;
+- no chunk should remain extremely large after reindex because hard fallback splitting is applied;
+- admins must still inspect chunks manually before moving a source to `active`, especially for LEX.UZ HTML text with navigation/table noise.
+
 A source is ready for `active` when:
 
 - it comes from the current official revision, preferably LEX.UZ;
