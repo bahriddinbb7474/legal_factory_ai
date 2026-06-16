@@ -130,20 +130,42 @@ type LegalSourceAdmin = {
   source_url: string | null;
   adoption_date: string | null;
   revision_date: string | null;
+  last_checked_at: string | null;
+  next_check_due_at: string | null;
+  language: string;
   status: "active" | "outdated" | "draft" | "archived";
   official_status: "official" | "non_official" | "unknown";
   chunks_count: number;
   needs_revision_check: boolean;
   revision_warning: string | null;
+  readiness_warnings: string[];
+  readiness_warning_messages: string[];
+};
+
+type LegalSourceChunk = {
+  id: number;
+  chunk_index: number;
+  article_or_point: string | null;
+  section_title: string | null;
+  text_preview: string;
+  chunk_text: string;
+  char_count: number;
+  created_at: string;
 };
 
 type LegalSourceForm = {
   document_type: string;
   title: string;
   document_number: string;
+  source_name: string;
   source_url: string;
   adoption_date: string;
   revision_date: string;
+  language: string;
+  status: "active" | "outdated" | "draft" | "archived";
+  official_status: "official" | "non_official" | "unknown";
+  last_checked_at: string;
+  next_check_due_at: string;
   raw_text: string;
 };
 
@@ -254,12 +276,21 @@ export default function HomePage() {
     document_type: "cabinet_resolution",
     title: "",
     document_number: "",
+    source_name: "LEX.UZ",
     source_url: "",
     adoption_date: "",
     revision_date: "",
+    language: "ru",
+    status: "draft",
+    official_status: "official",
+    last_checked_at: "",
+    next_check_due_at: "",
     raw_text: "",
   });
   const [legalSourceStatus, setLegalSourceStatus] = useState("");
+  const [editingLegalSourceId, setEditingLegalSourceId] = useState<number | null>(null);
+  const [expandedLegalSourceId, setExpandedLegalSourceId] = useState<number | null>(null);
+  const [legalSourceChunks, setLegalSourceChunks] = useState<Record<number, LegalSourceChunk[]>>({});
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
@@ -338,19 +369,49 @@ export default function HomePage() {
     }
   }
 
-  async function addLegalSource() {
+  async function saveLegalSource() {
     setLegalSourceStatus("");
+    if (editingLegalSourceId !== null) {
+      const response = await fetch(`${API_BASE_URL}/api/admin/legal-sources/${editingLegalSourceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_type: legalSourceForm.document_type,
+          title: legalSourceForm.title,
+          document_number: emptyToNull(legalSourceForm.document_number),
+          source_name: legalSourceForm.source_name,
+          source_url: emptyToNull(legalSourceForm.source_url),
+          adoption_date: emptyToNull(legalSourceForm.adoption_date),
+          revision_date: emptyToNull(legalSourceForm.revision_date),
+          language: legalSourceForm.language || "ru",
+          status: legalSourceForm.status,
+          official_status: legalSourceForm.official_status,
+          last_checked_at: localDateTimeToIso(legalSourceForm.last_checked_at),
+          next_check_due_at: localDateTimeToIso(legalSourceForm.next_check_due_at),
+        }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Не удалось сохранить metadata." }));
+        setLegalSourceStatus(error.detail ?? "Не удалось сохранить metadata.");
+        return;
+      }
+      resetLegalSourceForm();
+      setLegalSourceStatus("Metadata источника сохранены.");
+      await loadLegalSources();
+      return;
+    }
+
     const form = new FormData();
     form.append("document_type", legalSourceForm.document_type);
     form.append("title", legalSourceForm.title);
     form.append("document_number", legalSourceForm.document_number);
-    form.append("source_name", "LEX.UZ");
+    form.append("source_name", legalSourceForm.source_name);
     form.append("source_url", legalSourceForm.source_url);
     form.append("adoption_date", legalSourceForm.adoption_date);
     form.append("revision_date", legalSourceForm.revision_date);
-    form.append("language", "ru");
-    form.append("status", "active");
-    form.append("official_status", "official");
+    form.append("language", legalSourceForm.language || "ru");
+    form.append("status", legalSourceForm.status);
+    form.append("official_status", legalSourceForm.official_status);
     form.append("raw_text", legalSourceForm.raw_text);
     const response = await fetch(`${API_BASE_URL}/api/admin/legal-sources`, { method: "POST", body: form });
     if (!response.ok) {
@@ -358,7 +419,7 @@ export default function HomePage() {
       setLegalSourceStatus(error.detail ?? "Не удалось добавить источник.");
       return;
     }
-    setLegalSourceForm((current) => ({ ...current, title: "", document_number: "", source_url: "", raw_text: "" }));
+    resetLegalSourceForm();
     setLegalSourceStatus("Источник добавлен и проиндексирован.");
     await loadLegalSources();
   }
@@ -367,6 +428,70 @@ export default function HomePage() {
     const response = await fetch(`${API_BASE_URL}/api/admin/legal-sources/${sourceId}/reindex`, { method: "POST" });
     setLegalSourceStatus(response.ok ? "Источник переиндексирован." : "Не удалось переиндексировать источник.");
     await loadLegalSources();
+    if (expandedLegalSourceId === sourceId) {
+      await loadLegalSourceChunks(sourceId);
+    }
+  }
+
+  async function loadLegalSourceChunks(sourceId: number) {
+    const response = await fetch(`${API_BASE_URL}/api/admin/legal-sources/${sourceId}/chunks`);
+    if (response.ok) {
+      const chunks = (await response.json()) as LegalSourceChunk[];
+      setLegalSourceChunks((current) => ({ ...current, [sourceId]: chunks }));
+    }
+  }
+
+  async function toggleLegalSourceChunks(sourceId: number) {
+    if (expandedLegalSourceId === sourceId) {
+      setExpandedLegalSourceId(null);
+      return;
+    }
+    setExpandedLegalSourceId(sourceId);
+    if (!legalSourceChunks[sourceId]) {
+      const response = await fetch(`${API_BASE_URL}/api/admin/legal-sources/${sourceId}/chunks`);
+      if (response.ok) {
+        const chunks = (await response.json()) as LegalSourceChunk[];
+        setLegalSourceChunks((current) => ({ ...current, [sourceId]: chunks }));
+      }
+    }
+  }
+
+  function editLegalSource(source: LegalSourceAdmin) {
+    setEditingLegalSourceId(source.id);
+    setLegalSourceForm({
+      document_type: source.document_type,
+      title: source.title,
+      document_number: source.document_number ?? "",
+      source_name: source.source_name,
+      source_url: source.source_url ?? "",
+      adoption_date: source.adoption_date ?? "",
+      revision_date: source.revision_date ?? "",
+      language: source.language,
+      status: source.status,
+      official_status: source.official_status,
+      last_checked_at: isoToLocalDateTime(source.last_checked_at),
+      next_check_due_at: isoToLocalDateTime(source.next_check_due_at),
+      raw_text: "",
+    });
+  }
+
+  function resetLegalSourceForm() {
+    setEditingLegalSourceId(null);
+    setLegalSourceForm({
+      document_type: "cabinet_resolution",
+      title: "",
+      document_number: "",
+      source_name: "LEX.UZ",
+      source_url: "",
+      adoption_date: "",
+      revision_date: "",
+      language: "ru",
+      status: "draft",
+      official_status: "official",
+      last_checked_at: "",
+      next_check_due_at: "",
+      raw_text: "",
+    });
   }
 
   async function ensureChat(): Promise<number> {
@@ -1165,6 +1290,9 @@ export default function HomePage() {
               </section>
               <section>
                 <h2>Юридическая база</h2>
+                <p className="settings-hint">
+                  Для Stage 7 желательно использовать LEX.UZ, действующую редакцию, заполнить номер, дату принятия, дату редакции и URL.
+                </p>
                 <div className="legal-source-form">
                   <select value={legalSourceForm.document_type} onChange={(event) => setLegalSourceForm((current) => ({ ...current, document_type: event.target.value }))}>
                     <option value="code">Кодекс</option>
@@ -1181,13 +1309,44 @@ export default function HomePage() {
                   </select>
                   <input placeholder="Название" value={legalSourceForm.title} onChange={(event) => setLegalSourceForm((current) => ({ ...current, title: event.target.value }))} />
                   <input placeholder="Номер: ПКМ №999" value={legalSourceForm.document_number} onChange={(event) => setLegalSourceForm((current) => ({ ...current, document_number: event.target.value }))} />
+                  <input placeholder="Источник: LEX.UZ" value={legalSourceForm.source_name} onChange={(event) => setLegalSourceForm((current) => ({ ...current, source_name: event.target.value }))} />
                   <input placeholder="LEX.UZ URL" value={legalSourceForm.source_url} onChange={(event) => setLegalSourceForm((current) => ({ ...current, source_url: event.target.value }))} />
                   <input type="date" value={legalSourceForm.adoption_date} onChange={(event) => setLegalSourceForm((current) => ({ ...current, adoption_date: event.target.value }))} />
                   <input type="date" value={legalSourceForm.revision_date} onChange={(event) => setLegalSourceForm((current) => ({ ...current, revision_date: event.target.value }))} />
-                  <textarea placeholder="Вставьте текст действующей редакции" value={legalSourceForm.raw_text} onChange={(event) => setLegalSourceForm((current) => ({ ...current, raw_text: event.target.value }))} />
-                  <button className="agent-chip active" type="button" onClick={addLegalSource}>
-                    Добавить источник
+                  <input placeholder="Язык: ru" value={legalSourceForm.language} onChange={(event) => setLegalSourceForm((current) => ({ ...current, language: event.target.value }))} />
+                  <select value={legalSourceForm.status} onChange={(event) => setLegalSourceForm((current) => ({ ...current, status: event.target.value as LegalSourceForm["status"] }))}>
+                    <option value="draft">draft</option>
+                    <option value="active">active</option>
+                    <option value="outdated">outdated</option>
+                    <option value="archived">archived</option>
+                  </select>
+                  <select value={legalSourceForm.official_status} onChange={(event) => setLegalSourceForm((current) => ({ ...current, official_status: event.target.value as LegalSourceForm["official_status"] }))}>
+                    <option value="official">official</option>
+                    <option value="non_official">non_official</option>
+                    <option value="unknown">unknown</option>
+                  </select>
+                  <label>
+                    Last checked
+                    <input type="datetime-local" value={legalSourceForm.last_checked_at} onChange={(event) => setLegalSourceForm((current) => ({ ...current, last_checked_at: event.target.value }))} />
+                  </label>
+                  <label>
+                    Next check
+                    <input type="datetime-local" value={legalSourceForm.next_check_due_at} onChange={(event) => setLegalSourceForm((current) => ({ ...current, next_check_due_at: event.target.value }))} />
+                  </label>
+                  <textarea
+                    disabled={editingLegalSourceId !== null}
+                    placeholder={editingLegalSourceId === null ? "Вставьте текст действующей редакции" : "Текст источника меняется через re-upload в следующих подэтапах; здесь редактируются metadata."}
+                    value={legalSourceForm.raw_text}
+                    onChange={(event) => setLegalSourceForm((current) => ({ ...current, raw_text: event.target.value }))}
+                  />
+                  <button className="agent-chip active" type="button" onClick={saveLegalSource}>
+                    {editingLegalSourceId === null ? "Добавить источник" : "Сохранить metadata"}
                   </button>
+                  {editingLegalSourceId !== null ? (
+                    <button className="compact-button" type="button" onClick={resetLegalSourceForm}>
+                      Отмена
+                    </button>
+                  ) : null}
                 </div>
                 {legalSourceStatus ? <p className="settings-error">{legalSourceStatus}</p> : null}
                 <div className="settings-list">
@@ -1196,12 +1355,51 @@ export default function HomePage() {
                       <div>
                         <strong>{legalDocumentTypeLabel(source.document_type)} {source.document_number ?? ""}</strong>
                         <span>{source.title}</span>
-                        <span>{source.source_name} · редакция {source.revision_date ?? "не указана"} · chunks: {source.chunks_count}</span>
+                        <span>Тип: {source.document_type} · status: {source.status} · official: {source.official_status} · язык: {source.language}</span>
+                        <span>Принят: {source.adoption_date ?? "не указано"} · редакция: {source.revision_date ?? "не указана"} · chunks: {source.chunks_count}</span>
+                        <span>Проверка: {formatDateTime(source.last_checked_at)} · следующая: {formatDateTime(source.next_check_due_at)}</span>
+                        <span>
+                          Источник: {source.source_name}
+                          {source.source_url ? (
+                            <>
+                              {" · "}
+                              <a href={source.source_url} rel="noreferrer" target="_blank">URL</a>
+                            </>
+                          ) : " · URL не указан"}
+                        </span>
                         {source.needs_revision_check ? <span className="source-freshness-warning">{source.revision_warning ?? "Редакцию нужно проверить"}</span> : null}
+                        {source.readiness_warning_messages.length ? (
+                          <div className="readiness-warning-list">
+                            {source.readiness_warning_messages.map((warning, index) => (
+                              <span className="readiness-warning" key={`${source.id}-${source.readiness_warnings[index]}`}>{source.readiness_warnings[index]}: {warning}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="readiness-ok">Metadata готова для проверки перед active.</span>
+                        )}
+                        {expandedLegalSourceId === source.id ? (
+                          <div className="chunk-preview-list">
+                            {(legalSourceChunks[source.id] ?? []).map((chunk) => (
+                              <article className="chunk-preview" key={chunk.id}>
+                                <strong>Chunk {chunk.chunk_index + 1} · {chunk.article_or_point ?? "unknown"} · {chunk.char_count} chars</strong>
+                                {chunk.section_title ? <span>{chunk.section_title}</span> : null}
+                                <p>{chunk.text_preview}</p>
+                              </article>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <button className="compact-button" type="button" onClick={() => reindexLegalSource(source.id)}>
-                        Reindex
-                      </button>
+                      <div className="legal-source-actions">
+                        <button className="compact-button" type="button" onClick={() => editLegalSource(source)}>
+                          Редактировать
+                        </button>
+                        <button className="compact-button" type="button" onClick={() => toggleLegalSourceChunks(source.id)}>
+                          {expandedLegalSourceId === source.id ? "Скрыть chunks" : "Показать chunks"}
+                        </button>
+                        <button className="compact-button" type="button" onClick={() => reindexLegalSource(source.id)}>
+                          Reindex
+                        </button>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -1365,6 +1563,38 @@ function legalDocumentTypeLabel(type: string): string {
     tax_rule: "Налоговый акт",
     other: "Акт",
   }[type] ?? "Акт";
+}
+
+function emptyToNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function localDateTimeToIso(value: string): string | null {
+  if (!value) {
+    return null;
+  }
+  return new Date(value).toISOString();
+}
+
+function isoToLocalDateTime(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return "не указано";
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ru-RU");
 }
 
 function approvalStatusLabel(value: "draft" | "needs_review" | "approved" | "rejected" | "archived"): string {

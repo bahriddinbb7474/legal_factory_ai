@@ -75,6 +75,17 @@ class LegalChunkRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LegalChunkInspectionRead(BaseModel):
+    id: int
+    chunk_index: int
+    article_or_point: str | None = None
+    section_title: str | None = None
+    text_preview: str
+    chunk_text: str
+    char_count: int
+    created_at: datetime
+
+
 class LegalSourceRead(BaseModel):
     id: int
     document_type: str
@@ -94,6 +105,8 @@ class LegalSourceRead(BaseModel):
     chunks_count: int = 0
     needs_revision_check: bool = False
     revision_warning: str | None = None
+    readiness_warnings: list[str] = Field(default_factory=list)
+    readiness_warning_messages: list[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

@@ -124,3 +124,54 @@ Stage 7 acceptance criteria:
 7. Correct law quotes are confirmed.
 8. Wrong law quotes are rejected/unconfirmed.
 9. Outdated revisions show a freshness warning.
+
+## Stage 7.1 Source Readiness Checklist
+
+Before loading the first 15-30 real sources, every candidate source should be checked in the admin legal base UI.
+
+Required metadata for manual upload:
+
+- `document_type`;
+- `title`;
+- `document_number`;
+- `adoption_date`;
+- `revision_date`;
+- `source_name`;
+- `source_url`;
+- `official_status`;
+- `status`;
+- `language`;
+- `last_checked_at`;
+- `next_check_due_at`.
+
+Readiness warnings are non-blocking in Stage 7.1, but must be resolved before a source is trusted as active:
+
+- `missing_source_url`;
+- `missing_document_number`;
+- `missing_adoption_date`;
+- `missing_revision_date`;
+- `missing_source_name`;
+- `active_without_official_status`;
+- `active_without_revision_date`;
+- `official_source_without_url`;
+- `lexuz_expected_for_official_law`;
+- `lexuz_source_with_bad_url`;
+- `next_check_due_or_overdue`.
+
+Chunk inspection:
+
+1. Upload or paste the source text as `draft` first when possible.
+2. Open `Показать chunks` in the legal base UI.
+3. Check that articles, points, subpoints, and appendices are separated in a useful way.
+4. Use `Reindex` after metadata or source text preparation changes.
+5. Run retrieval/citation smoke checks before moving the source to `active`.
+
+A source is ready for `active` when:
+
+- it comes from the current official revision, preferably LEX.UZ;
+- URL, document number, adoption date, revision date, language, and official status are filled;
+- chunks are readable and searchable;
+- correct citations are confirmed and wrong citations are rejected;
+- `next_check_due_at` is set for the next manual revision check.
+
+There is still no LEX.UZ crawler in Stage 7.1. Sources are copied and verified manually.

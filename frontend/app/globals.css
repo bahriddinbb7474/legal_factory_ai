@@ -1013,11 +1013,25 @@ button {
 
 .legal-source-form input,
 .legal-source-form select,
-.legal-source-form textarea {
+.legal-source-form textarea,
+.legal-source-form label {
   border: 1px solid var(--line);
   border-radius: 8px;
   min-height: 36px;
   padding: 7px 10px;
+}
+
+.legal-source-form label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  gap: 4px;
+}
+
+.legal-source-form label input {
+  border: 0;
+  min-height: 22px;
+  padding: 0;
 }
 
 .legal-source-form textarea {
@@ -1033,6 +1047,51 @@ button {
 .source-freshness-warning {
   color: #8a5c00 !important;
   font-weight: 600;
+}
+
+.settings-hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: -2px 0 10px;
+}
+
+.readiness-warning-list,
+.chunk-preview-list,
+.legal-source-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.readiness-warning {
+  color: #9f3a1c !important;
+  font-weight: 600;
+}
+
+.readiness-ok {
+  color: #216e39 !important;
+  font-weight: 600;
+}
+
+.legal-source-actions {
+  align-content: start;
+}
+
+.chunk-preview-list {
+  margin-top: 8px;
+}
+
+.chunk-preview {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.chunk-preview p {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 4px 0 0;
 }
 
 .settings-row,
