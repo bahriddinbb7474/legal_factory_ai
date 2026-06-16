@@ -3,6 +3,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from app.schemas.legal_response import SourceCheckStatus
+
 
 class MessageCreate(BaseModel):
     author_type: str | None = None
@@ -14,6 +16,13 @@ class MessageCreate(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     cost_usd: Decimal = Decimal("0")
+    structured_payload: dict | None = None
+    raw_response: str | None = None
+    risk: str | None = None
+    confidence: str | None = None
+    approval_required: str | None = None
+    source_check_status: SourceCheckStatus = "not_checked"
+    red_flag_codes: list[str] = []
 
     @model_validator(mode="after")
     def normalize_author_type(self) -> "MessageCreate":

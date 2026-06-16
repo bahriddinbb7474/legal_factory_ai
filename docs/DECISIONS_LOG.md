@@ -21,6 +21,14 @@
 - Extracted document text is stored separately and reused in chat context instead of re-running extraction on every lawyer call.
 - Uploaded document content is wrapped as untrusted data before being sent to an LLM.
 - Stage 3 v2 uses a development-only backend current-user stub from environment variables for role checks.
+- Stage 4 v2 stores validated legal answers in `Message.structured_payload`; raw model output is technical evidence only.
+- Backend performs at most one JSON repair attempt before rejecting the response.
+- Uploaded-document quotes are verified deterministically from extracted text.
+- Laws are not confirmed sources until Stage 6 RAG/legal-source ingestion exists; `law_unconfirmed` is always unconfirmed.
+- `Chat.approval_status` is the single current approval status for Stage 4.
+- `Approval` is an event journal, not a second source of truth.
+- Red flag rules are stored as configurable `RedFlagRule` rows seeded by code.
+- Monthly budget enforcement uses current-month `CostRecord` totals.
 - Real company documents may be sent to external LLM APIs only after the responsible business owner approves this operating model.
 - Both Web UI and Telegram are needed, but Web UI comes first.
 
@@ -33,3 +41,5 @@
 - Whether Telegram approval is allowed for all red-risk cases or only selected categories.
 - Final production list of trusted providers for sensitive company documents.
 - Whether image OCR should use OpenRouter vision models, a local OCR service, or a dedicated Uzbek/Russian OCR provider in production.
+- Production approval roles and whether admin should be allowed to approve outside development.
+- Production monthly budget value and whether blocks should be enabled by default.

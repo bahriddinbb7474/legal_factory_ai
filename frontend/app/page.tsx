@@ -30,12 +30,43 @@ type ChatMessage = {
   id?: number;
   author_type: "user" | "agent1" | "agent2" | "agent3" | "system";
   content: string;
+  structured_payload?: LegalStructuredPayload | null;
+  risk?: "green" | "yellow" | "red" | null;
+  confidence?: "high" | "medium" | "low" | null;
+  approval_required?: "none" | "chief_accountant" | "director" | "external_lawyer" | null;
+  source_check_status?: "not_checked" | "confirmed" | "partially_confirmed" | "unconfirmed";
+  red_flag_codes?: string[];
   model_id?: string | null;
   provider_code?: string | null;
   input_tokens?: number;
   output_tokens?: number;
   cost_usd?: string;
   created_at?: string;
+};
+
+type LegalStructuredPayload = {
+  summary: string;
+  risk: "green" | "yellow" | "red";
+  findings: { title: string; description: string }[];
+  sources: {
+    source_type: "uploaded_document" | "law_unconfirmed";
+    document_id: number | null;
+    title: string;
+    document_number: string | null;
+    revision_date: string | null;
+    article_or_point: string | null;
+    quote: string;
+    verification_status: "pending" | "confirmed" | "unconfirmed";
+  }[];
+  meaning_for_factory: string;
+  actions: string[];
+  confidence: "high" | "medium" | "low";
+  approval_required: "none" | "chief_accountant" | "director" | "external_lawyer";
+  agreement: {
+    agreed_points: string[];
+    disagreed_points: string[];
+    unresolved_points: string[];
+  } | null;
 };
 
 type OpenRouterModel = {
@@ -140,6 +171,8 @@ export default function HomePage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedLawyer, setSelectedLawyer] = useState<Agent["code"]>("lawyer_1");
   const [chatId, setChatId] = useState<number | null>(null);
+  const [chatApprovalStatus, setChatApprovalStatus] = useState<"draft" | "needs_review" | "approved" | "rejected" | "archived">("draft");
+  const [approvalComment, setApprovalComment] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isInvoking, setIsInvoking] = useState(false);
@@ -251,7 +284,30 @@ export default function HomePage() {
     }
     const chat = await response.json();
     setChatId(chat.id);
+    setChatApprovalStatus(chat.approval_status ?? "draft");
     return chat.id;
+  }
+
+  async function refreshChatStatus(nextChatId: number) {
+    const response = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}`).catch(() => null);
+    if (response?.ok) {
+      const chat = await response.json();
+      setChatApprovalStatus(chat.approval_status ?? "draft");
+    }
+  }
+
+  async function changeApproval(action: "approve" | "reject" | "request-approval") {
+    const nextChatId = await ensureChat();
+    const suffix = approvalComment ? `?comment=${encodeURIComponent(approvalComment)}` : "";
+    const response = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/${action}${suffix}`, { method: "POST" });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Не удалось изменить статус согласования." }));
+      setApiStatus(error.detail ?? "Не удалось изменить статус согласования.");
+      return;
+    }
+    const chat = await response.json();
+    setChatApprovalStatus(chat.approval_status ?? "draft");
+    setApprovalComment("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -274,6 +330,7 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userMessage),
       });
+      await refreshChatStatus(nextChatId);
       const invokeResponse = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/invoke`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -285,6 +342,7 @@ export default function HomePage() {
       }
       const lawyerMessage = await invokeResponse.json();
       setMessages((current) => [...current, lawyerMessage]);
+      await refreshChatStatus(nextChatId);
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -454,6 +512,7 @@ export default function HomePage() {
         <header className="topbar">
           <h1 className="chat-title">Долги / претензии · Письмо клиенту о задолженности…</h1>
           <div className="topbar-actions">
+            <span className={`approval-status ${chatApprovalStatus}`}>{approvalStatusLabel(chatApprovalStatus)}</span>
             <div className="cost-menu-wrap">
               <button className="compact-button" onClick={() => setIsCostOpen((current) => !current)} type="button" aria-expanded={isCostOpen}>
                 Расходы: ${totalCost.toFixed(6)}
@@ -498,7 +557,7 @@ export default function HomePage() {
               <article className="message assistant-message" key={`${message.author_type}-${index}`}>
                 <div className="message-toolbar">
                   <span className="assistant-meta">{messageLabel(message)}</span>
-                  {message.author_type.startsWith("agent") ? <span className="risk-badge yellow">Жёлтый риск</span> : null}
+                  {message.author_type.startsWith("agent") ? <span className={`risk-badge ${message.risk ?? message.structured_payload?.risk ?? "yellow"}`}>{riskLabel(message.risk ?? message.structured_payload?.risk ?? "yellow")}</span> : null}
                   {message.author_type.startsWith("agent") ? (
                     <button className="pill-button verdict-button" onClick={() => setIsDocumentOpen(true)} type="button">
                       Пометить как вердикт
@@ -507,6 +566,7 @@ export default function HomePage() {
                 </div>
                 <h1>{message.author_type === "system" ? "Статус" : "Краткий вывод"}</h1>
                 <p>{message.content}</p>
+                {message.structured_payload ? <StructuredAnswerSections message={message} /> : null}
                 {message.author_type.startsWith("agent") ? (
                   <>
                     <div className="legal-grid">
@@ -544,6 +604,28 @@ export default function HomePage() {
         </div>
 
         <div className="composer-wrap">
+          {chatApprovalStatus === "needs_review" ? (
+            <div className="red-flag-banner">
+              <strong>Тема серьёзная.</strong>
+              <span>Рекомендуется мнение Юриста 2 или Юриста 3 и требуется утверждение руководства.</span>
+            </div>
+          ) : null}
+          <div className="approval-panel">
+            <input
+              value={approvalComment}
+              onChange={(event) => setApprovalComment(event.target.value)}
+              placeholder="Комментарий к согласованию"
+            />
+            <button type="button" className="compact-button" onClick={() => changeApproval("request-approval")}>
+              На согласование
+            </button>
+            <button type="button" className="compact-button" onClick={() => changeApproval("approve")}>
+              Утвердить
+            </button>
+            <button type="button" className="compact-button" onClick={() => changeApproval("reject")}>
+              Отклонить
+            </button>
+          </div>
           {uploadedDocuments.length ? (
             <div className="uploaded-documents">
               {uploadedDocuments.map((document) => (
@@ -895,6 +977,82 @@ export default function HomePage() {
       ) : null}
     </main>
   );
+}
+
+function StructuredAnswerSections({ message }: { message: ChatMessage }) {
+  const payload = message.structured_payload;
+  if (!payload) {
+    return null;
+  }
+  return (
+    <div className="structured-answer">
+      <section>
+        <h2>Что обнаружено</h2>
+        {payload.findings.map((finding) => (
+          <div className="finding-row" key={`${finding.title}-${finding.description}`}>
+            <strong>{finding.title}</strong>
+            <span>{finding.description}</span>
+          </div>
+        ))}
+      </section>
+      <section>
+        <h2>Источники</h2>
+        {payload.sources.map((source, index) => (
+          <article className={`source-row ${source.verification_status}`} key={`${source.title}-${index}`}>
+            <strong>{source.title}</strong>
+            <span>{source.quote}</span>
+            <b>{source.verification_status === "confirmed" ? "Подтверждено" : "Не подтверждено"}</b>
+          </article>
+        ))}
+        {message.source_check_status && message.source_check_status !== "confirmed" ? (
+          <p className="source-warning">Точный источник не найден. Окончательный юридический вывод давать нельзя. Требуется проверка юристом или ответственным специалистом.</p>
+        ) : null}
+      </section>
+      <section>
+        <h2>Значение для завода</h2>
+        <p>{payload.meaning_for_factory}</p>
+      </section>
+      <section>
+        <h2>Рекомендуемые действия</h2>
+        <ul>{payload.actions.map((action) => <li key={action}>{action}</li>)}</ul>
+      </section>
+      <div className="legal-grid">
+        <div><span>Уверенность</span><strong>{confidenceLabel(message.confidence ?? payload.confidence)}</strong></div>
+        <div><span>Согласование</span><strong>{approvalRequiredLabel(message.approval_required ?? payload.approval_required)}</strong></div>
+        <div><span>Источники</span><strong>{sourceStatusLabel(message.source_check_status ?? "not_checked")}</strong></div>
+      </div>
+      {payload.agreement ? (
+        <section>
+          <h2>Согласие / спорные пункты</h2>
+          <div className="agreement-grid">
+            <div><strong>Согласие</strong><span>{payload.agreement.agreed_points.join("; ") || "Нет"}</span></div>
+            <div><strong>Несогласие</strong><span>{payload.agreement.disagreed_points.join("; ") || "Нет"}</span></div>
+            <div><strong>Нерешено</strong><span>{payload.agreement.unresolved_points.join("; ") || "Нет"}</span></div>
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function riskLabel(risk: "green" | "yellow" | "red"): string {
+  return { green: "Зелёный риск", yellow: "Жёлтый риск", red: "Красный риск" }[risk];
+}
+
+function confidenceLabel(confidence: "high" | "medium" | "low"): string {
+  return { high: "Высокая", medium: "Средняя", low: "Низкая" }[confidence];
+}
+
+function approvalRequiredLabel(value: "none" | "chief_accountant" | "director" | "external_lawyer"): string {
+  return { none: "Не требуется", chief_accountant: "Главбух", director: "Директор", external_lawyer: "Внешний юрист" }[value];
+}
+
+function sourceStatusLabel(value: "not_checked" | "confirmed" | "partially_confirmed" | "unconfirmed"): string {
+  return { not_checked: "Не проверено", confirmed: "Подтверждено", partially_confirmed: "Частично", unconfirmed: "Не подтверждено" }[value];
+}
+
+function approvalStatusLabel(value: "draft" | "needs_review" | "approved" | "rejected" | "archived"): string {
+  return { draft: "Черновик", needs_review: "На согласовании", approved: "Утверждено", rejected: "Отклонено", archived: "Архив" }[value];
 }
 
 function messageLabel(message: ChatMessage): string {

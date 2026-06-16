@@ -16,6 +16,7 @@ from app.services.current_user import CurrentUser, get_current_user
 from app.services.document_access import DocumentAccessError, document_access_service
 from app.services.document_categories import DOCUMENT_CATEGORIES, suggest_category
 from app.services.document_extractor import document_extractor
+from app.services.red_flags import red_flag_service
 from app.storage.local import local_storage
 
 
@@ -105,8 +106,10 @@ async def upload_document(
         extraction_error = None
 
     if chat_id is not None:
-        await _get_chat_or_404(chat_id, db)
+        chat = await _get_chat_or_404(chat_id, db)
         await _link_document_to_chat(chat_id, document.id, current_user.id, db)
+        if existing_document is None and document.extraction_status == "completed" and text_storage_key:
+            await red_flag_service.apply_to_chat(db, chat, extraction.text, current_user.id)
 
     await write_audit_log(
         db,

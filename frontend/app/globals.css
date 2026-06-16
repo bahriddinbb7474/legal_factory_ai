@@ -559,6 +559,120 @@ button {
   color: var(--yellow);
 }
 
+.risk-badge.green {
+  background: #e8f7ef;
+  color: #116b3a;
+}
+
+.risk-badge.red {
+  background: #fdecec;
+  color: #a01818;
+}
+
+.approval-status {
+  border: 1px solid #dedede;
+  border-radius: 999px;
+  color: #555;
+  font-size: 13px;
+  padding: 7px 12px;
+}
+
+.approval-status.needs_review {
+  background: var(--yellow-bg);
+  border-color: #edd58a;
+  color: var(--yellow);
+}
+
+.approval-status.approved {
+  background: #e8f7ef;
+  border-color: #aad9bd;
+  color: #116b3a;
+}
+
+.approval-status.rejected {
+  background: #fdecec;
+  border-color: #ebb2b2;
+  color: #a01818;
+}
+
+.structured-answer {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.structured-answer h2 {
+  color: var(--text);
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+
+.structured-answer ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.finding-row,
+.source-row,
+.agreement-grid > div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+}
+
+.source-row.confirmed {
+  border-color: #badfc8;
+}
+
+.source-row.unconfirmed,
+.source-row.pending {
+  background: #fffaf0;
+  border-color: #ecd8a2;
+}
+
+.source-row b {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-warning,
+.red-flag-banner {
+  background: var(--yellow-bg);
+  border: 1px solid #ead28d;
+  border-radius: 8px;
+  color: #6d4b00;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+
+.red-flag-banner {
+  display: grid;
+  gap: 3px;
+}
+
+.agreement-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.approval-panel {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(180px, 1fr) auto auto auto;
+}
+
+.approval-panel input {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: inherit;
+  padding: 9px 12px;
+}
+
 .legal-grid {
   display: grid;
   gap: 8px;

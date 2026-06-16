@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 
 from app.api.chats import get_llm_gateway
@@ -10,10 +11,37 @@ from app.services.openrouter_models import normalize_openrouter_endpoint, normal
 class FakeGateway:
     calls: list[tuple[str, str]]
 
-    async def invoke(self, agent, chat_context: str) -> LLMResponse:
+    async def invoke(self, agent, chat_context: str, response_format: dict | None = None) -> LLMResponse:
         self.calls.append((agent.code, chat_context))
+        agreement = None
+        if agent.code in {"lawyer_2", "lawyer_3"}:
+            agreement = {"agreed_points": ["История учтена"], "disagreed_points": [], "unresolved_points": []}
         return LLMResponse(
-            content=f"Ответ {agent.display_name}",
+            content=json.dumps(
+                {
+                    "summary": f"Ответ {agent.display_name}",
+                    "risk": "yellow",
+                    "findings": [{"title": "Вывод", "description": "Нужна проверка источника"}],
+                    "sources": [
+                        {
+                            "source_type": "law_unconfirmed",
+                            "document_id": None,
+                            "title": "Закон не подтвержден",
+                            "document_number": None,
+                            "revision_date": None,
+                            "article_or_point": None,
+                            "quote": "нужно проверить",
+                            "verification_status": "pending",
+                        }
+                    ],
+                    "meaning_for_factory": "Для завода нужен контроль ответственного специалиста.",
+                    "actions": ["Проверить источник"],
+                    "confidence": "medium",
+                    "approval_required": "none",
+                    "agreement": agreement,
+                },
+                ensure_ascii=False,
+            ),
             model_id=agent.model_name,
             provider_code=agent.provider_code,
             input_tokens=100,
@@ -39,6 +67,8 @@ def test_invoke_calls_only_selected_lawyer_and_saves_metadata(client) -> None:
     assert "Юрист 1: Ответ юриста 1" in fake_gateway.calls[0][1]
     assert "Пользователь: Последний вопрос" in fake_gateway.calls[0][1]
     assert payload["author_type"] == "agent2"
+    assert payload["structured_payload"]["summary"].startswith("Ответ")
+    assert payload["source_check_status"] == "unconfirmed"
     assert payload["model_id"]
     assert payload["provider_code"] == "cloudflare"
     assert payload["input_tokens"] == 100

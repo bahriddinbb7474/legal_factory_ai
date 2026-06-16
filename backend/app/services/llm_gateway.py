@@ -24,7 +24,7 @@ class LLMResponse:
 
 
 class OpenRouterGateway:
-    async def invoke(self, agent: Agent, chat_context: str) -> LLMResponse:
+    async def invoke(self, agent: Agent, chat_context: str, response_format: dict | None = None) -> LLMResponse:
         if not settings.openrouter_api_key:
             raise MissingOpenRouterKeyError("OPENROUTER_API_KEY is not configured.")
 
@@ -48,6 +48,8 @@ class OpenRouterGateway:
             },
             "max_tokens": settings.openrouter_max_output_tokens,
         }
+        if response_format:
+            payload["response_format"] = response_format
         if agent.supports_zdr:
             payload["provider"]["zdr"] = True
 

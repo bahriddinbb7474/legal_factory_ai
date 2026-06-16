@@ -69,6 +69,7 @@ class Chat(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     owner_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
+    approval_status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
 
     owner: Mapped[Optional["User"]] = relationship(back_populates="chats")
     messages: Mapped[list["Message"]] = relationship(back_populates="chat", cascade="all, delete-orphan")
@@ -92,6 +93,13 @@ class Message(Base, TimestampMixin):
     input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cost_usd: Mapped[float] = mapped_column(Numeric(12, 6), default=0, nullable=False)
+    structured_payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    raw_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    risk: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    confidence: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    approval_required: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    source_check_status: Mapped[str] = mapped_column(String(32), default="not_checked", nullable=False)
+    red_flag_codes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
     chat: Mapped["Chat"] = relationship(back_populates="messages")
     agent: Mapped[Optional["Agent"]] = relationship(back_populates="messages")
@@ -188,6 +196,13 @@ class Approval(Base, TimestampMixin):
     approved_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    entity_type: Mapped[str] = mapped_column(String(64), default="chat", nullable=False)
+    entity_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    action: Mapped[str] = mapped_column(String(64), default="request", nullable=False)
+    performed_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    performed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    previous_status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    new_status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     chat: Mapped["Chat"] = relationship(back_populates="approvals")
 
@@ -218,3 +233,16 @@ class AuditLog(Base):
     entity_type: Mapped[str] = mapped_column(String(128), nullable=False)
     entity_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+
+class RedFlagRule(Base, TimestampMixin):
+    __tablename__ = "red_flag_rules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    code: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    keywords: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    category: Mapped[str] = mapped_column(String(64), default="general", nullable=False)
+    amount_threshold: Mapped[Optional[float]] = mapped_column(Numeric(14, 2), nullable=True)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    required_approver: Mapped[str] = mapped_column(String(64), default="director", nullable=False)

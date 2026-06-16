@@ -57,7 +57,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 3 v2 document upload and secure processing foundation.
+Current status: Stage 4 v2 structured legal responses and safeguards.
 
 Implemented foundation:
 
@@ -85,8 +85,17 @@ Implemented foundation:
 - sensitive-document provider enforcement;
 - audit logs for upload/open/download/link/use/denial events;
 - upload UI from the chat composer plus right-side extracted-text preview.
+- strict structured JSON response schema for lawyer answers;
+- backend validation and one safe JSON repair attempt;
+- deterministic citation verification against uploaded document text;
+- unconfirmed-source safeguards that prevent green/high-confidence answers;
+- red flag detection with automatic `needs_review` chat status;
+- arbiter forced-red rule for unresolved disputes without confirmed sources;
+- approval API where `Chat.approval_status` is the single source of truth;
+- monthly budget warning/block guard based on stored `CostRecord` rows;
+- frontend structured legal answer card, red-flag banner, and approval controls.
 
-Not implemented yet: RAG over laws, final legal source enforcement, approval workflow behavior, real document export, production auth/admin permissions, and Telegram.
+Not implemented yet: RAG over laws, confirmed law-source enforcement, real document export, production auth/admin permissions, and Telegram.
 
 ## Run Backend
 
@@ -170,6 +179,9 @@ OPENROUTER_API_KEY=
 DOCUMENT_VISION_MODEL=
 DOCUMENT_VISION_PROVIDER=
 MAX_UPLOAD_SIZE_MB=25
+MONTHLY_BUDGET_USD=100
+BUDGET_WARNING_PERCENT=80
+BLOCK_EXPENSIVE_CALLS=false
 ```
 
 Without the key, automated tests still pass through mocks, and the UI shows a clear backend/OpenRouter error instead of calling a real provider.

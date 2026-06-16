@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     document_vision_provider: str = ""
     max_upload_size_mb: int = 25
     xlsx_max_rows: int = 1000
+    monthly_budget_usd: float = 100.0
+    budget_warning_percent: int = 80
+    block_expensive_calls: bool = False
     dev_current_user_role: str = "admin"
     dev_current_user_id: int = 1
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"

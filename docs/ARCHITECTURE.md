@@ -148,3 +148,47 @@ Sensitivity values:
 If a chat contains a `sensitive` document, the selected provider must be enabled, allowlisted, and trusted for sensitive documents. This check is enforced on the backend before any OpenRouter request.
 
 SQLite remains for local development and tests only. PostgreSQL remains the production database target.
+
+## Stage 4 v2 Structured Legal Safeguards
+
+Stage 4 v2 changes lawyer answers from free text to validated structured data.
+
+Flow:
+
+1. Backend builds the normal chat context plus any uploaded document text in `<UNTRUSTED_DOCUMENT>` blocks.
+2. The selected lawyer is asked for strict JSON according to the legal response schema.
+3. OpenRouter may receive `response_format={"type": "json_object"}` when supported, but backend validation is still mandatory.
+4. If the first response is invalid JSON, backend performs one safe repair attempt.
+5. If validation still fails, no normal legal answer is saved.
+6. Citation verification runs in code:
+   - `uploaded_document` sources must reference a document from the current context;
+   - the quote must exist in extracted text after Unicode/whitespace normalization;
+   - `law_unconfirmed` is always unconfirmed until Stage 6.
+7. Unconfirmed sources force at least yellow risk and at most medium confidence.
+8. Red flag rules scan user text, uploaded document text, and structured response text.
+9. Chat approval status is updated on the `Chat` row; `Approval` records are an event journal.
+10. Monthly budget checks run before model invocation and use current-month `CostRecord` totals.
+
+New message fields:
+
+- `structured_payload`;
+- `raw_response`;
+- `risk`;
+- `confidence`;
+- `approval_required`;
+- `source_check_status`;
+- `red_flag_codes`.
+
+New approval API:
+
+- `POST /api/chats/{chat_id}/request-approval`
+- `POST /api/chats/{chat_id}/approve`
+- `POST /api/chats/{chat_id}/reject`
+- `GET /api/chats/{chat_id}/approvals`
+
+New safety services:
+
+- `structured_response.py`;
+- `citation_verifier.py`;
+- `red_flags.py`;
+- `budget.py`.
