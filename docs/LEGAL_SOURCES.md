@@ -77,6 +77,12 @@ Law citations are confirmed only when the model quotes text from a chunk returne
 
 Stage 7 is the next main stage after curated legal RAG. The goal is to fill the system with 15-30 real official sources needed by a cable factory in Uzbekistan.
 
+Approved first-batch registry and revision/update policy are maintained in:
+
+```text
+docs/STAGE7_LEGAL_SOURCE_REGISTRY.md
+```
+
 Primary source:
 
 - `LEX.UZ`
