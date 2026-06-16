@@ -29,6 +29,11 @@
 - `Approval` is an event journal, not a second source of truth.
 - Red flag rules are stored as configurable `RedFlagRule` rows seeded by code.
 - Monthly budget enforcement uses current-month `CostRecord` totals.
+- Stage 5 uses one active verdict per chat through `Chat.active_verdict_message_id`.
+- A generated document can be created only from the active verdict message.
+- `GeneratedDocument.status` is the current status for document approval; `Approval` remains an event journal.
+- Sending a generated document back to chat must not auto-select a lawyer or auto-call an LLM.
+- Stage 5 DOCX export uses `python-docx`; PDF export is a lightweight fallback until a production renderer is chosen.
 - Real company documents may be sent to external LLM APIs only after the responsible business owner approves this operating model.
 - Both Web UI and Telegram are needed, but Web UI comes first.
 

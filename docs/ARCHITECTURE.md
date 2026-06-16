@@ -192,3 +192,44 @@ New safety services:
 - `citation_verifier.py`;
 - `red_flags.py`;
 - `budget.py`.
+
+## Stage 5 v2 Verdict and Generated Documents
+
+Stage 5 introduces an explicit bridge between legal analysis and document drafting.
+
+Core rule:
+
+1. A lawyer answer is not automatically final.
+2. The user marks exactly one lawyer message as the active verdict.
+3. A generated document may be created only from that active verdict.
+4. Earlier opinions, rejected drafts, and non-verdict chat messages are not document-generation sources.
+
+Updated entities:
+
+- `Chat.active_verdict_message_id` stores the current verdict message.
+- `Message.is_verdict` marks the active verdict message in message lists.
+- `GeneratedDocument` stores the generated draft, document type, current status, storage keys, and the verdict message it came from.
+- `Approval` remains an event journal; for generated documents, the current status lives on `GeneratedDocument.status`.
+
+New chat API:
+
+- `POST /api/chats/{chat_id}/messages/{message_id}/mark-verdict`
+- `DELETE /api/chats/{chat_id}/verdict`
+- `GET /api/chats/{chat_id}/verdict`
+- `POST /api/chats/{chat_id}/documents/generate-from-verdict`
+
+New generated document API:
+
+- `GET /api/generated-documents/{document_id}`
+- `PATCH /api/generated-documents/{document_id}`
+- `GET /api/generated-documents/{document_id}/download.docx`
+- `GET /api/generated-documents/{document_id}/download.pdf`
+- `POST /api/generated-documents/{document_id}/send-to-chat`
+- `POST /api/generated-documents/{document_id}/request-approval`
+- `POST /api/generated-documents/{document_id}/approve`
+- `POST /api/generated-documents/{document_id}/reject`
+- `GET /api/generated-documents/{document_id}/approvals`
+
+The send-back-to-chat action only adds a normal chat message/card. It does not choose a lawyer and does not invoke an LLM. The user must still select Lawyer 1, Lawyer 2, or Lawyer 3 from the composer before asking for another review.
+
+DOCX export uses `python-docx`. PDF export is a lightweight Stage 5 fallback so the endpoint is stable; production PDF layout is postponed.

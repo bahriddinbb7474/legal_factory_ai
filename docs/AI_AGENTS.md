@@ -83,3 +83,11 @@ Unknown fields are rejected. Invalid JSON is not displayed as a normal answer. B
 Each real invocation stores model, provider, input tokens, output tokens, and calculated USD cost.
 
 Monthly budget safeguards use stored `CostRecord` rows. At the warning threshold the backend logs a warning; at 100%, non-admin calls can be blocked if `BLOCK_EXPENSIVE_CALLS=true`.
+
+## Stage 5 Verdict-to-Document Rule
+
+Lawyers can produce analysis, but a document draft is generated only after the user marks one lawyer message as the active verdict.
+
+Document-generation prompts include an explicit `<ACTIVE_VERDICT>` block and tell the model not to use earlier opinions or rejected/non-verdict chat messages as drafting sources. This keeps the document workflow anchored to the user-approved legal position.
+
+Sending a generated document back to the chat is not a lawyer invocation. It creates a normal chat message/card only; the user must manually choose Lawyer 1, Lawyer 2, or Lawyer 3 in the composer for any later review.

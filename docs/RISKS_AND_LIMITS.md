@@ -51,3 +51,13 @@ Legal Factory AI must stay inside clear limits.
 - `law_unconfirmed` is allowed only as a warning marker, not as a confirmed source.
 - Approval in Stage 4 is chat-level. Generated documents will get their own status in a later stage.
 - Monthly budgets are enforced from stored cost records and configuration, not from provider invoices.
+
+## Stage 5 v2 Limits
+
+- A generated document is a draft artifact, not a final legal document.
+- The active verdict is selected by the user; the system does not decide which lawyer answer is final.
+- Generated documents are created from the active verdict context only, but final human review is still required before signing or sending.
+- DOCX export is supported for first-pass drafts.
+- PDF export is a lightweight fallback in Stage 5 and is not a production layout engine.
+- Generated document approval uses a development current-user stub until production authentication is implemented.
+- Sending a document back to chat does not notify a lawyer, choose a lawyer, or call OpenRouter automatically.

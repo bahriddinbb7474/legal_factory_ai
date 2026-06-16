@@ -23,6 +23,7 @@ class MessageCreate(BaseModel):
     approval_required: str | None = None
     source_check_status: SourceCheckStatus = "not_checked"
     red_flag_codes: list[str] = []
+    is_verdict: bool = False
 
     @model_validator(mode="after")
     def normalize_author_type(self) -> "MessageCreate":

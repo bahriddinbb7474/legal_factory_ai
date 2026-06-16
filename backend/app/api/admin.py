@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import Agent, ProviderConfig
+from app.db.base import Agent, AuditLog, ProviderConfig
 from app.db.session import get_db
 from app.schemas.agents import AgentRead, AgentUpdate
+from app.schemas.audit import AuditLogRead
 from app.schemas.openrouter import OpenRouterModelRead
 from app.schemas.providers import ProviderRead, ProviderUpdate
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
@@ -86,6 +87,21 @@ async def list_openrouter_models(db: AsyncSession = Depends(get_db)) -> list[Ope
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter model list unavailable") from exc
     await _ensure_model_providers(models, db)
     return models
+
+
+@router.get("/audit-logs", response_model=list[AuditLogRead])
+async def list_audit_logs(
+    action: str | None = None,
+    entity_type: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> list[AuditLog]:
+    query = select(AuditLog).order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+    if action is not None:
+        query = query.where(AuditLog.action == action)
+    if entity_type is not None:
+        query = query.where(AuditLog.entity_type == entity_type)
+    result = await db.execute(query)
+    return list(result.scalars().all())
 
 
 @router.post("/openrouter/models/refresh", response_model=list[OpenRouterModelRead])

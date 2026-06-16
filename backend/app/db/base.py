@@ -70,13 +70,19 @@ class Chat(Base, TimestampMixin):
     owner_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     approval_status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
+    active_verdict_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     owner: Mapped[Optional["User"]] = relationship(back_populates="chats")
-    messages: Mapped[list["Message"]] = relationship(back_populates="chat", cascade="all, delete-orphan")
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="chat",
+        cascade="all, delete-orphan",
+        foreign_keys="Message.chat_id",
+    )
     documents: Mapped[list["Document"]] = relationship(back_populates="chat")
     chat_documents: Mapped[list["ChatDocument"]] = relationship(back_populates="chat", cascade="all, delete-orphan")
     approvals: Mapped[list["Approval"]] = relationship(back_populates="chat")
     cost_records: Mapped[list["CostRecord"]] = relationship(back_populates="chat")
+    generated_documents: Mapped[list["GeneratedDocument"]] = relationship(back_populates="chat")
 
 
 class Message(Base, TimestampMixin):
@@ -100,10 +106,29 @@ class Message(Base, TimestampMixin):
     approval_required: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     source_check_status: Mapped[str] = mapped_column(String(32), default="not_checked", nullable=False)
     red_flag_codes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    is_verdict: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    chat: Mapped["Chat"] = relationship(back_populates="messages")
+    chat: Mapped["Chat"] = relationship(back_populates="messages", foreign_keys=[chat_id])
     agent: Mapped[Optional["Agent"]] = relationship(back_populates="messages")
     message_documents: Mapped[list["MessageDocument"]] = relationship(back_populates="message", cascade="all, delete-orphan")
+
+
+class GeneratedDocument(Base, TimestampMixin):
+    __tablename__ = "generated_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id"), nullable=False)
+    verdict_message_id: Mapped[int] = mapped_column(ForeignKey("messages.id"), nullable=False)
+    created_by_agent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("agents.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    document_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
+    storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    docx_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    pdf_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    chat: Mapped["Chat"] = relationship(back_populates="generated_documents")
 
 
 class ProviderConfig(Base, TimestampMixin):

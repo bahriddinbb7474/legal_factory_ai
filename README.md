@@ -57,7 +57,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 4 v2 structured legal responses and safeguards.
+Current status: Stage 5 v2 verdict-based generated document workflow.
 
 Implemented foundation:
 
@@ -94,8 +94,13 @@ Implemented foundation:
 - approval API where `Chat.approval_status` is the single source of truth;
 - monthly budget warning/block guard based on stored `CostRecord` rows;
 - frontend structured legal answer card, red-flag banner, and approval controls.
+- active verdict workflow: only one lawyer message can be marked as the current verdict per chat;
+- `GeneratedDocument` backend entity for drafts created strictly from the active verdict;
+- generated document editor flow with save/cancel, DOCX/PDF export endpoints, and send-back-to-chat action;
+- generated document approval status with an `Approval` event journal;
+- audit logs for verdict, generated document, export, send-back, and approval events.
 
-Not implemented yet: RAG over laws, confirmed law-source enforcement, real document export, production auth/admin permissions, and Telegram.
+Not implemented yet: RAG over laws, confirmed law-source enforcement, production auth/admin permissions, production-grade PDF rendering, and Telegram.
 
 ## Run Backend
 

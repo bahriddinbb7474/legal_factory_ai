@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from decimal import Decimal
 
@@ -5,11 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import Agent, Approval, Chat, ChatDocument, CostRecord, Document, Message, MessageDocument, ProviderConfig
+from app.db.base import Agent, Approval, Chat, ChatDocument, CostRecord, Document, GeneratedDocument, Message, MessageDocument, ProviderConfig
 from app.db.session import get_db
 from app.schemas.approvals import ApprovalRead
 from app.schemas.chats import ChatCreate, ChatRead
 from app.schemas.costs import CostRecordRead
+from app.schemas.generated_documents import GenerateDocumentFromVerdictRequest, GeneratedDocumentRead
 from app.schemas.messages import MessageCreate, MessageRead
 from app.schemas.openrouter import InvokeAgentRequest
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
@@ -20,6 +22,7 @@ from app.services.costs import calculate_cost_usd
 from app.services.current_user import CurrentUser, get_current_user
 from app.services.document_access import DocumentAccessError, document_access_service
 from app.services.audit import write_audit_log
+from app.services.generated_documents import save_generated_document_text
 from app.services.llm_gateway import LLMGatewayError, MissingOpenRouterKeyError, OpenRouterGateway, openrouter_gateway
 from app.services.red_flags import red_flag_service
 from app.services.structured_response import StructuredResponseError, invoke_structured_with_repair
@@ -82,6 +85,149 @@ async def create_message(
     await db.commit()
     await db.refresh(message)
     return message
+
+
+@router.post("/{chat_id}/messages/{message_id}/mark-verdict", response_model=MessageRead)
+async def mark_message_as_verdict(
+    chat_id: int,
+    message_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> Message:
+    chat = await _get_chat_or_404(chat_id, db)
+    message = await _get_chat_message_or_404(chat_id, message_id, db)
+    if message.role != "assistant" or not message.author_type.startswith("agent"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only lawyer messages can be marked as verdict.")
+
+    if chat.active_verdict_message_id and chat.active_verdict_message_id != message.id:
+        previous = await db.get(Message, chat.active_verdict_message_id)
+        if previous is not None:
+            previous.is_verdict = False
+
+    message.is_verdict = True
+    chat.active_verdict_message_id = message.id
+    await write_audit_log(
+        db,
+        action="verdict.marked",
+        entity_type="message",
+        entity_id=message.id,
+        user_id=current_user.id,
+        details={"chat_id": chat.id, "risk": message.risk, "author_type": message.author_type},
+    )
+    await db.commit()
+    await db.refresh(message)
+    return message
+
+
+@router.delete("/{chat_id}/verdict", response_model=ChatRead)
+async def clear_chat_verdict(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> Chat:
+    chat = await _get_chat_or_404(chat_id, db)
+    previous_id = chat.active_verdict_message_id
+    if previous_id is not None:
+        previous = await db.get(Message, previous_id)
+        if previous is not None:
+            previous.is_verdict = False
+    chat.active_verdict_message_id = None
+    await write_audit_log(
+        db,
+        action="verdict.cleared",
+        entity_type="chat",
+        entity_id=chat.id,
+        user_id=current_user.id,
+        details={"previous_verdict_message_id": previous_id},
+    )
+    await db.commit()
+    await db.refresh(chat)
+    return chat
+
+
+@router.get("/{chat_id}/verdict", response_model=MessageRead)
+async def get_chat_verdict(chat_id: int, db: AsyncSession = Depends(get_db)) -> Message:
+    chat = await _get_chat_or_404(chat_id, db)
+    if chat.active_verdict_message_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active verdict found")
+    return await _get_chat_message_or_404(chat_id, chat.active_verdict_message_id, db)
+
+
+@router.post("/{chat_id}/documents/generate-from-verdict", response_model=GeneratedDocumentRead, status_code=status.HTTP_201_CREATED)
+async def generate_document_from_verdict(
+    chat_id: int,
+    payload: GenerateDocumentFromVerdictRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+    gateway: OpenRouterGateway = Depends(get_llm_gateway),
+) -> GeneratedDocument:
+    await ensure_default_config(db)
+    chat = await _get_chat_or_404(chat_id, db)
+    if chat.active_verdict_message_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Сначала нужно пометить сообщение юриста как вердикт.",
+        )
+    verdict = await _get_chat_message_or_404(chat_id, chat.active_verdict_message_id, db)
+    agent = await _get_agent_or_404(payload.agent_code, db)
+    context = _build_active_verdict_document_prompt(verdict, payload.document_type, payload.title)
+    try:
+        response = await gateway.invoke(agent, context)
+    except MissingOpenRouterKeyError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except LLMGatewayError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+    content = response.content.strip() or verdict.content
+    document_status = "needs_review" if _verdict_requires_review(chat, verdict) else "draft"
+    storage_key = await save_generated_document_text(content)
+    document = GeneratedDocument(
+        chat_id=chat.id,
+        verdict_message_id=verdict.id,
+        created_by_agent_id=agent.id,
+        title=payload.title,
+        document_type=payload.document_type,
+        content=content,
+        status=document_status,
+        storage_key=storage_key,
+    )
+    db.add(document)
+    await db.flush()
+    if response.input_tokens or response.output_tokens:
+        cost_usd = calculate_cost_usd(
+            response.input_tokens,
+            response.output_tokens,
+            Decimal(agent.input_price_per_1m),
+            Decimal(agent.output_price_per_1m),
+        )
+        db.add(
+            CostRecord(
+                chat_id=chat.id,
+                agent_id=agent.id,
+                provider_code=response.provider_code,
+                model_id=response.model_id,
+                input_tokens=response.input_tokens,
+                output_tokens=response.output_tokens,
+                cost_usd=cost_usd,
+            )
+        )
+    await write_audit_log(
+        db,
+        action="generated_document.created_from_verdict",
+        entity_type="generated_document",
+        entity_id=document.id,
+        user_id=current_user.id,
+        details={
+            "chat_id": chat.id,
+            "verdict_message_id": verdict.id,
+            "agent_code": agent.code,
+            "document_type": document.document_type,
+            "status": document.status,
+        },
+    )
+    await db.commit()
+    await db.refresh(document)
+    return document
 
 
 @router.post("/{chat_id}/invoke", response_model=MessageRead)
@@ -337,6 +483,14 @@ async def _get_chat_or_404(chat_id: int, db: AsyncSession) -> Chat:
     return chat
 
 
+async def _get_chat_message_or_404(chat_id: int, message_id: int, db: AsyncSession) -> Message:
+    result = await db.execute(select(Message).where(Message.id == message_id, Message.chat_id == chat_id))
+    message = result.scalar_one_or_none()
+    if message is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
+    return message
+
+
 async def _list_chat_messages(chat_id: int, db: AsyncSession) -> list[Message]:
     result = await db.execute(
         select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at, Message.id)
@@ -350,6 +504,31 @@ async def _get_agent_or_404(agent_code: str, db: AsyncSession) -> Agent:
     if agent is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lawyer not found")
     return agent
+
+
+def _build_active_verdict_document_prompt(verdict: Message, document_type: str, title: str) -> str:
+    structured = json.dumps(verdict.structured_payload or {}, ensure_ascii=False, indent=2)
+    return "\n".join(
+        [
+            "Создай юридический документ только на основе активного вердикта ниже.",
+            "Запрещено использовать ранние мнения, отклоненные выводы или другие сообщения чата как источник для документа.",
+            "Если данных из ACTIVE_VERDICT недостаточно, прямо укажи, что нужен юрист/ответственный специалист.",
+            f"Тип документа: {document_type}",
+            f"Название документа: {title}",
+            "<ACTIVE_VERDICT>",
+            f"message_id: {verdict.id}",
+            f"risk: {verdict.risk or 'unknown'}",
+            f"approval_required: {verdict.approval_required or 'none'}",
+            f"source_check_status: {verdict.source_check_status}",
+            f"content: {verdict.content}",
+            f"structured_payload: {structured}",
+            "</ACTIVE_VERDICT>",
+        ]
+    )
+
+
+def _verdict_requires_review(chat: Chat, verdict: Message) -> bool:
+    return chat.approval_status == "needs_review" or verdict.risk == "red" or verdict.approval_required not in {None, "none"}
 
 
 async def _get_provider_or_404(provider_code: str, db: AsyncSession) -> ProviderConfig:

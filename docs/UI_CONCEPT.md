@@ -104,3 +104,19 @@ Toolbar actions are currently UI-stage controls: edit mode, download menu, send-
 ## Design Direction
 
 The interface should remain calm, light, and business-focused: thin borders, compact controls, readable legal text, and a three-zone workspace when a document is open.
+
+## Stage 5 v2 Verdict Document Workflow
+
+The current UI adds a practical verdict-to-document flow:
+
+- lawyer messages have `Пометить как вердикт`;
+- only one lawyer message is visually active as the current verdict;
+- the document card creates or opens a generated document from that active verdict;
+- the right panel shows the generated document content, status, and editor controls;
+- save/cancel applies to the generated document editor only;
+- download opens Word/PDF actions backed by `/api/generated-documents/...`;
+- reply/send-back has one action: `Отправить в общий чат`.
+
+The right-panel reply action does not show Lawyer 1/2/3 options and does not invoke an LLM. After the document is returned to the chat, the user must select a lawyer in the bottom composer and send a normal follow-up message.
+
+Uploaded document preview remains separate from generated document editing. Uploaded documents can be opened for metadata/extracted-text preview, while generated documents are the editable artifacts.

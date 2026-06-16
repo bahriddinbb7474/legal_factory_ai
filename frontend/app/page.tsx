@@ -42,6 +42,7 @@ type ChatMessage = {
   output_tokens?: number;
   cost_usd?: string;
   created_at?: string;
+  is_verdict?: boolean;
 };
 
 type LegalStructuredPayload = {
@@ -95,6 +96,17 @@ type UploadedDocument = {
   document_date?: string | null;
   extraction_status: string;
   ocr_status: string;
+};
+
+type GeneratedDocument = {
+  id: number;
+  chat_id: number;
+  verdict_message_id: number;
+  created_by_agent_id: number | null;
+  title: string;
+  document_type: string;
+  content: string;
+  status: "draft" | "needs_review" | "approved" | "rejected" | "archived";
 };
 
 type UploadForm = {
@@ -189,6 +201,9 @@ export default function HomePage() {
   const [isDocumentOpen, setIsDocumentOpen] = useState(false);
   const [isDocumentEditing, setIsDocumentEditing] = useState(false);
   const [documentBody, setDocumentBody] = useState(initialDocumentBody);
+  const [savedDocumentBody, setSavedDocumentBody] = useState(initialDocumentBody);
+  const [generatedDocument, setGeneratedDocument] = useState<GeneratedDocument | null>(null);
+  const [activeVerdictMessageId, setActiveVerdictMessageId] = useState<number | null>(null);
   const [openDocumentMenu, setOpenDocumentMenu] = useState<"download" | "reply" | null>(null);
   const [isCostOpen, setIsCostOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -285,6 +300,7 @@ export default function HomePage() {
     const chat = await response.json();
     setChatId(chat.id);
     setChatApprovalStatus(chat.approval_status ?? "draft");
+    setActiveVerdictMessageId(chat.active_verdict_message_id ?? null);
     return chat.id;
   }
 
@@ -293,6 +309,7 @@ export default function HomePage() {
     if (response?.ok) {
       const chat = await response.json();
       setChatApprovalStatus(chat.approval_status ?? "draft");
+      setActiveVerdictMessageId(chat.active_verdict_message_id ?? null);
     }
   }
 
@@ -460,6 +477,7 @@ export default function HomePage() {
 
   async function openUploadedDocument(document: UploadedDocument) {
     setSelectedDocument(document);
+    setGeneratedDocument(null);
     setIsDocumentOpen(true);
     setIsDocumentEditing(false);
     setOpenDocumentMenu(null);
@@ -494,10 +512,143 @@ export default function HomePage() {
     setOpenDocumentMenu(null);
   }
 
-  function cancelDocumentChanges() {
-    setDocumentBody(initialDocumentBody);
+  async function saveDocumentChanges() {
+    if (generatedDocument) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/generated-documents/${generatedDocument.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: documentBody }),
+        });
+        if (response.ok) {
+          const updatedDocument = await response.json();
+          setGeneratedDocument(updatedDocument);
+          setDocumentBody(updatedDocument.content);
+          setSavedDocumentBody(updatedDocument.content);
+        }
+      } catch {
+        setApiStatus("Не удалось сохранить документ в backend. Изменения оставлены локально.");
+      }
+    } else {
+      setSavedDocumentBody(documentBody);
+    }
     setIsDocumentEditing(false);
     setOpenDocumentMenu(null);
+  }
+
+  function cancelDocumentChanges() {
+    setDocumentBody(savedDocumentBody);
+    setIsDocumentEditing(false);
+    setOpenDocumentMenu(null);
+  }
+
+  async function markAsVerdict(message: ChatMessage, messageKey: number) {
+    if (!message.id) {
+      setActiveVerdictMessageId(messageKey);
+      setMessages((current) =>
+        current.map((item, index) => ({
+          ...item,
+          is_verdict: (item.id ?? -index) === messageKey,
+        })),
+      );
+      return;
+    }
+    try {
+      const nextChatId = await ensureChat();
+      const response = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages/${message.id}/mark-verdict`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Не удалось пометить вердикт." }));
+        throw new Error(error.detail ?? "Не удалось пометить вердикт.");
+      }
+      const updated = await response.json();
+      setActiveVerdictMessageId(updated.id);
+      setMessages((current) =>
+        current.map((item) => ({
+          ...item,
+          is_verdict: item.id === updated.id,
+        })),
+      );
+      await refreshChatStatus(nextChatId);
+    } catch (error) {
+      setApiStatus(error instanceof Error ? error.message : "Не удалось пометить вердикт.");
+    }
+  }
+
+  async function openGeneratedDocument(message: ChatMessage, messageKey: number) {
+    setSelectedDocument(null);
+    if (activeVerdictMessageId !== messageKey && !message.is_verdict) {
+      await markAsVerdict(message, messageKey);
+    }
+    if (!message.id) {
+      const mockDocument: GeneratedDocument = {
+        id: 0,
+        chat_id: chatId ?? 0,
+        verdict_message_id: 0,
+        created_by_agent_id: null,
+        title: "Письмо клиенту о задолженности",
+        document_type: "claim_letter",
+        content: documentBody,
+        status: "draft",
+      };
+      setGeneratedDocument(mockDocument);
+      setSavedDocumentBody(mockDocument.content);
+      setDocumentBody(mockDocument.content);
+      setIsDocumentOpen(true);
+      return;
+    }
+    try {
+      const nextChatId = await ensureChat();
+      const response = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/documents/generate-from-verdict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_code: selectedLawyer,
+          document_type: "claim_letter",
+          title: "Письмо клиенту о задолженности",
+        }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Не удалось создать документ по вердикту." }));
+        throw new Error(error.detail ?? "Не удалось создать документ по вердикту.");
+      }
+      const document = await response.json();
+      setGeneratedDocument(document);
+      setDocumentBody(document.content);
+      setSavedDocumentBody(document.content);
+      setIsDocumentOpen(true);
+      setIsDocumentEditing(false);
+      setOpenDocumentMenu(null);
+    } catch (error) {
+      setApiStatus(error instanceof Error ? error.message : "Не удалось создать документ по вердикту.");
+      setIsDocumentOpen(true);
+    }
+  }
+
+  async function sendDocumentToChat() {
+    setOpenDocumentMenu(null);
+    if (generatedDocument?.id) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/generated-documents/${generatedDocument.id}/send-to-chat`, {
+          method: "POST",
+        });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ detail: "Не удалось отправить документ в общий чат." }));
+          throw new Error(error.detail ?? "Не удалось отправить документ в общий чат.");
+        }
+      } catch (error) {
+        setApiStatus(error instanceof Error ? error.message : "Не удалось отправить документ в общий чат.");
+        return;
+      }
+    }
+    setMessages((current) => [
+      ...current,
+      {
+        author_type: "user",
+        content: `Документ отправлен в общий чат для проверки: ${generatedDocument?.title ?? selectedDocument?.original_filename ?? "Письмо клиенту"}`,
+      },
+    ]);
   }
 
   function toggleDocumentMenu(menu: "download" | "reply") {
@@ -548,8 +699,10 @@ export default function HomePage() {
         </header>
 
         <div className="conversation">
-          {messages.map((message, index) =>
-            message.author_type === "user" ? (
+          {messages.map((message, index) => {
+            const messageKey = message.id ?? -index;
+            const isActiveVerdict = message.is_verdict || activeVerdictMessageId === messageKey;
+            return message.author_type === "user" ? (
               <article className="message user-message" key={`${message.author_type}-${index}`}>
                 <p>{message.content}</p>
               </article>
@@ -559,8 +712,8 @@ export default function HomePage() {
                   <span className="assistant-meta">{messageLabel(message)}</span>
                   {message.author_type.startsWith("agent") ? <span className={`risk-badge ${message.risk ?? message.structured_payload?.risk ?? "yellow"}`}>{riskLabel(message.risk ?? message.structured_payload?.risk ?? "yellow")}</span> : null}
                   {message.author_type.startsWith("agent") ? (
-                    <button className="pill-button verdict-button" onClick={() => setIsDocumentOpen(true)} type="button">
-                      Пометить как вердикт
+                    <button className={isActiveVerdict ? "pill-button verdict-button active-verdict" : "pill-button verdict-button"} onClick={() => markAsVerdict(message, messageKey)} type="button">
+                      {isActiveVerdict ? "Действующий вердикт" : "Пометить как вердикт"}
                     </button>
                   ) : null}
                 </div>
@@ -583,24 +736,24 @@ export default function HomePage() {
                         <strong>${Number(message.cost_usd ?? 0).toFixed(6)}</strong>
                       </div>
                     </div>
-                    <button className="document-card document-card-button" onClick={() => setIsDocumentOpen(true)} type="button">
+                    <button className="document-card document-card-button" onClick={() => openGeneratedDocument(message, messageKey)} type="button">
                       <div className="doc-icon">DOCX</div>
                       <div>
-                        <strong>Письмо клиенту о задолженности</strong>
-                        <span>Черновик документа</span>
+                        <strong>{generatedDocument?.title ?? "Письмо клиенту о задолженности"}</strong>
+                        <span>{isActiveVerdict ? "Документ создаётся строго из активного вердикта" : "Сначала будет выбран активный вердикт"}</span>
                       </div>
-                      <span className="compact-button">Открыть справа</span>
+                      <span className="compact-button">{generatedDocument ? "Открыть справа" : "Создать справа"}</span>
                     </button>
                     <div className="message-actions">
                       <button type="button">Копировать</button>
                       <button type="button">Нравится</button>
-                      <button type="button">Отправить Юристу 3</button>
+                      <button type="button" onClick={() => openGeneratedDocument(message, messageKey)}>Сгенерировать документ</button>
                     </div>
                   </>
                 ) : null}
               </article>
-            ),
-          )}
+            );
+          })}
         </div>
 
         <div className="composer-wrap">
@@ -690,24 +843,26 @@ export default function HomePage() {
         <aside className="document-pane">
           <header className="document-header">
             <div>
-              <strong>{selectedDocument?.original_filename ?? "Письмо клиенту о задолженности"}</strong>
-              <span>{selectedDocument ? `${selectedDocument.mime_type} · ${selectedDocument.extraction_status}` : "Документ · DOCX"}</span>
+              <strong>{selectedDocument?.original_filename ?? generatedDocument?.title ?? "Письмо клиенту о задолженности"}</strong>
+              <span>{selectedDocument ? `${selectedDocument.mime_type} · ${selectedDocument.extraction_status}` : `${approvalStatusLabel(generatedDocument?.status ?? "draft")} · GeneratedDocument`}</span>
             </div>
             <div className="document-actions">
               <div className="document-action-group">
                 {isDocumentEditing ? (
                   <>
-                    <button className="document-icon-button" onClick={() => setIsDocumentEditing(false)} title="Сохранить изменения" type="button" aria-label="Сохранить изменения">
+                    <button className="document-icon-button" onClick={saveDocumentChanges} title="Сохранить изменения" type="button" aria-label="Сохранить изменения">
                       ✓
                     </button>
                     <button className="document-icon-button cancel-edit-button" onClick={cancelDocumentChanges} title="Отменить изменения" type="button" aria-label="Отменить изменения">
                       ×
                     </button>
                   </>
-                ) : (
+                ) : !selectedDocument ? (
                   <button className="document-icon-button" onClick={() => setIsDocumentEditing(true)} title="Редактировать документ" type="button" aria-label="Редактировать документ">
                     ✎
                   </button>
+                ) : (
+                  <span className="document-action-placeholder" aria-hidden="true" />
                 )}
                 <div className="document-menu-wrap">
                   <button className="document-icon-button" onClick={() => toggleDocumentMenu("download")} title="Скачать документ" type="button" aria-label="Скачать документ" aria-expanded={openDocumentMenu === "download"}>
@@ -717,6 +872,11 @@ export default function HomePage() {
                     <div className="document-dropdown">
                       {selectedDocument ? (
                         <a href={`${API_BASE_URL}/api/documents/${selectedDocument.id}/download`}>Скачать оригинал</a>
+                      ) : generatedDocument?.id ? (
+                        <>
+                          <a href={`${API_BASE_URL}/api/generated-documents/${generatedDocument.id}/download.docx`}>Скачать Word (.docx)</a>
+                          <a href={`${API_BASE_URL}/api/generated-documents/${generatedDocument.id}/download.pdf`}>Скачать PDF (.pdf)</a>
+                        </>
                       ) : (
                         <>
                           <button type="button">Скачать Word (.docx)</button>
@@ -732,9 +892,7 @@ export default function HomePage() {
                   </button>
                   {openDocumentMenu === "reply" ? (
                     <div className="document-dropdown">
-                      <button type="button">Отправить Юристу 1</button>
-                      <button type="button">Отправить Юристу 2</button>
-                      <button type="button">Отправить Юристу 3</button>
+                      <button type="button" onClick={sendDocumentToChat}>Отправить в общий чат</button>
                     </div>
                   ) : null}
                 </div>
@@ -782,7 +940,7 @@ export default function HomePage() {
                   <h2>ООО “KABEL TECH ENERGY”</h2>
                   <p className="doc-center">111116, Республика Узбекистан, Ташкентская область</p>
                   <section>
-                    <h3>Письмо о задолженности</h3>
+                    <h3>{generatedDocument?.title ?? "Письмо о задолженности"}</h3>
                     {isDocumentEditing ? (
                       <textarea className="document-editor" aria-label="Текст документа" value={documentBody} onChange={(event) => setDocumentBody(event.target.value)} />
                     ) : (

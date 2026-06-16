@@ -548,6 +548,12 @@ button {
   margin-left: auto;
 }
 
+.active-verdict {
+  background: #e8f7ef;
+  border-color: #aad9bd;
+  color: #116b3a;
+}
+
 .risk-badge {
   border-radius: 999px;
   font-size: 12px;
@@ -1160,6 +1166,12 @@ input:disabled {
 
 .document-icon-button:hover {
   background: var(--panel-strong);
+}
+
+.document-action-placeholder {
+  display: inline-block;
+  height: 32px;
+  width: 32px;
 }
 
 .cancel-edit-button {

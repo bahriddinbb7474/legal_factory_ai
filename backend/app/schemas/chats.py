@@ -8,6 +8,7 @@ class ChatCreate(BaseModel):
     owner_user_id: int | None = None
     status: str = "draft"
     approval_status: str = "draft"
+    active_verdict_message_id: int | None = None
 
 
 class ChatRead(ChatCreate):
