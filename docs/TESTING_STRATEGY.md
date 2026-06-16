@@ -49,3 +49,76 @@ Testing must verify that Legal Factory AI behaves like a controlled legal assist
 - Missing API keys must produce clear disabled-provider behavior.
 - OpenRouter and vision calls must be mocked in automated tests.
 - Embedding calls must be mocked or disabled in automated tests.
+
+## Stage 7-13 Test Blocks
+
+Stage 7 legal source completion:
+
+- at least 15 real legal sources can be loaded with required metadata;
+- every source has a LEX.UZ URL and revision date;
+- chunking succeeds for every source;
+- retriever finds expected clauses/points;
+- only active official sources enter normal lawyer context;
+- correct `source_type=law` citations are confirmed;
+- wrong quotes remain unconfirmed and cannot produce green/high-confidence output;
+- overdue revision checks show warnings.
+
+Stage 8 company profile:
+
+- company data saves and updates;
+- changes are audit logged;
+- logo and letterhead are available for DOCX generation;
+- stamp and signature are treated as sensitive;
+- only director/admin can manage sensitive company assets.
+
+Stage 9 templates:
+
+- draft/active/archived template statuses work;
+- at least five core templates can be active;
+- old template versions are archived;
+- generated documents can be created from an active verdict and active template;
+- CompanyProfile fields are substituted;
+- preview and DOCX export render the expected branded structure.
+
+Stage 10 local laptop server:
+
+- backend and frontend run together on the laptop;
+- LAN clients can open the app through the local IP;
+- 3-4 users can perform chat/upload/RAG/document-generation flows without instability;
+- backup and restore commands are tested;
+- logs are available for troubleshooting.
+
+Stage 11 auth and roles:
+
+- dev current-user stub is disabled;
+- users log in with their own credentials;
+- role-based access is enforced by backend endpoints;
+- HR documents are hidden from supply users;
+- sensitive documents and company stamp/signature are protected;
+- approval cannot be bypassed by frontend-only changes.
+
+Stage 12 final factory scenarios:
+
+- client debt;
+- claim letter;
+- supplier delay;
+- contract review;
+- import contract;
+- tax letter;
+- customs letter;
+- HR question;
+- occupational safety;
+- certification/technical regulation;
+- state body reply;
+- template document generation;
+- director approval;
+- DOCX export;
+- legal source verification.
+
+Stage 13 mini-launch:
+
+- user and admin instructions are complete;
+- legal source upload/revision rules are documented;
+- approval and sensitive-document rules are documented;
+- backup schedule and restore guide are verified;
+- responsible owners are assigned.

@@ -24,7 +24,7 @@ Legal Factory AI must stay inside clear limits.
 - File uploads must reject unsupported types, path traversal filenames, and files above the configured size limit.
 - Lawyer answers must be validated structured JSON before being shown as normal legal analysis.
 - Uploaded-document citations must be verified by code, not by another LLM prompt.
-- Until Stage 6, legal/law sources are always `law_unconfirmed`.
+- Legal/law sources are confirmed only when matched to retrieved curated legal chunks.
 - Unconfirmed sources force at least yellow risk and at most medium confidence.
 - Red flag topics automatically move the chat to `needs_review`.
 
@@ -72,3 +72,16 @@ Legal Factory AI must stay inside clear limits.
 - SQLite uses lexical fallback; semantic pgvector search is a production target.
 - Embeddings are optional and mocked/disabled in tests; no paid embedding calls are made by automated tests.
 - Non-official sources can be stored but are excluded from confirmed legal RAG.
+
+## Post-Stage-6 Roadmap Risks
+
+- The factory legal base requires manual source selection and revision checks; LEX.UZ data must be verified by a responsible person before being treated as current.
+- Stage 7 is data-completion work, not an automatic crawler. Missing or stale sources can still produce incomplete legal analysis.
+- A laptop may not handle 3-4 concurrent users, document uploads, RAG retrieval, and OpenRouter latency reliably.
+- SQLite is not a production database. It is acceptable only for tests and minimal local pilots.
+- Local PostgreSQL should be prepared for the laptop pilot if practical, and PostgreSQL remains the production target.
+- Approved document templates must be reviewed and accepted by a responsible factory owner before they are used for outgoing documents.
+- Company stamps and signatures are sensitive assets and must be protected from normal users.
+- Local role-based access must be enforced by the backend; frontend-only hiding is not enough.
+- Telegram is postponed. Any Telegram workflow added later must not bypass Web UI controls, source verification, or approval.
+- VPS/full production server deployment is postponed until the laptop pilot proves insufficient or the factory needs 24/7, more than 3-4 users, external access, stronger backups, or production security.

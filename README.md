@@ -25,7 +25,10 @@ Legal Factory AI is an assistant only. It does not replace a live lawyer, direct
 - RAG over uploaded factory documents and official legal sources.
 - Cost tracking by chat, model, and agent.
 - Approval workflow for red-risk answers and final documents.
-- Telegram bot as a quick entry point in later stages.
+- Company profile data for official letters and generated documents.
+- Approved document templates for factory letters, claims, replies, and HR/production documents.
+- Local laptop server pilot for 3-4 users before any VPS or production deployment.
+- Telegram bot as a postponed quick entry point after the Web UI, legal base, templates, and local launch are stable.
 
 ## Future Stack
 
@@ -35,21 +38,30 @@ Legal Factory AI is an assistant only. It does not replace a live lawyer, direct
 - Vector search: pgvector.
 - LLM provider: OpenRouter API.
 - Files: local server storage first.
-- Telegram: added after the web foundation is stable.
+- Telegram: postponed until after the factory legal base, templates, local launch, and real users are stable.
 
 ## Launch Stages
 
-1. Project foundation and documentation.
-2. Web UI skeleton.
-3. Chat and agents.
-4. OpenRouter integration.
-5. File upload and document analysis.
-6. Right document editor.
-7. RAG and legal sources.
-8. Roles and approval.
-9. Cost tracking.
-10. Telegram bot.
-11. Testing and first launch.
+Completed:
+
+1. Stage 1: UI skeleton and project foundation.
+2. Stage 2: OpenRouter and three lawyers in one shared chat, including manual lawyer selection and token/cost tracking.
+3. Stage 3: PDF/DOCX/XLSX/TXT/JPG/JPEG/PNG/WEBP upload, extraction/OCR path, sensitivity, `UNTRUSTED_DOCUMENT`, storage, and provider enforcement.
+4. Stage 4: structured legal JSON, risk, confidence, findings, sources, citation verification, red flags, approval, and monthly budget guard.
+5. Stage 5: active verdict, `GeneratedDocument`, right editor, DOCX export, PDF fallback, generated-document approval, and send-back-to-chat without an automatic LLM call.
+6. Stage 6: curated legal RAG with `LegalSource`, `LegalChunk`, ПП/ПКМ support, `TRUSTED_LEGAL_SOURCE`, `source_type=law` verification, freshness warnings, SQLite lexical fallback, and PostgreSQL + pgvector production target.
+
+Current roadmap:
+
+7. Stage 7: complete the factory legal base with 15-30 manually verified LEX.UZ sources.
+8. Stage 8: add Company Profile / official company data.
+9. Stage 9: add approved document templates.
+10. Stage 10: test and configure laptop local server mode for 3-4 users.
+11. Stage 11: replace the dev current-user stub with local users, passwords, and roles.
+12. Stage 12: run final factory scenarios end to end.
+13. Stage 13: mini-launch at the factory with user/admin instructions, backup, restore, and owners.
+14. Stage 14: Telegram later, as a quick entry point, not a Web UI replacement.
+15. Stage 15: VPS/full server later if the laptop cannot meet operational needs.
 
 ## Legal Warning
 
@@ -57,7 +69,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 6 v2 curated legal RAG sources.
+Current status: Stage 6 v2 curated legal RAG sources is complete. The next stage is Stage 7: factory legal base completion.
 
 Implemented foundation:
 
@@ -107,7 +119,15 @@ Implemented foundation:
 - trusted legal source blocks in lawyer context, separate from untrusted uploaded documents;
 - `source_type=law` citation validation only against retrieved legal chunks.
 
-Not implemented yet: full LEX.UZ crawler, automatic legal update monitoring, production auth/admin permissions, production-grade PDF rendering, and Telegram.
+Stage 6 smoke status: PASS.
+
+- ПКМ №999 chunking produced Пункт 1/2/3.
+- Retriever found Пункт 3: `Документы проверяются один раз в месяц.`
+- Correct quote was confirmed.
+- Wrong quote was unconfirmed, prevented green/high-confidence output, and kept risk at yellow with medium confidence.
+- Freshness warning works.
+
+Not implemented yet: Stage 7 real legal base population, CompanyProfile, document templates, local laptop pilot, production auth/admin permissions, production-grade PDF rendering, Telegram, and VPS/production deployment.
 
 ## Run Backend
 

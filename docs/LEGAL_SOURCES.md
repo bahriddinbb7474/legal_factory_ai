@@ -72,3 +72,55 @@ Only `active` and `official` sources are returned by the retriever.
 Old revisions should be marked `archived` or `outdated`; they remain in the database for history but do not enter normal lawyer context.
 
 Law citations are confirmed only when the model quotes text from a chunk returned by the legal retriever. A model-invented article, ПП/ПКМ number, or quote remains unconfirmed.
+
+## Stage 7 Legal Base Completion
+
+Stage 7 is the next main stage after curated legal RAG. The goal is to fill the system with 15-30 real official sources needed by a cable factory in Uzbekistan.
+
+Primary source:
+
+- `LEX.UZ`
+
+Required metadata for every source:
+
+- `document_type`
+- `title`
+- `document_number`
+- `adoption_date`
+- `revision_date`
+- `source_name`
+- `source_url`
+- `official_status`
+- `status=active`
+- `language`
+- `last_checked_at`
+- `next_check_due_at`
+
+Required source categories:
+
+- Contracts and obligations: Civil Code, supply contracts, late payment, claims work.
+- Import and customs: Customs Code, ПП/ПКМ on customs benefits, raw material import, certificates of origin, invoices, contracts.
+- Taxes: Tax Code, VAT, tax audits, electronic invoices.
+- Labor and HR: Labor Code, dismissal, disciplinary penalties, employee personal data.
+- Occupational safety: labor protection, accidents, fire safety, sanitary requirements.
+- Production, certification, and technical regulation: technical regulations, cable product certification, metrology, O'z DSt/GOST where applicable, ecology.
+- Government bodies: inspections, replies to state bodies, licenses/permits where applicable.
+
+Revision rule:
+
+- New active revision is loaded as `active`.
+- Old revision is moved to `archived` or `outdated`.
+- Normal RAG uses only `active` official revisions.
+- Monthly revision checks remain mandatory through `last_checked_at` and `next_check_due_at`.
+
+Stage 7 acceptance criteria:
+
+1. At least 15 real sources are loaded.
+2. Every source has a LEX.UZ URL.
+3. Every source has a revision date.
+4. Chunking succeeds for each source.
+5. Retriever finds the expected clauses/points.
+6. Lawyers can cite `source_type=law`.
+7. Correct law quotes are confirmed.
+8. Wrong law quotes are rejected/unconfirmed.
+9. Outdated revisions show a freshness warning.

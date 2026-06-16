@@ -10,7 +10,7 @@ Legal Factory AI should start with a simple, expandable architecture.
 - Vector search: pgvector.
 - LLM provider: OpenRouter API.
 - File storage: local server storage first.
-- Telegram bot: added after the web workflow is stable.
+- Telegram bot: postponed. It is not in the current core path and should return only after the legal base, templates, local launch, and real users are stable.
 
 ## Backend Data Foundation
 
@@ -42,6 +42,19 @@ Initial API surface:
 - `GET /api/chats/{chat_id}/costs`
 
 Alembic is configured in `backend/alembic.ini`, with the first migration under `backend/alembic/versions/`.
+
+## Current Strategic Path After Stage 6
+
+The current core path is no longer Telegram-first. After Stage 6, the product should move through:
+
+1. Stage 7: complete the factory legal base with 15-30 manually verified official sources, primarily from LEX.UZ.
+2. Stage 8: add `CompanyProfile` so official company data can be reused in letters, claims, replies, and generated documents.
+3. Stage 9: add `DocumentTemplate` and template-based generation for approved factory documents.
+4. Stage 10: test a laptop as a temporary local server for 3-4 users in the office LAN.
+5. Stage 11: replace the development current-user stub with local authentication and role-based access.
+6. Stage 12-13: run final factory scenarios and mini-launch.
+
+VPS, full production deployment, and Telegram are deferred until this path is stable.
 
 ## First Foundation
 
@@ -270,3 +283,15 @@ Citation validation:
 - `source_type=law` is confirmed only if the source came from the legal retriever and the quote exists in the retrieved chunk with matching metadata.
 - `source_type=law_unconfirmed` is always unconfirmed.
 - Uploaded document citations continue to be verified against extracted uploaded document text.
+
+## Planned Stage 7-11 Architecture
+
+Stage 7 extends the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources.
+
+Stage 8 will add `CompanyProfile` for full/short company names, legal and actual addresses, TIN, OKED, registration details, bank data, director/chief accountant/legal responsible names, contacts, logo, letterhead, stamp, and signature storage keys. Stamp and signature files are sensitive and require director/admin access plus audit logging.
+
+Stage 9 will add `DocumentTemplate` with draft/active/archived statuses, versioning, required fields, company profile fields, preview, and template-based creation of `GeneratedDocument` from an active verdict.
+
+Stage 10 keeps the laptop pilot as an operational check: backend, frontend, local IP, LAN access, backups, restore, restart script, logs, database size, uploads size, and stability under 3-4 local users. SQLite is acceptable only for tests or minimal local launch; PostgreSQL remains the production target and should be prepared locally if practical.
+
+Stage 11 removes the development current-user stub and introduces login/password users, password changes, disabled users, roles, backend-enforced role-based access, and approval restricted to director/chief_accountant where required.

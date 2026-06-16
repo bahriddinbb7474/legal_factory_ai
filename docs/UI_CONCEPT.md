@@ -105,6 +105,45 @@ Toolbar actions are currently UI-stage controls: edit mode, download menu, send-
 
 The interface should remain calm, light, and business-focused: thin borders, compact controls, readable legal text, and a three-zone workspace when a document is open.
 
+## Planned Settings Sections After Stage 6
+
+The next roadmap adds operational settings, but the core workspace remains chat + right document panel.
+
+Planned settings sections:
+
+- `Настройки -> Юридическая база`
+- `Настройки -> Данные компании`
+- `Настройки -> Шаблоны документов`
+
+`Настройки -> Юридическая база` should support the existing curated legal-source workflow and Stage 7 completion needs:
+
+- list legal sources;
+- upload or paste source text;
+- show document type, number, revision date, source URL, status, language, last check date, and next check date;
+- show active/outdated/archived state;
+- show freshness warnings;
+- reindex chunks.
+
+`Настройки -> Данные компании` is planned for Stage 8:
+
+- edit official company profile fields;
+- upload logo;
+- upload letterhead;
+- upload stamp/signature with sensitive access controls;
+- preview the company block;
+- show change history from audit logs.
+
+`Настройки -> Шаблоны документов` is planned for Stage 9:
+
+- list templates;
+- create and edit templates;
+- preview;
+- activate a version;
+- archive an old version;
+- run test generation.
+
+Telegram is not part of the current UI path. It is postponed until the Web UI, legal base, templates, local launch, and real users are stable.
+
 ## Stage 5 v2 Verdict Document Workflow
 
 The current UI adds a practical verdict-to-document flow:

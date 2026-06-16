@@ -1,6 +1,6 @@
 # AI Agents
 
-Legal Factory AI Stage 4 v2 uses one shared chat and three configurable legal agents. The user manually selects exactly one lawyer before sending/invoking. The backend must not call two or three lawyers in one request.
+Legal Factory AI uses one shared chat and three configurable legal agents. The user manually selects exactly one lawyer before sending/invoking. The backend must not call two or three lawyers in one request.
 
 ## Shared Chat Rule
 
@@ -54,6 +54,17 @@ Lawyer 3 should:
 
 Stage 4 enforces: if Lawyer 3 has unresolved points without confirmed sources, backend forces `risk=red` and `approval_required=director`.
 
+## Curated Legal RAG Rule
+
+After Stage 6, lawyers may use confirmed law sources only from curated legal RAG context.
+
+- Official legal sources are injected as `<TRUSTED_LEGAL_SOURCE ...>`.
+- Uploaded factory documents remain `<UNTRUSTED_DOCUMENT ...>`.
+- `source_type=law` is confirmed only when the quote and metadata match a retrieved legal chunk.
+- `source_type=law_unconfirmed` remains unconfirmed.
+- If a legal quote is wrong or not retrieved, backend must prevent green/high-confidence output.
+- Stage 7 will expand the curated source set with 15-30 real LEX.UZ sources needed by the cable factory.
+
 ## Structured Output
 
 Each lawyer answer must be valid JSON with:
@@ -91,3 +102,17 @@ Lawyers can produce analysis, but a document draft is generated only after the u
 Document-generation prompts include an explicit `<ACTIVE_VERDICT>` block and tell the model not to use earlier opinions or rejected/non-verdict chat messages as drafting sources. This keeps the document workflow anchored to the user-approved legal position.
 
 Sending a generated document back to the chat is not a lawyer invocation. It creates a normal chat message/card only; the user must manually choose Lawyer 1, Lawyer 2, or Lawyer 3 in the composer for any later review.
+
+## Planned Company Profile and Templates
+
+Stage 8 CompanyProfile and Stage 9 DocumentTemplate will become the normal path for final documents:
+
+- lawyers provide structured legal analysis;
+- the user marks one answer as the active verdict;
+- the system selects an approved template;
+- CompanyProfile fields fill official company data;
+- the result becomes a `GeneratedDocument`.
+
+Lawyers should not invent company data, bank details, stamp/signature information, document template versions, or approval status. Those values must come from stored project data once the stages are implemented.
+
+There is currently no Telegram workflow. Telegram is postponed and must not be assumed in prompts or agent behavior.

@@ -41,17 +41,24 @@
 - Legal source freshness is a manual 30-day check cycle.
 - SQLite/dev/test use lexical fallback; PostgreSQL + pgvector remains the production vector-search target.
 - `source_type=law` is confirmed only through chunks returned by the legal retriever.
+- After Stage 6, Telegram and VPS are deferred.
+- The post-Stage-6 priority is: legal source completion, company data, document templates, laptop local server, local auth/users, and factory scenario testing.
+- The laptop can be used as a temporary local server only if it handles 3-4 users without instability.
+- SQLite is acceptable for tests or a minimal local pilot only; PostgreSQL remains the production target.
+- Telegram will be a quick entry point later, not a replacement for the Web UI.
 - Real company documents may be sent to external LLM APIs only after the responsible business owner approves this operating model.
-- Both Web UI and Telegram are needed, but Web UI comes first.
+- Both Web UI and Telegram may be useful, but Web UI and local operational readiness come first.
 
 ## Pending Decisions
 
 - Exact production OpenRouter models for Lawyer 1, Lawyer 2, and Lawyer 3 after manual testing.
-- Production hosting model.
+- Production hosting model after the laptop pilot.
 - Backup policy for uploaded documents.
 - Retention period for chats, files, and audit logs.
-- Whether Telegram approval is allowed for all red-risk cases or only selected categories.
+- Whether Telegram approval is allowed for all red-risk cases or only selected categories after Telegram is reintroduced.
 - Final production list of trusted providers for sensitive company documents.
 - Whether image OCR should use OpenRouter vision models, a local OCR service, or a dedicated Uzbek/Russian OCR provider in production.
 - Production approval roles and whether admin should be allowed to approve outside development.
 - Production monthly budget value and whether blocks should be enabled by default.
+- Final approved list of factory document templates and owners.
+- Responsible owners for legal source revision checks, templates, and technical launch.

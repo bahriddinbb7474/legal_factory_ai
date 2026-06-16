@@ -1,6 +1,6 @@
 # Development Setup
 
-Stage 3 v2 creates a runnable backend/frontend foundation with core chat APIs, OpenRouter lawyer invocation, model settings, document upload, local file storage, and text extraction.
+Stage 6 v2 has a runnable backend/frontend foundation with core chat APIs, OpenRouter lawyer invocation, model settings, document upload, local file storage, text extraction, structured legal answers, generated documents, and curated legal RAG.
 
 ## Backend
 
@@ -139,6 +139,29 @@ cd frontend
 npm run build
 ```
 
+## Future Laptop Local Server Plan
+
+Stage 10 will test the user's laptop as a temporary local server for 3-4 users in the office LAN.
+
+Planned local setup checks:
+
+- backend runs on the laptop;
+- frontend runs on the laptop;
+- LAN users can reach the app through the laptop local IP;
+- firewall rules allow local network access only as needed;
+- OpenRouter latency is acceptable;
+- document upload, RAG, generated documents, and DOCX export work under 3-4 users;
+- database size, upload size, logs, CPU, RAM, and disk usage are monitored;
+- restart, backup, and restore commands are documented.
+
+Database guidance:
+
+- SQLite is acceptable for automated tests and a minimal local pilot only.
+- Local PostgreSQL should be prepared for the laptop pilot if practical.
+- PostgreSQL remains the production target.
+
+Do not treat the laptop pilot as production deployment. VPS/full server work is postponed until the laptop cannot meet the factory's needs or the factory needs 24/7, external access, stronger backups, or production security.
+
 ## Documents
 
 Uploaded source files and extracted text are stored locally under:
@@ -151,6 +174,6 @@ The folder is ignored by git. Stage 3 supports PDF, DOCX, XLSX, TXT, JPG, PNG, a
 
 ## Current Scope
 
-Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, OpenRouter gateway foundation, mock-tested lawyer invocation, admin model/provider endpoints, document upload APIs, local document storage, text extraction, basic role/sensitivity checks, Alembic migrations, backend tests, connected Next.js chat workspace, document chips, and model settings UI.
+Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, OpenRouter gateway foundation, mock-tested lawyer invocation, admin model/provider endpoints, document upload APIs, local document storage, text extraction, basic role/sensitivity checks, structured legal JSON, citation verification, red flags, approval, generated documents, DOCX/PDF endpoints, curated legal RAG, Alembic migrations, backend tests, connected Next.js chat workspace, document chips, right editor, legal source settings UI, and model settings UI.
 
-Not implemented: RAG/vector search, production OCR hardening, real document export, final legal source enforcement, approval workflow behavior, production admin auth, and Telegram.
+Not implemented: Stage 7 real legal base population, CompanyProfile, document templates, local laptop server hardening, production auth, production OCR hardening, production-grade PDF rendering, Telegram, and VPS/production deployment.
