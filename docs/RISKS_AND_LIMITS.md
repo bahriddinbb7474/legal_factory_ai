@@ -61,3 +61,14 @@ Legal Factory AI must stay inside clear limits.
 - PDF export is a lightweight fallback in Stage 5 and is not a production layout engine.
 - Generated document approval uses a development current-user stub until production authentication is implemented.
 - Sending a document back to chat does not notify a lawyer, choose a lawyer, or call OpenRouter automatically.
+
+## Stage 6 v2 Limits
+
+- The legal database is curated manually; there is no full LEX.UZ crawler.
+- There is no automatic monitoring of new legal revisions.
+- Admins must archive/outdate old revisions and load the current active revision.
+- `source_type=law` is confirmed only through retrieved legal chunks.
+- If a law citation is not found in retrieved context, the response cannot remain green/high-confidence.
+- SQLite uses lexical fallback; semantic pgvector search is a production target.
+- Embeddings are optional and mocked/disabled in tests; no paid embedding calls are made by automated tests.
+- Non-official sources can be stored but are excluded from confirmed legal RAG.

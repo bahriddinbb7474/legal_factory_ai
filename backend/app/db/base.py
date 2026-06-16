@@ -271,3 +271,40 @@ class RedFlagRule(Base, TimestampMixin):
     amount_threshold: Mapped[Optional[float]] = mapped_column(Numeric(14, 2), nullable=True)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     required_approver: Mapped[str] = mapped_column(String(64), default="director", nullable=False)
+
+
+class LegalSource(Base, TimestampMixin):
+    __tablename__ = "legal_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_type: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    document_number: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    source_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    adoption_date: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    revision_date: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    last_checked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    next_check_due_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    language: Mapped[str] = mapped_column(String(32), default="ru", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True, nullable=False)
+    official_status: Mapped[str] = mapped_column(String(32), default="official", index=True, nullable=False)
+    uploaded_by_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    storage_key: Mapped[str] = mapped_column(String(500), nullable=False)
+
+    chunks: Mapped[list["LegalChunk"]] = relationship(back_populates="legal_source", cascade="all, delete-orphan")
+
+
+class LegalChunk(Base, TimestampMixin):
+    __tablename__ = "legal_chunks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    legal_source_id: Mapped[int] = mapped_column(ForeignKey("legal_sources.id"), index=True, nullable=False)
+    article_or_point: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    section_title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_text: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[Optional[list[float]]] = mapped_column(JSON, nullable=True)
+    metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    legal_source: Mapped["LegalSource"] = relationship(back_populates="chunks")

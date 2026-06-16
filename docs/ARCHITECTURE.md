@@ -233,3 +233,40 @@ New generated document API:
 The send-back-to-chat action only adds a normal chat message/card. It does not choose a lawyer and does not invoke an LLM. The user must still select Lawyer 1, Lawyer 2, or Lawyer 3 from the composer before asking for another review.
 
 DOCX export uses `python-docx`. PDF export is a lightweight Stage 5 fallback so the endpoint is stable; production PDF layout is postponed.
+
+## Stage 6 v2 Curated Legal RAG
+
+Stage 6 adds a curated legal source database, not a crawler.
+
+Admins manually upload or paste active revisions of sources that the factory actually needs: codes, laws, ПП, ПКМ, ministerial orders, technical regulations, standards, tax/customs/fire/sanitary rules, and similar official acts.
+
+New entities:
+
+- `LegalSource`: metadata for one legal act/revision.
+- `LegalChunk`: searchable chunks linked to a legal source.
+
+Source lifecycle:
+
+- `active` sources are eligible for RAG.
+- `outdated`, `archived`, and `draft` sources remain visible in admin UI but are excluded from normal retrieval.
+- Old revisions are archived or marked outdated instead of deleted.
+- `last_checked_at` and `next_check_due_at` support manual monthly freshness review.
+
+Retrieval:
+
+- Production target is PostgreSQL + pgvector.
+- Dev/test path uses lexical fallback in SQLite and does not require embeddings.
+- If `EMBEDDING_MODEL`, `EMBEDDING_PROVIDER`, and `EMBEDDING_DIMENSIONS` are empty, uploads and retrieval still work.
+- Only `status=active` and `official_status=official` sources are returned to the lawyer context.
+
+Context separation:
+
+- Curated laws are injected as `<TRUSTED_LEGAL_SOURCE ...>`.
+- Uploaded contracts/letters stay inside `<UNTRUSTED_DOCUMENT ...>`.
+- These two source types must not be mixed.
+
+Citation validation:
+
+- `source_type=law` is confirmed only if the source came from the legal retriever and the quote exists in the retrieved chunk with matching metadata.
+- `source_type=law_unconfirmed` is always unconfirmed.
+- Uploaded document citations continue to be verified against extracted uploaded document text.

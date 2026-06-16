@@ -23,6 +23,7 @@ from app.services.current_user import CurrentUser, get_current_user
 from app.services.document_access import DocumentAccessError, document_access_service
 from app.services.audit import write_audit_log
 from app.services.generated_documents import save_generated_document_text
+from app.services.legal_retriever import build_trusted_legal_context, legal_retriever
 from app.services.llm_gateway import LLMGatewayError, MissingOpenRouterKeyError, OpenRouterGateway, openrouter_gateway
 from app.services.red_flags import red_flag_service
 from app.services.structured_response import StructuredResponseError, invoke_structured_with_repair
@@ -276,7 +277,9 @@ async def invoke_agent(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No user message found in chat")
 
     document_context = await _build_document_context(documents)
-    chat_context = build_chat_context(messages, document_context=document_context)
+    legal_chunks = await legal_retriever.retrieve(db, _last_user_message(messages), top_k=5)
+    legal_context = build_trusted_legal_context(legal_chunks)
+    chat_context = build_chat_context(messages, document_context=document_context, legal_context=legal_context)
     try:
         structured_result = await invoke_structured_with_repair(agent, chat_context, gateway, db, current_user.id)
     except MissingOpenRouterKeyError as exc:
@@ -292,7 +295,7 @@ async def invoke_agent(
 
     original_risk = structured_result.payload.risk
     original_confidence = structured_result.payload.confidence
-    verification = await citation_verifier.verify(structured_result.payload, documents)
+    verification = await citation_verifier.verify(structured_result.payload, documents, legal_chunks)
     payload = verification.payload
     red_text = "\n".join(
         [
@@ -496,6 +499,13 @@ async def _list_chat_messages(chat_id: int, db: AsyncSession) -> list[Message]:
         select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at, Message.id)
     )
     return list(result.scalars().all())
+
+
+def _last_user_message(messages: list[Message]) -> str:
+    for message in reversed(messages):
+        if message.author_type == "user":
+            return message.content
+    return messages[-1].content if messages else ""
 
 
 async def _get_agent_or_404(agent_code: str, db: AsyncSession) -> Agent:

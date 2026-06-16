@@ -34,6 +34,13 @@
 - `GeneratedDocument.status` is the current status for document approval; `Approval` remains an event journal.
 - Sending a generated document back to chat must not auto-select a lawyer or auto-call an LLM.
 - Stage 5 DOCX export uses `python-docx`; PDF export is a lightweight fallback until a production renderer is chosen.
+- Stage 6 implements curated legal RAG only; no full LEX.UZ crawler is built.
+- Admins manually load active legal revisions, including ПП and ПКМ.
+- `LegalSource.status=active` and `official_status=official` are required for normal retrieval.
+- Old revisions are kept as `archived` or `outdated`.
+- Legal source freshness is a manual 30-day check cycle.
+- SQLite/dev/test use lexical fallback; PostgreSQL + pgvector remains the production vector-search target.
+- `source_type=law` is confirmed only through chunks returned by the legal retriever.
 - Real company documents may be sent to external LLM APIs only after the responsible business owner approves this operating model.
 - Both Web UI and Telegram are needed, but Web UI comes first.
 

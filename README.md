@@ -57,7 +57,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 5 v2 verdict-based generated document workflow.
+Current status: Stage 6 v2 curated legal RAG sources.
 
 Implemented foundation:
 
@@ -99,8 +99,15 @@ Implemented foundation:
 - generated document editor flow with save/cancel, DOCX/PDF export endpoints, and send-back-to-chat action;
 - generated document approval status with an `Approval` event journal;
 - audit logs for verdict, generated document, export, send-back, and approval events.
+- curated legal source database for manually loaded laws, codes, ПП, ПКМ, standards, and other official acts;
+- `LegalSource` and `LegalChunk` models with Alembic migration;
+- admin API and minimal settings UI for legal source upload, raw-text entry, listing, freshness warnings, and reindex;
+- legal chunking by articles, points, subpoints, applications, with safe fallback chunking;
+- legal retriever with SQLite lexical fallback for dev/tests and PostgreSQL + pgvector as the production target;
+- trusted legal source blocks in lawyer context, separate from untrusted uploaded documents;
+- `source_type=law` citation validation only against retrieved legal chunks.
 
-Not implemented yet: RAG over laws, confirmed law-source enforcement, production auth/admin permissions, production-grade PDF rendering, and Telegram.
+Not implemented yet: full LEX.UZ crawler, automatic legal update monitoring, production auth/admin permissions, production-grade PDF rendering, and Telegram.
 
 ## Run Backend
 
@@ -187,6 +194,9 @@ MAX_UPLOAD_SIZE_MB=25
 MONTHLY_BUDGET_USD=100
 BUDGET_WARNING_PERCENT=80
 BLOCK_EXPENSIVE_CALLS=false
+EMBEDDING_MODEL=
+EMBEDDING_PROVIDER=
+EMBEDDING_DIMENSIONS=
 ```
 
 Without the key, automated tests still pass through mocks, and the UI shows a clear backend/OpenRouter error instead of calling a real provider.

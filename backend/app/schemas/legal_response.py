@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 RiskLevel = Literal["green", "yellow", "red"]
 ConfidenceLevel = Literal["high", "medium", "low"]
 ApprovalRequirement = Literal["none", "chief_accountant", "director", "external_lawyer"]
-SourceType = Literal["uploaded_document", "law_unconfirmed"]
+SourceType = Literal["uploaded_document", "law", "law_unconfirmed"]
 VerificationStatus = Literal["pending", "confirmed", "unconfirmed"]
 SourceCheckStatus = Literal["not_checked", "confirmed", "partially_confirmed", "unconfirmed"]
 
@@ -21,10 +21,14 @@ class LegalFinding(BaseModel):
 class LegalSource(BaseModel):
     source_type: SourceType
     document_id: int | None = None
+    legal_source_id: int | None = None
     title: str = Field(min_length=1)
+    document_type: str | None = None
     document_number: str | None = None
     revision_date: str | None = None
     article_or_point: str | None = None
+    source_name: str | None = None
+    source_url: str | None = None
     quote: str = Field(min_length=1)
     verification_status: VerificationStatus = "pending"
 
@@ -66,12 +70,16 @@ STRUCTURED_LEGAL_RESPONSE_INSTRUCTION = """
   "risk": "green | yellow | red",
   "findings": [{"title": "название", "description": "описание"}],
   "sources": [{
-    "source_type": "uploaded_document | law_unconfirmed",
+    "source_type": "uploaded_document | law | law_unconfirmed",
     "document_id": 1,
+    "legal_source_id": null,
     "title": "название источника",
+    "document_type": null,
     "document_number": null,
     "revision_date": null,
     "article_or_point": null,
+    "source_name": null,
+    "source_url": null,
     "quote": "точная цитата",
     "verification_status": "pending"
   }],
@@ -82,7 +90,8 @@ STRUCTURED_LEGAL_RESPONSE_INSTRUCTION = """
   "agreement": null
 }
 Для Юриста 2 и Юриста 3 поле agreement обязательно и должно содержать agreed_points, disagreed_points, unresolved_points.
-До подключения RAG законы указывай только как source_type="law_unconfirmed"; не называй закон подтвержденным источником.
+Для законов, ПП, ПКМ и иных актов используй source_type="law" только если источник есть в блоке TRUSTED_LEGAL_SOURCE.
+Если нужного закона нет в TRUSTED_LEGAL_SOURCE, используй source_type="law_unconfirmed".
 Для uploaded_document используй только document_id из контекста и цитату, которая есть в документе.
 """
 

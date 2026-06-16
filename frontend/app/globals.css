@@ -1004,6 +1004,37 @@ button {
   gap: 8px;
 }
 
+.legal-source-form {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.legal-source-form input,
+.legal-source-form select,
+.legal-source-form textarea {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.legal-source-form textarea {
+  grid-column: 1 / -1;
+  min-height: 90px;
+  resize: vertical;
+}
+
+.legal-source-row span {
+  line-height: 1.35;
+}
+
+.source-freshness-warning {
+  color: #8a5c00 !important;
+  font-weight: 600;
+}
+
 .settings-row,
 .model-row {
   align-items: center;

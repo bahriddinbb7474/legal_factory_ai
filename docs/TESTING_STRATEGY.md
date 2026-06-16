@@ -17,7 +17,10 @@ Testing must verify that Legal Factory AI behaves like a controlled legal assist
 - If no source is found, the answer blocks final legal conclusions.
 - Red-risk questions go to approval.
 - Uploaded-document quotes are verified by deterministic string matching against extracted text.
-- `law_unconfirmed` sources remain unconfirmed until Stage 6 RAG/legal sources exist.
+- `law_unconfirmed` sources always remain unconfirmed.
+- `source_type=law` is confirmed only when the quote and metadata match a retrieved legal chunk.
+- Archived/outdated/draft/non-official legal sources are excluded from normal retriever results.
+- Trusted legal source blocks are separate from untrusted uploaded document blocks.
 - Unconfirmed sources cannot produce `risk=green` or `confidence=high`.
 - Lawyer 2 and Lawyer 3 must include `agreement`.
 - Lawyer 3 unresolved disputes without confirmed sources force red risk and director approval.
@@ -34,6 +37,10 @@ Testing must verify that Legal Factory AI behaves like a controlled legal assist
 - Red flag rules move the chat to `needs_review`.
 - Approval events are a journal; `Chat.approval_status` is the single current status.
 - Monthly budget warnings and blocks are tested through stored cost records.
+- Legal source upload works through file and raw text paths.
+- ПП and ПКМ document types are stored and rendered explicitly.
+- Reindex recreates chunks.
+- Freshness warnings appear when revision date is missing or the next check date is overdue.
 
 ## Provider Checks
 
@@ -41,3 +48,4 @@ Testing must verify that Legal Factory AI behaves like a controlled legal assist
 - Fake providers must be used in automated tests.
 - Missing API keys must produce clear disabled-provider behavior.
 - OpenRouter and vision calls must be mocked in automated tests.
+- Embedding calls must be mocked or disabled in automated tests.

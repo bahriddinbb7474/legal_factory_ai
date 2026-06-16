@@ -8,6 +8,7 @@ from app.api.documents import chat_router as chat_documents_router
 from app.api.documents import router as documents_router
 from app.api.generated_documents import router as generated_documents_router
 from app.api.health import router as health_router
+from app.api.legal_sources import router as legal_sources_router
 from app.core.config import settings
 
 
@@ -25,4 +26,5 @@ app.include_router(chats_router)
 app.include_router(documents_router)
 app.include_router(chat_documents_router)
 app.include_router(generated_documents_router)
+app.include_router(legal_sources_router)
 app.include_router(admin_router)

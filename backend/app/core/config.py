@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     monthly_budget_usd: float = 100.0
     budget_warning_percent: int = 80
     block_expensive_calls: bool = False
+    embedding_model: str = ""
+    embedding_provider: str = ""
+    embedding_dimensions: int = 0
     dev_current_user_role: str = "admin"
     dev_current_user_id: int = 1
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"

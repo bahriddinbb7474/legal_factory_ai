@@ -10,7 +10,7 @@ AUTHOR_LABELS = {
 }
 
 
-def build_chat_context(messages: list[Message], document_context: str = "") -> str:
+def build_chat_context(messages: list[Message], document_context: str = "", legal_context: str = "") -> str:
     lines: list[str] = []
     for message in messages:
         author = AUTHOR_LABELS.get(message.author_type, message.author_type)
@@ -20,6 +20,10 @@ def build_chat_context(messages: list[Message], document_context: str = "") -> s
         lines.append("")
         lines.append("Документы, связанные с текущим чатом:")
         lines.append(document_context)
+    if legal_context:
+        lines.append("")
+        lines.append("Курируемые подтвержденные правовые источники:")
+        lines.append(legal_context)
     return "\n".join(lines)
 
 
