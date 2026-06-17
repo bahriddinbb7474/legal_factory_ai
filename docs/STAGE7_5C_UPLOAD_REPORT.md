@@ -24,6 +24,22 @@ data/stage7_3_smoke_20260616_v2.db
 
 This DB and related `data/uploads` storage are ignored local artifacts.
 
+## Correction Note 2026-06-17
+
+Stage 7.5-C originally imported ZRU-820, `Law of Uzbekistan on Accreditation of Conformity Assessment Bodies`, as the conformity assessment source.
+
+Corrective check found the exact approved source No. 15:
+
+```text
+Law of Uzbekistan on Conformity Assessment
+ZRU-354, adopted 2013-10-04
+LEX.UZ: https://lex.uz/ru/docs/2248099
+```
+
+LEX.UZ marks ZRU-354 as no longer in force from `2023-08-29`. It was imported locally for exact first-batch coverage and smoke-checked, but it must not be used as active current law in ordinary RAG under `docs/LEGAL_SOURCE_VERSION_POLICY.md`.
+
+ZRU-820 remains a related additional source/candidate. It is not a replacement for first-batch source No. 15.
+
 ## Source Summary
 
 | Source id / title | Source URL | Document number | Adoption date | Revision date / ONDATE | Language | Initial status | Final status | Chunks | Max chunk size | Warnings | Activation decision |
@@ -32,6 +48,7 @@ This DB and related `data/uploads` storage are ignored local artifacts.
 | 13 / Law of Uzbekistan on Currency Regulation | https://lex.uz/ru/docs/4562834 | ZRU-573 | 2019-10-22 | 2025-04-18 | uz | draft | active | 72 | 5589 | none | Activated after metadata, chunk, retrieval, and citation smoke |
 | 14 / Law of Uzbekistan on Technical Regulation | https://lex.uz/ru/docs/6392314?ONDATE=19.01.2026 | ZRU-819 | 2023-02-27 | 2026-01-19 ONDATE | ru | draft | active | 204 | 7841 | none | Activated after metadata, chunk, retrieval, and citation smoke |
 | 15 / Law of Uzbekistan on Accreditation of Conformity Assessment Bodies | https://lex.uz/ru/docs/6392307?ONDATE=29.08.2023 | ZRU-820 | 2023-02-27 | 2023-08-29 ONDATE | ru | draft | active | 86 | 3772 | none | Activated after metadata, chunk, retrieval, and citation smoke |
+| 16 / Law of Uzbekistan on Conformity Assessment | https://lex.uz/ru/docs/2248099 | ZRU-354 | 2013-10-04 | 2023-08-29 (expired) | uz | draft | outdated | 18 | 3498 | `lexuz_lost_force_2023_08_29` | Exact approved source No. 15 imported and smoke-checked, but not activated because LEX.UZ marks it as no longer in force |
 
 ## Future Revision Observation
 
@@ -41,6 +58,7 @@ This DB and related `data/uploads` storage are ignored local artifacts.
 | Law of Uzbekistan on Currency Regulation | none observed after 2026-06-17 | No future version imported. |
 | Law of Uzbekistan on Technical Regulation | none observed after 2026-06-17 | No future version imported. |
 | Law of Uzbekistan on Accreditation of Conformity Assessment Bodies | none observed after 2026-06-17 | No future version imported. |
+| Law of Uzbekistan on Conformity Assessment, ZRU-354 | no future version imported | Exact source imported for coverage; LEX.UZ marks it as no longer in force from 2023-08-29, so it is not active current law. |
 
 Future versions remain preparation-only and must not be used as active law before their effective dates.
 
@@ -84,13 +102,25 @@ Future versions remain preparation-only and must not be used as active law befor
 
 - Metadata captured: LEX.UZ URL, document number, adoption date, revision date/ONDATE, language, official status, last/next check dates.
 - Current active version as of 2026-06-17: `2023-08-29 ONDATE`.
-- Source title note: the Stage 7 registry names this category as `Law on Conformity Assessment`; LEX.UZ search did not show a separate exact-title law. The official source found and imported for this category is `Law on Accreditation of Conformity Assessment Bodies`, ZRU-820.
+- Correction: this source is related to conformity assessment, but it is not the exact approved source No. 15 and must not be treated as a replacement for ZRU-354.
 - No future revisions were observed after 2026-06-17.
 - Readiness warnings: none.
 - Chunk inspection: 86 chunks, max chunk size 3772, under the Stage 7.4 hard max.
 - Retrieval probes: conformity assessment, accreditation, conformity assessment bodies, and accreditation certificate probes returned source hits.
 - Citation smoke: correct quote confirmed; fake quote unconfirmed.
 - Performance: about 241 KB HTML and about 50k extracted text characters. Safe for laptop use.
+
+### Law of Uzbekistan on Conformity Assessment
+
+- Corrective source: exact approved first-batch source No. 15, ZRU-354, adopted 2013-10-04.
+- LEX.UZ URL: `https://lex.uz/ru/docs/2248099`.
+- LEX.UZ status: no longer in force from `2023-08-29`.
+- Local final status: `outdated`, not `active`, to keep ordinary RAG aligned with current-law policy.
+- Readiness warnings: `lexuz_lost_force_2023_08_29`.
+- Chunk inspection: 18 chunks, max chunk size 3498, under the Stage 7.4 hard max.
+- Retrieval probes: conformity assessment, certification, declaration of conformity, and confirmation of conformity probes returned source hits.
+- Citation smoke: correct quote confirmed; fake quote unconfirmed.
+- Performance: about 226 KB HTML and a small extracted text set. Safe for laptop use.
 
 ## Existing Source Status Check
 
@@ -109,6 +139,7 @@ The previous Stage 7.3, Stage 7.5-A, and Stage 7.5-B sources were available in t
 | Law of Uzbekistan on Occupational Safety | active | 2022-05-18 ONDATE | 77 | 8230 | active sample hits available |
 | Law of Uzbekistan on Fire Safety | active | 2026-03-01 | 141 | 6937 | active sample hits available |
 | Law of Uzbekistan on Foreign Economic Activity | active | 2021-04-21 ONDATE | 46 | 4225 | active sample hits available |
+| Law of Uzbekistan on Conformity Assessment, ZRU-354 | outdated | 2023-08-29 (expired) | 18 | 3498 | exact source imported, excluded from active current retrieval |
 
 This confirms the PP-4348 future source remains draft and excluded from active retrieval, while prior active sources remain available.
 
@@ -116,9 +147,10 @@ This confirms the PP-4348 future source remains draft and excluded from active r
 
 | Metric | Count | Note |
 | --- | ---: | --- |
-| Active current sources | 14 | All current first-batch sources imported so far passed smoke and are active. |
+| Active current sources | 14 | Includes 13 exact current first-batch active sources plus ZRU-820 as a related additional active source/candidate. |
 | Draft/future sources | 1 | PP-4348 / PQ-4348 `ONDATE=2026-07-01` remains draft/future before its effective date. |
-| Total first-batch sources covered | 15 | Includes 14 current active sources plus 1 future draft source. |
+| Outdated exact first-batch sources | 1 | Exact source No. 15, ZRU-354, is covered but not active because LEX.UZ marks it as no longer in force from 2023-08-29. |
+| Total first-batch sources covered | 15 | Includes 13 exact current active sources, 1 future draft source, and 1 exact outdated source. |
 
 Ordinary RAG should continue to use only active official sources. PP-4348 remains excluded from ordinary active retrieval until its effective date and a later approved activation check.
 
@@ -127,7 +159,8 @@ Ordinary RAG should continue to use only active official sources. PP-4348 remain
 - LEX.UZ search ranks newer modifying acts above base laws, so direct source verification required exact doc IDs and revision checks.
 - Civil Code Part One has a future LEX.UZ candidate `2026-06-29`. It was not imported or activated.
 - Currency Regulation `ONDATE=18.04.2025` returned 404; the canonical URL was used with explicit revision metadata.
-- The conformity-assessment registry title is ambiguous: LEX.UZ did not show a separate exact-title `Law on Conformity Assessment`. The imported official law is `Law on Accreditation of Conformity Assessment Bodies`, ZRU-820, which matches the conformity assessment category and smoke probes.
+- Corrective check found exact source No. 15, ZRU-354 `Law on Conformity Assessment`, but LEX.UZ marks it as no longer in force from 2023-08-29.
+- ZRU-820 is a related additional source/candidate, not a replacement for ZRU-354.
 - HTML extraction still includes some LEX.UZ navigation/service text. Chunking and citation smoke passed, but manual chunk inspection remains necessary before production reliance.
 - Civil Code Part One and Tax Code are close to the Stage 7.4 chunk-size ceiling. Laptop use remains acceptable, but final acceptance smoke should watch performance.
 
@@ -140,7 +173,8 @@ Recommended:
 - verify final 14-active + 1-draft status through UI/API;
 - run cross-source retrieval probes for common factory scenarios;
 - explicitly verify PP-4348 future remains excluded from ordinary `<TRUSTED_LEGAL_SOURCE>`;
-- review the conformity-assessment source-title ambiguity with the user before treating it as final production coverage;
+- decide whether ZRU-820 should remain active as an additional current source or be moved to draft until a separate second-batch approval;
+- keep ZRU-354 out of ordinary active RAG unless a user explicitly requests historical/outdated-law analysis;
 - avoid adding more sources until final acceptance smoke confirms laptop performance.
 
 ## Local Data Warning
