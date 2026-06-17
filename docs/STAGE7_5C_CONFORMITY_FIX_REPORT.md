@@ -61,6 +61,23 @@ It is not the exact first-batch source No. 15 and is not a replacement for ZRU-3
 | Related additional active/candidate source | 1 | ZRU-820, not a replacement for ZRU-354. |
 | Total approved first-batch sources covered | 15 | Coverage now includes exact ZRU-354, but it is not current active law. |
 
+## Final Registry Decision
+
+Stage 7.5-C2 updates the registry so source No. 15 is no longer described as a normal activation candidate.
+
+For ZRU-354:
+
+- `stage7_status`: `covered_as_outdated_historical`.
+- `recommended_runtime_status`: `outdated`.
+- `ordinary_rag`: excluded.
+- `role`: historical/reference only.
+
+For current-law conformity-related answers:
+
+- ZRU-819, `Law of Uzbekistan on Technical Regulation`, is the current primary first-batch source for technical regulation and related conformity-framework checks after the ZRU-354 expiry.
+- ZRU-819 should not be described as fully replacing every ZRU-354 norm unless a later text check confirms that.
+- ZRU-820, `Law of Uzbekistan on Accreditation of Conformity Assessment Bodies`, is a related additional candidate/current related source for accreditation of conformity assessment bodies. It is not a replacement for source No. 15 and should be treated as a second-batch/certification-expansion candidate unless separately approved.
+
 ## Policy Note
 
 Ordinary legal answers must continue to use only active current official sources. ZRU-354 is available locally for exact coverage and historical reference, but it must not participate in ordinary `<TRUSTED_LEGAL_SOURCE>` as current law while its LEX.UZ status is no longer in force.

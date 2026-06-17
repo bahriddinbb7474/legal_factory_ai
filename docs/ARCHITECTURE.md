@@ -288,7 +288,7 @@ Citation validation:
 
 ## Planned Stage 7-11 Architecture
 
-Stage 7 extends the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Draft/future sources are preparation-only unless a later approved task adds separate future-context retrieval.
+Stage 7 extends the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Draft/future sources are preparation-only unless a later approved task adds separate future-context retrieval. Outdated/historical sources, including an approved source later found expired, remain metadata/history records and are excluded from ordinary current-law RAG.
 
 Stage 8 will add `CompanyProfile` for full/short company names, legal and actual addresses, TIN, OKED, registration details, bank data, director/chief accountant/legal responsible names, contacts, logo, letterhead, stamp, and signature storage keys. Stamp and signature files are sensitive and require director/admin access plus audit logging.
 

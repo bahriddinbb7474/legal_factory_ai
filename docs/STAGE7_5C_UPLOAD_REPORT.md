@@ -40,6 +40,26 @@ LEX.UZ marks ZRU-354 as no longer in force from `2023-08-29`. It was imported lo
 
 ZRU-820 remains a related additional source/candidate. It is not a replacement for first-batch source No. 15.
 
+## Stage 7.5-C2 Registry Update
+
+The Stage 7 registry has been updated after the ZRU-354 expiry finding.
+
+For source No. 15:
+
+- `stage7_status`: `covered_as_outdated_historical`.
+- `recommended_runtime_status`: `outdated`.
+- `ordinary_rag`: excluded.
+- `role`: historical/reference only.
+
+`Covered` means the approved source slot was investigated and resolved. It does not mean the source is active current law.
+
+For conformity-related current-law answers after the ZRU-354 expiry:
+
+- ZRU-354 must stay out of ordinary active `<TRUSTED_LEGAL_SOURCE>` retrieval.
+- ZRU-819, `Law of Uzbekistan on Technical Regulation`, is the current primary first-batch source for technical regulation and related conformity-framework checks, together with other current related acts.
+- ZRU-819 must not be described as fully replacing every ZRU-354 norm unless that is confirmed by the text.
+- ZRU-820 is a related additional candidate/current related source for accreditation of conformity assessment bodies, not a replacement for source No. 15.
+
 ## Source Summary
 
 | Source id / title | Source URL | Document number | Adoption date | Revision date / ONDATE | Language | Initial status | Final status | Chunks | Max chunk size | Warnings | Activation decision |
@@ -147,12 +167,12 @@ This confirms the PP-4348 future source remains draft and excluded from active r
 
 | Metric | Count | Note |
 | --- | ---: | --- |
-| Active current sources | 14 | Includes 13 exact current first-batch active sources plus ZRU-820 as a related additional active source/candidate. |
+| Active current sources | 14 | Includes 13 exact current first-batch active sources plus ZRU-820 as a related additional active source/candidate; this is not the same as 15 active first-batch sources. |
 | Draft/future sources | 1 | PP-4348 / PQ-4348 `ONDATE=2026-07-01` remains draft/future before its effective date. |
 | Outdated exact first-batch sources | 1 | Exact source No. 15, ZRU-354, is covered but not active because LEX.UZ marks it as no longer in force from 2023-08-29. |
 | Total first-batch sources covered | 15 | Includes 13 exact current active sources, 1 future draft source, and 1 exact outdated source. |
 
-Ordinary RAG should continue to use only active official sources. PP-4348 remains excluded from ordinary active retrieval until its effective date and a later approved activation check.
+Ordinary RAG should continue to use only active official sources. PP-4348 remains excluded from ordinary active retrieval until its effective date and a later approved activation check. ZRU-354 remains excluded because it is outdated/historical.
 
 ## Issues Found
 
@@ -170,9 +190,10 @@ Proceed next to first-batch final acceptance smoke only after user approval.
 
 Recommended:
 
-- verify final 14-active + 1-draft status through UI/API;
+- verify final active-current status through UI/API using active current only;
 - run cross-source retrieval probes for common factory scenarios;
 - explicitly verify PP-4348 future remains excluded from ordinary `<TRUSTED_LEGAL_SOURCE>`;
+- explicitly verify outdated ZRU-354 remains excluded from ordinary `<TRUSTED_LEGAL_SOURCE>`;
 - decide whether ZRU-820 should remain active as an additional current source or be moved to draft until a separate second-batch approval;
 - keep ZRU-354 out of ordinary active RAG unless a user explicitly requests historical/outdated-law analysis;
 - avoid adding more sources until final acceptance smoke confirms laptop performance.

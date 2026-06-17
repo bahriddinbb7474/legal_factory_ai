@@ -60,6 +60,8 @@ Old source versions should remain metadata-only locally unless a separate cold-a
 
 Codex must not automatically download or import all historical LEX.UZ versions. Historical source work requires a separate explicit command, a narrow scope, and a clear reason.
 
+If an approved source is found expired during import, keep it as outdated/historical metadata and do not activate it. Identify the current related source separately and ask user approval before adding substitutes. Example: Stage 7 source No. 15, ZRU-354 `Law of Uzbekistan on Conformity Assessment`, was found no longer in force from `2023-08-29`; it is covered as historical/reference only and excluded from ordinary RAG.
+
 ## Update Workflow
 
 When a newer official revision appears:

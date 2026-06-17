@@ -105,7 +105,30 @@ Definitions:
 | 12 | A | foreign_economic_activity | Закон Республики Узбекистан “О внешнеэкономической деятельности” | law | LEX.UZ | find exact current LEX.UZ source during manual upload | capture exact LEX.UZ current revision/ONDATE at upload time | monthly | if LEX.UZ has newer revision, archive old source and upload new revision as draft before activation | импортные контракты, ВЭД, права участников внешнеэкономической деятельности | draft until import contract retrieval probes pass | approved_for_manual_upload |
 | 13 | A | currency_regulation | Закон Республики Узбекистан “О валютном регулировании” | law | LEX.UZ | find exact current LEX.UZ source during manual upload | capture exact LEX.UZ current revision/ONDATE at upload time | monthly | if LEX.UZ has newer revision, archive old source and upload new revision as draft before activation | импортные платежи, валютные контракты, валютный контроль | draft until currency regulation retrieval probes pass | approved_for_manual_upload |
 | 14 | A | technical_regulation | Закон Республики Узбекистан “О техническом регулировании” | law | LEX.UZ | find exact current LEX.UZ source during manual upload | capture exact LEX.UZ current revision/ONDATE at upload time | monthly | if LEX.UZ has newer revision, archive old source and upload new revision as draft before activation | техрегламенты, требования к продукции, госнадзор | draft until technical regulation retrieval probes pass | approved_for_manual_upload |
-| 15 | A | conformity_assessment | Закон Республики Узбекистан “Об оценке соответствия” | law | LEX.UZ | find exact current LEX.UZ source during manual upload | capture exact LEX.UZ current revision/ONDATE at upload time | monthly | if LEX.UZ has newer revision, archive old source and upload new revision as draft before activation | сертификация, декларация, соответствие продукции, документы качества | draft until conformity/certification retrieval probes pass | approved_for_manual_upload |
+| 15 | A | conformity_assessment | Закон Республики Узбекистан “Об оценке соответствия”, ZRU-354, adopted 2013-10-04 | law | LEX.UZ | https://lex.uz/ru/docs/2248099 | exact source checked during Stage 7.5-C-fix; LEX.UZ marks it no longer in force from 2023-08-29 | monthly if retained for history | keep metadata/history only; do not use as active RAG; identify current related sources separately and ask user approval before adding substitutes | сертификация, декларация, соответствие продукции, документы качества | covered as outdated/historical; ordinary RAG excluded; role: historical/reference only | covered_as_outdated_historical |
+
+## Stage 7.5-C2 conformity registry decision
+
+Stage 7.5-C-fix found and smoke-checked the exact approved source No. 15, ZRU-354 `Law of Uzbekistan on Conformity Assessment`, at `https://lex.uz/ru/docs/2248099`. LEX.UZ marks this act as no longer in force from `2023-08-29`.
+
+Registry decision:
+
+- `stage7_status`: `covered_as_outdated_historical`.
+- `recommended_runtime_status`: `outdated`.
+- `ordinary_rag`: excluded.
+- `role`: historical/reference only.
+
+Original approved source No. 15 was checked and found expired; keep metadata/history, do not use it as active RAG. See `docs/STAGE7_5C_CONFORMITY_FIX_REPORT.md`.
+
+ZRU-819, `Law of Uzbekistan on Technical Regulation`, is already in the first batch as a current active source. After ZRU-354 expiry, current regulation for technical regulation and related conformity-framework questions should be checked through ZRU-819 and other current related acts. Do not state that ZRU-819 fully replaces every ZRU-354 norm unless that is confirmed by the text.
+
+ZRU-820, `Law of Uzbekistan on Accreditation of Conformity Assessment Bodies`, is a related additional candidate/current related source for accreditation of conformity assessment bodies. It is not a replacement for source No. 15 and is not part of the original first-batch required source list unless the user later approves it for a second batch or certification expansion.
+
+First-batch coverage wording:
+
+- `covered` means the approved source slot was investigated and its status was resolved; it does not mean every covered source is active.
+- `active current sources` must exclude outdated ZRU-354 and future PP-4348.
+- ordinary `<TRUSTED_LEGAL_SOURCE>` retrieval must exclude outdated/future sources unless a separate future or historical mode is explicitly implemented later.
 
 ## Stage 7.3 suggested upload order
 

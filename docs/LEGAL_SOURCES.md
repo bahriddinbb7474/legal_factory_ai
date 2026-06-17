@@ -83,6 +83,8 @@ docs/LEGAL_SOURCE_VERSION_POLICY.md
 
 Ordinary current-law answers use only active current official revisions. Draft/future revisions are preparation-only and must not be treated as active law before their effective dates. Outdated/archived revisions stay out of ordinary RAG. Codex must not automatically download or import all historical LEX.UZ versions.
 
+If an approved registry source is found expired during upload, keep its metadata and history, mark it outdated/historical, and do not activate it for ordinary RAG. A related current source can be identified separately, but it must not silently replace the approved source without user approval. Stage 7 source No. 15, ZRU-354 `Law of Uzbekistan on Conformity Assessment`, is the working example: it was covered as historical/reference only after LEX.UZ showed it lost force from `2023-08-29`.
+
 Stage 7 is the next main stage after curated legal RAG. The goal is to fill the system with 15-30 real official sources needed by a cable factory in Uzbekistan.
 
 Approved first-batch registry and revision/update policy are maintained in:
@@ -130,7 +132,7 @@ Revision rule:
 
 Stage 7 acceptance criteria:
 
-1. At least 15 real sources are loaded.
+1. At least 15 approved source slots are investigated/covered, with current active, future/draft, and outdated/historical statuses clearly separated.
 2. Every source has a LEX.UZ URL.
 3. Every source has a revision date.
 4. Chunking succeeds for each source.
@@ -138,7 +140,8 @@ Stage 7 acceptance criteria:
 6. Lawyers can cite `source_type=law`.
 7. Correct law quotes are confirmed.
 8. Wrong law quotes are rejected/unconfirmed.
-9. Outdated revisions show a freshness warning.
+9. Outdated revisions are excluded from ordinary RAG.
+10. Future revisions are excluded from ordinary RAG until their effective date and a separate activation check.
 
 ## Stage 7.1 Source Readiness Checklist
 
