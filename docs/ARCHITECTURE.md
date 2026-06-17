@@ -263,6 +263,7 @@ Source lifecycle:
 - `active` sources are eligible for RAG.
 - `outdated`, `archived`, and `draft` sources remain visible in admin UI but are excluded from normal retrieval.
 - Old revisions are archived or marked outdated instead of deleted.
+- Future revisions remain draft/future before their effective date and are excluded from ordinary current-law retrieval.
 - `last_checked_at` and `next_check_due_at` support manual monthly freshness review.
 
 Retrieval:
@@ -277,6 +278,7 @@ Context separation:
 - Curated laws are injected as `<TRUSTED_LEGAL_SOURCE ...>`.
 - Uploaded contracts/letters stay inside `<UNTRUSTED_DOCUMENT ...>`.
 - These two source types must not be mixed.
+- Future legal-source context, if later approved, must use a separate marker such as `<FUTURE_LEGAL_SOURCE ...>` with an effective-date warning.
 
 Citation validation:
 
@@ -286,7 +288,7 @@ Citation validation:
 
 ## Planned Stage 7-11 Architecture
 
-Stage 7 extends the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources.
+Stage 7 extends the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Draft/future sources are preparation-only unless a later approved task adds separate future-context retrieval.
 
 Stage 8 will add `CompanyProfile` for full/short company names, legal and actual addresses, TIN, OKED, registration details, bank data, director/chief accountant/legal responsible names, contacts, logo, letterhead, stamp, and signature storage keys. Stamp and signature files are sensitive and require director/admin access plus audit logging.
 

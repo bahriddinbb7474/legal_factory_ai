@@ -18,6 +18,14 @@ Every source must have:
 
 LEX.UZ crawler work is explicitly forbidden at this stage.
 
+Version handling policy is defined in:
+
+```text
+docs/LEGAL_SOURCE_VERSION_POLICY.md
+```
+
+Ordinary legal answers use only active current official revisions. Draft/future revisions are preparation-only until their effective date and must not be used as active law. Outdated/archived revisions remain metadata/history records and must not participate in ordinary RAG. Codex must not automatically download or import all historical LEX.UZ versions.
+
 ## Source revision lifecycle
 
 One legal source record equals one concrete revision of one official document.
@@ -45,6 +53,7 @@ Forbidden:
 - leave an active source without `revision_date_or_ONDATE`;
 - treat a source as current without `last_checked_at`;
 - use a future version as `active` before its effective date.
+- download/import historical LEX.UZ versions automatically.
 
 ## Required metadata for every source
 

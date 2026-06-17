@@ -65,6 +65,12 @@ After Stage 6, lawyers may use confirmed law sources only from curated legal RAG
 - If a legal quote is wrong or not retrieved, backend must prevent green/high-confidence output.
 - Stage 7 will expand the curated source set with 15-30 real LEX.UZ sources needed by the cable factory.
 
+Version rule:
+
+- Current-law answers may rely only on active current official sources from `<TRUSTED_LEGAL_SOURCE ...>`.
+- Draft/future, outdated, and archived legal sources must not be used as current law.
+- If future-change context is added later, it must be separate from the current answer, carry an effective-date warning, and not confirm ordinary current-law citations.
+
 ## Structured Output
 
 Each lawyer answer must be valid JSON with:

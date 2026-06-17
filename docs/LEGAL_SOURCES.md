@@ -75,6 +75,14 @@ Law citations are confirmed only when the model quotes text from a chunk returne
 
 ## Stage 7 Legal Base Completion
 
+Version handling policy is defined in:
+
+```text
+docs/LEGAL_SOURCE_VERSION_POLICY.md
+```
+
+Ordinary current-law answers use only active current official revisions. Draft/future revisions are preparation-only and must not be treated as active law before their effective dates. Outdated/archived revisions stay out of ordinary RAG. Codex must not automatically download or import all historical LEX.UZ versions.
+
 Stage 7 is the next main stage after curated legal RAG. The goal is to fill the system with 15-30 real official sources needed by a cable factory in Uzbekistan.
 
 Approved first-batch registry and revision/update policy are maintained in:
@@ -117,6 +125,7 @@ Revision rule:
 - New active revision is loaded as `active`.
 - Old revision is moved to `archived` or `outdated`.
 - Normal RAG uses only `active` official revisions.
+- Future revisions stay `draft`/future until their effective date and smoke checks pass.
 - Monthly revision checks remain mandatory through `last_checked_at` and `next_check_due_at`.
 
 Stage 7 acceptance criteria:

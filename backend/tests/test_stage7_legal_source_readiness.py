@@ -192,6 +192,74 @@ def test_stage6_law_citation_and_inactive_exclusion_still_work(client) -> None:
     assert response.json()["source_check_status"] == "confirmed"
 
 
+def test_draft_future_outdated_and_archived_sources_stay_out_of_current_legal_context(client) -> None:
+    create_source(
+        client,
+        "Article 1. shared cable tax phrase belongs to a future draft source.",
+        title="Future draft Tax Code",
+        document_number="ZRU-FUTURE",
+        status="draft",
+        revision_date="2026-06-29",
+    )
+    create_source(
+        client,
+        "Article 1. shared cable tax phrase belongs to an outdated source.",
+        title="Outdated Tax Code",
+        document_number="ZRU-OLD",
+        status="outdated",
+        revision_date="2026-03-17",
+    )
+    create_source(
+        client,
+        "Article 1. shared cable tax phrase belongs to an archived source.",
+        title="Archived Tax Code",
+        document_number="ZRU-ARCHIVE",
+        status="archived",
+        revision_date="2025-12-31",
+    )
+    active = create_source(
+        client,
+        "Article 1. shared cable tax phrase belongs to the active current source.",
+        title="Active Current Tax Code",
+        document_number="ZRU-ACTIVE",
+        revision_date="2026-03-17",
+    )
+    payload = legal_payload(
+        {
+            "source_type": "law",
+            "legal_source_id": active["id"],
+            "title": "Active Current Tax Code",
+            "document_type": "cabinet_resolution",
+            "document_number": "ZRU-ACTIVE",
+            "revision_date": "2026-03-17",
+            "article_or_point": "unknown",
+            "source_name": "LEX.UZ",
+            "source_url": "https://lex.uz/docs/999",
+            "quote": "shared cable tax phrase belongs to the active current source.",
+            "verification_status": "pending",
+        }
+    )
+    gateway = Stage7Gateway(payload)
+    app.dependency_overrides[get_llm_gateway] = lambda: gateway
+    chat_id = client.post("/api/chats", json={"title": "Version policy"}).json()["id"]
+    client.post(
+        f"/api/chats/{chat_id}/messages",
+        json={"author_type": "user", "content": "shared cable tax phrase"},
+    )
+
+    response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
+
+    assert response.status_code == 200
+    context = gateway.calls[0][1]
+    assert "<TRUSTED_LEGAL_SOURCE" in context
+    assert "<FUTURE_LEGAL_SOURCE" not in context
+    assert "Active Current Tax Code" in context
+    assert "Future draft Tax Code" not in context
+    assert "Outdated Tax Code" not in context
+    assert "Archived Tax Code" not in context
+    assert response.json()["source_check_status"] == "confirmed"
+
+
 def test_uploaded_documents_remain_untrusted_not_trusted_legal_sources(client) -> None:
     payload = legal_payload(
         {
