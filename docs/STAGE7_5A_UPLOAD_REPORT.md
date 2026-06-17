@@ -24,6 +24,8 @@ This DB and related `data/uploads` storage are ignored local artifacts.
 
 ## Source Summary
 
+Correction note added on 2026-06-17: Tax Code `2026-03-17 ONDATE` remains the active/current version for legal answers as of 2026-06-17. LEX.UZ also exposes future Tax Code states for `2026-06-29` and `2026-07-19`; those are preparation-only future revisions and must not be used as active law before their effective dates. `2026-04-17` and `2026-07-14` were checked as ONDATE/as-of URLs, but they were not listed by LEX.UZ as separate Tax Code revision dates.
+
 | Source id / title | Source URL | Document number | Adoption date | Revision date / ONDATE | Language | Initial status | Final status | Chunks | Max chunk size | Warnings | Activation decision |
 | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | --- |
 | 4 / Tax Code of Uzbekistan | https://lex.uz/ru/docs/4674893?ONDATE=17.03.2026 | ZRU-599 | 2019-12-30 | 2026-03-17 ONDATE | ru | draft | active | 1249 | 8970 | none | Activated after metadata, chunk, retrieval, and citation smoke |
@@ -36,12 +38,15 @@ This DB and related `data/uploads` storage are ignored local artifacts.
 ### Tax Code of Uzbekistan
 
 - Metadata captured: LEX.UZ URL, document number, adoption date, revision date, language, official status, last/next check dates.
-- LEX.UZ showed future revisions after the current date 2026-06-17, so the import used the accessible current as-of URL `ONDATE=17.03.2026`.
+- LEX.UZ showed future revisions after the current date 2026-06-17. The active/current source remains `ONDATE=17.03.2026`, because the next listed Tax Code revision date is `2026-06-29`.
+- Additional check: `ONDATE=17.04.2026` was accessible as an as-of URL, but LEX.UZ did not list `2026-04-17` as a separate revision date. `ONDATE=14.07.2026` was also accessible as an as-of URL between future revisions, but LEX.UZ did not list `2026-07-14` as a separate revision date.
+- Future Tax Code revisions found: `2026-06-29` and `2026-07-19`. These are for preparation only and must stay draft/future if loaded before their effective dates.
 - Readiness warnings: none.
 - Chunk inspection: 1249 chunks, max chunk size 8970, under the Stage 7.4 hard max.
 - Retrieval probes: VAT/tax, tax inspection, and tax demand probes returned source hits.
 - Citation smoke: correct quote confirmed; wrong quote unconfirmed and downgraded green/high to yellow/medium.
 - Performance: largest imported source in this batch, about 6.7 MB HTML and about 1.97M extracted text characters. Laptop use is acceptable but close to the chunk size ceiling.
+- Local smoke DB status after correction check: only the `2026-03-17` Tax Code source was present; it remained `active`. No future Tax Code source was made active.
 
 ### Customs Code of Uzbekistan
 
@@ -87,7 +92,7 @@ This confirms the future PP-4348 source remains excluded from active retrieval.
 
 ## Issues Found
 
-- Tax Code has future LEX.UZ revisions visible after 2026-06-17. The smoke used `ONDATE=17.03.2026`; Stage 7.5-B should keep checking date-specific URLs before activation of future-sensitive tax advice.
+- Tax Code has future LEX.UZ revisions visible after 2026-06-17. The smoke used `ONDATE=17.03.2026`, which remains the current active version as of 2026-06-17. Future `2026-06-29` and `2026-07-19` versions must not become active before their effective dates.
 - Customs Code `ONDATE=01.03.2026` returned 404. The canonical URL was used with revision metadata from LEX.UZ.
 - LEX.UZ HTML extraction still includes navigation, OKOZ/TSZ and service text in some chunks. Citation verification still works, but admins should inspect chunks before relying on them.
 - Personal Data generic probe `personal data` had 0 source hits in top-k; more specific probes passed. This is a lexical retriever limitation, not a source upload failure.
@@ -101,6 +106,7 @@ Proceed to the next batch, but keep it small and manual. Recommended:
 - keep all new sources as `draft` until metadata/chunk/retrieval/citation smoke passes;
 - prefer exact `ONDATE` URLs when LEX.UZ accepts them;
 - document any LEX.UZ `ONDATE` 404 and use canonical URL only with explicit revision metadata;
+- use the active current source for current legal answers; use draft/future sources only for future planning with an explicit date warning;
 - add stricter retrieval probes for short/generic terms only if lexical ranking becomes a real blocker.
 
 ## Local Data Warning
