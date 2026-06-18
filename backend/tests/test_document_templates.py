@@ -117,7 +117,14 @@ def test_apply_claim_template_to_generated_document_without_real_assets(client) 
 
     applied = client.post(
         f"/api/generated-documents/{document['id']}/apply-template",
-        json={"template_key": "client_debt_claim"},
+        json={
+            "template_key": "client_debt_claim",
+            "counterparty_name": "ООО Должник",
+            "debt_amount": "1000000",
+            "currency": "UZS",
+            "payment_basis": "Договор",
+            "overdue_days": "15" # optional field
+        },
     )
 
     assert applied.status_code == 200
@@ -125,8 +132,39 @@ def test_apply_claim_template_to_generated_document_without_real_assets(client) 
     assert payload["document"]["template_key"] == "client_debt_claim"
     assert "Kabel Tech Energy LLC" in payload["document"]["content"]
     assert "Базовый черновик претензии." in payload["document"]["content"]
+    assert "ООО Должник" in payload["document"]["content"]
+    assert "1000000" in payload["document"]["content"]
+    assert "15" in payload["document"]["content"] # optional field rendered
     assert "stamp" not in payload["document"]["content"].lower()
     assert "signature" not in payload["document"]["content"].lower()
+
+def test_apply_debt_template_missing_required_fields_fails(client) -> None:
+    _prepare_company_profile(client)
+    chat_id = _create_chat(client)
+    verdict = _create_message(client, chat_id, "Нужно направить претензию.")
+    assert client.post(f"/api/chats/{chat_id}/messages/{verdict['id']}/mark-verdict").status_code == 200
+    gateway = TemplateGateway(content="Базовый черновик претензии.")
+    app.dependency_overrides[get_llm_gateway] = lambda: gateway
+
+    document = client.post(
+        f"/api/chats/{chat_id}/documents/generate-from-verdict",
+        json={"agent_code": "lawyer_1", "document_type": "claim_letter", "title": "Черновик"},
+    ).json()
+
+    applied = client.post(
+        f"/api/generated-documents/{document['id']}/apply-template",
+        json={
+            "template_key": "client_debt_claim",
+            # Missing counterparty_name, debt_amount, currency, payment_basis
+        },
+    )
+
+    assert applied.status_code == 422
+    assert "Missing required fields" in applied.json()["detail"]
+    assert "counterparty_name" in applied.json()["detail"]
+    assert "debt_amount" in applied.json()["detail"]
+    assert "currency" in applied.json()["detail"]
+    assert "payment_basis" in applied.json()["detail"]
 
 
 def test_unknown_placeholders_do_not_execute_code() -> None:

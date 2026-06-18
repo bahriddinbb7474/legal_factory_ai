@@ -371,6 +371,24 @@ export default function HomePage() {
   const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState("client_debt_reminder");
   const [templateStatus, setTemplateStatus] = useState("");
+  const [debtTemplateFields, setDebtTemplateFields] = useState({
+    counterparty_name: "",
+    counterparty_address: "",
+    counterparty_tax_id: "",
+    debt_amount: "",
+    currency: "UZS",
+    payment_basis: "",
+    contract_number: "",
+    contract_date: "",
+    invoice_or_spec_number: "",
+    due_date: "",
+    overdue_days: "",
+    requested_payment_deadline: "",
+    responsible_person: "",
+    additional_note: "",
+    bank_details_note: "",
+    attached_documents_note: "",
+  });
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
@@ -1000,10 +1018,35 @@ export default function HomePage() {
     }
     setTemplateStatus("");
     try {
+      const payloadData = {
+        template_key: selectedTemplate.template_key,
+        ...(selectedTemplate.template_key === "client_debt_reminder" || selectedTemplate.template_key === "client_debt_claim"
+          ? {
+              ...debtTemplateFields,
+              counterparty_name: debtTemplateFields.counterparty_name || undefined,
+              counterparty_address: debtTemplateFields.counterparty_address || undefined,
+              counterparty_tax_id: debtTemplateFields.counterparty_tax_id || undefined,
+              debt_amount: debtTemplateFields.debt_amount || undefined,
+              currency: debtTemplateFields.currency || undefined,
+              payment_basis: debtTemplateFields.payment_basis || undefined,
+              contract_number: debtTemplateFields.contract_number || undefined,
+              contract_date: debtTemplateFields.contract_date || undefined,
+              invoice_or_spec_number: debtTemplateFields.invoice_or_spec_number || undefined,
+              due_date: debtTemplateFields.due_date || undefined,
+              overdue_days: debtTemplateFields.overdue_days || undefined,
+              requested_payment_deadline: debtTemplateFields.requested_payment_deadline || undefined,
+              responsible_person: debtTemplateFields.responsible_person || undefined,
+              additional_note: debtTemplateFields.additional_note || undefined,
+              bank_details_note: debtTemplateFields.bank_details_note || undefined,
+              attached_documents_note: debtTemplateFields.attached_documents_note || undefined,
+            }
+          : {}),
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/generated-documents/${generatedDocument.id}/apply-template`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ template_key: selectedTemplate.template_key }),
+        body: JSON.stringify(payloadData),
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: "Не удалось применить шаблон." }));
@@ -1487,10 +1530,83 @@ export default function HomePage() {
                           </option>
                         ))}
                       </select>
+                    </div>
+                    
+                    {(selectedTemplateKey === "client_debt_reminder" || selectedTemplateKey === "client_debt_claim") && (
+                      <div className="template-fields-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+                        <label>
+                          <span>Контрагент *</span>
+                          <input value={debtTemplateFields.counterparty_name} onChange={e => setDebtTemplateFields(f => ({ ...f, counterparty_name: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Адрес контрагента</span>
+                          <input value={debtTemplateFields.counterparty_address} onChange={e => setDebtTemplateFields(f => ({ ...f, counterparty_address: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>ИНН контрагента</span>
+                          <input value={debtTemplateFields.counterparty_tax_id} onChange={e => setDebtTemplateFields(f => ({ ...f, counterparty_tax_id: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Сумма долга *</span>
+                          <input value={debtTemplateFields.debt_amount} onChange={e => setDebtTemplateFields(f => ({ ...f, debt_amount: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Валюта *</span>
+                          <input value={debtTemplateFields.currency} onChange={e => setDebtTemplateFields(f => ({ ...f, currency: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Основание платежа *</span>
+                          <input value={debtTemplateFields.payment_basis} onChange={e => setDebtTemplateFields(f => ({ ...f, payment_basis: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Договор №</span>
+                          <input value={debtTemplateFields.contract_number} onChange={e => setDebtTemplateFields(f => ({ ...f, contract_number: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Дата договора</span>
+                          <input type="date" value={debtTemplateFields.contract_date} onChange={e => setDebtTemplateFields(f => ({ ...f, contract_date: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Спецификация/счёт №</span>
+                          <input value={debtTemplateFields.invoice_or_spec_number} onChange={e => setDebtTemplateFields(f => ({ ...f, invoice_or_spec_number: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Срок оплаты</span>
+                          <input type="date" value={debtTemplateFields.due_date} onChange={e => setDebtTemplateFields(f => ({ ...f, due_date: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Дней просрочки</span>
+                          <input value={debtTemplateFields.overdue_days} onChange={e => setDebtTemplateFields(f => ({ ...f, overdue_days: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Срок для оплаты по письму</span>
+                          <input value={debtTemplateFields.requested_payment_deadline} onChange={e => setDebtTemplateFields(f => ({ ...f, requested_payment_deadline: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Ответственный</span>
+                          <input value={debtTemplateFields.responsible_person} onChange={e => setDebtTemplateFields(f => ({ ...f, responsible_person: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Доп. примечание</span>
+                          <input value={debtTemplateFields.additional_note} onChange={e => setDebtTemplateFields(f => ({ ...f, additional_note: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Банковское примечание</span>
+                          <input value={debtTemplateFields.bank_details_note} onChange={e => setDebtTemplateFields(f => ({ ...f, bank_details_note: e.target.value }))} />
+                        </label>
+                        <label>
+                          <span>Приложения</span>
+                          <input value={debtTemplateFields.attached_documents_note} onChange={e => setDebtTemplateFields(f => ({ ...f, attached_documents_note: e.target.value }))} />
+                        </label>
+                      </div>
+                    )}
+                    
+                    <div style={{ marginBottom: '15px' }}>
                       <button className="compact-button" type="button" onClick={() => void applySelectedTemplate()} disabled={!generatedDocument?.id || !selectedTemplate}>
-                        РџСЂРёРјРµРЅРёС‚СЊ С€Р°Р±Р»РѕРЅ
+                        Применить шаблон
                       </button>
                     </div>
+
                     <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
                     {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
                     {isDocumentEditing ? (

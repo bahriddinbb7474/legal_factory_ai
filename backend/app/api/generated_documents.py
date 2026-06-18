@@ -148,6 +148,23 @@ async def apply_document_template(
     template = await document_template_service.get_template(payload.template_key, db)
     if template is None or not template.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document template not found")
+    if template.template_key in ("client_debt_reminder", "client_debt_claim"):
+        missing_required = []
+        if not payload.counterparty_name:
+            missing_required.append("counterparty_name")
+        if not payload.debt_amount and not payload.amount:
+            missing_required.append("debt_amount")
+        if not payload.currency:
+            missing_required.append("currency")
+        if not payload.payment_basis:
+            missing_required.append("payment_basis")
+        
+        if missing_required:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Missing required fields for debt template: {', '.join(missing_required)}"
+            )
+
     verdict = await document_template_service.get_verdict_message(document, db)
     company = await get_company_profile_context(db)
     render_context = document_template_service.build_render_context(
@@ -157,8 +174,20 @@ async def apply_document_template(
         counterparty_name=payload.counterparty_name,
         counterparty_address=payload.counterparty_address,
         counterparty_tax_id=payload.counterparty_tax_id,
-        amount=payload.amount,
+        debt_amount=payload.debt_amount,
+        currency=payload.currency,
+        payment_basis=payload.payment_basis,
+        contract_number=payload.contract_number,
+        contract_date=payload.contract_date,
+        invoice_or_spec_number=payload.invoice_or_spec_number,
         due_date=payload.due_date,
+        overdue_days=payload.overdue_days,
+        requested_payment_deadline=payload.requested_payment_deadline,
+        responsible_person=payload.responsible_person,
+        additional_note=payload.additional_note,
+        bank_details_note=payload.bank_details_note,
+        attached_documents_note=payload.attached_documents_note,
+        amount=payload.amount,
     )
     rendered = document_template_service.render(template.body_template, render_context)
     document.content = rendered.content
