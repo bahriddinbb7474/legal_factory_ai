@@ -125,7 +125,7 @@ The following fields are now structured and processed during template applicatio
 ### Placeholder Policy
 - Templates have been updated to utilize these exact placeholders.
 - Safe substitution is strictly enforced via `DocumentTemplateService.render()`.
-- Unrecognized or empty placeholders remain visible and are listed in `missing_placeholders` array in API response.
+- Unrecognized or empty placeholders are rendered as blank and are listed in `missing_placeholders` array in API response.
 - `CompanyProfile` context (`{{ company.* }}`) continues working seamlessly.
 
 ### Manual Editing and Security

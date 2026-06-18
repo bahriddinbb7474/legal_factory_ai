@@ -166,6 +166,81 @@ def test_apply_debt_template_missing_required_fields_fails(client) -> None:
     assert "currency" in applied.json()["detail"]
     assert "payment_basis" in applied.json()["detail"]
 
+def test_apply_debt_template_whitespace_only_fails(client) -> None:
+    _prepare_company_profile(client)
+    chat_id = _create_chat(client)
+    verdict = _create_message(client, chat_id, "Нужно направить претензию.")
+    assert client.post(f"/api/chats/{chat_id}/messages/{verdict['id']}/mark-verdict").status_code == 200
+    gateway = TemplateGateway(content="Базовый черновик претензии.")
+    app.dependency_overrides[get_llm_gateway] = lambda: gateway
+
+    document = client.post(
+        f"/api/chats/{chat_id}/documents/generate-from-verdict",
+        json={"agent_code": "lawyer_1", "document_type": "claim_letter", "title": "Черновик"},
+    ).json()
+
+    applied = client.post(
+        f"/api/generated-documents/{document['id']}/apply-template",
+        json={
+            "template_key": "client_debt_claim",
+            "counterparty_name": "   ",
+            "debt_amount": " \n ",
+            "currency": "\t",
+            "payment_basis": "  ",
+        },
+    )
+
+    assert applied.status_code == 422
+    assert "Missing required fields" in applied.json()["detail"]
+    assert "counterparty_name" in applied.json()["detail"]
+    assert "debt_amount" in applied.json()["detail"]
+    assert "currency" in applied.json()["detail"]
+    assert "payment_basis" in applied.json()["detail"]
+
+def test_ensure_default_templates_upgrades_existing_stage_9a_row(client) -> None:
+    # Set up an old version of the template using raw SQL to bypass the service
+    from app.db.session import get_db
+    from app.db.base import DocumentTemplate
+    from sqlalchemy import select, delete
+    import asyncio
+
+    async def _setup_old():
+        override = app.dependency_overrides.get(get_db, get_db)
+        async for db in override():
+            # Clear it if it exists
+            await db.execute(delete(DocumentTemplate).where(DocumentTemplate.template_key == "client_debt_claim"))
+            # Insert a Stage 9-A style template
+            db.add(DocumentTemplate(
+                template_key="client_debt_claim",
+                name="Old Claim",
+                description="Old description",
+                category="claim",
+                language="ru",
+                template_type="text_to_docx",
+                body_template="Old body with {{ amount }} and {{ due_date }}",
+                is_active=True,
+                requires_approval=False,
+            ))
+            await db.commit()
+
+    asyncio.run(_setup_old())
+
+    # Now the service should upgrade it on listing templates
+    listed = client.get("/api/document-templates")
+    assert listed.status_code == 200
+
+    template = client.get("/api/document-templates/client_debt_claim")
+    assert template.status_code == 200
+    data = template.json()
+
+    assert data["name"] == "Претензия клиенту о задолженности"
+    assert data["description"] == "Претензионное письмо клиенту о погашении задолженности."
+    assert "{{ debt.amount }}" in data["body_template"]
+    assert "{{ debt.currency }}" in data["body_template"]
+    assert "{{ counterparty.name }}" in data["body_template"]
+    assert "{{ contract.number }}" in data["body_template"]
+    assert "{{ payment_basis }}" in data["body_template"]
+
 
 def test_unknown_placeholders_do_not_execute_code() -> None:
     rendered = document_template_service.render(

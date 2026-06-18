@@ -139,26 +139,39 @@ ALLOWED_PLACEHOLDERS = {
 
 class DocumentTemplateService:
     async def ensure_default_templates(self, db: AsyncSession) -> None:
-        result = await db.execute(select(DocumentTemplate.template_key))
-        existing = set(result.scalars().all())
+        result = await db.execute(select(DocumentTemplate).where(DocumentTemplate.template_key.in_([seed.template_key for seed in DEFAULT_DOCUMENT_TEMPLATES])))
+        existing_templates = {t.template_key: t for t in result.scalars().all()}
+        
         changed = False
         for seed in DEFAULT_DOCUMENT_TEMPLATES:
-            if seed.template_key in existing:
-                continue
-            db.add(
-                DocumentTemplate(
-                    template_key=seed.template_key,
-                    name=seed.name,
-                    description=seed.description,
-                    category=seed.category,
-                    language="ru",
-                    template_type="text_to_docx",
-                    body_template=seed.body_template,
-                    is_active=True,
-                    requires_approval=False,
+            if seed.template_key in existing_templates:
+                t = existing_templates[seed.template_key]
+                if (
+                    t.name != seed.name
+                    or t.description != seed.description
+                    or t.body_template != seed.body_template
+                    or t.category != seed.category
+                ):
+                    t.name = seed.name
+                    t.description = seed.description
+                    t.body_template = seed.body_template
+                    t.category = seed.category
+                    changed = True
+            else:
+                db.add(
+                    DocumentTemplate(
+                        template_key=seed.template_key,
+                        name=seed.name,
+                        description=seed.description,
+                        category=seed.category,
+                        language="ru",
+                        template_type="text_to_docx",
+                        body_template=seed.body_template,
+                        is_active=True,
+                        requires_approval=False,
+                    )
                 )
-            )
-            changed = True
+                changed = True
         if changed:
             await db.commit()
 

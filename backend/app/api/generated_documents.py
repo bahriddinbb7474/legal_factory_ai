@@ -150,13 +150,17 @@ async def apply_document_template(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document template not found")
     if template.template_key in ("client_debt_reminder", "client_debt_claim"):
         missing_required = []
-        if not payload.counterparty_name:
+        if not payload.counterparty_name or not payload.counterparty_name.strip():
             missing_required.append("counterparty_name")
-        if not payload.debt_amount and not payload.amount:
+        
+        has_debt_amount = bool(payload.debt_amount and payload.debt_amount.strip())
+        has_amount = bool(payload.amount and payload.amount.strip())
+        if not has_debt_amount and not has_amount:
             missing_required.append("debt_amount")
-        if not payload.currency:
+            
+        if not payload.currency or not payload.currency.strip():
             missing_required.append("currency")
-        if not payload.payment_basis:
+        if not payload.payment_basis or not payload.payment_basis.strip():
             missing_required.append("payment_basis")
         
         if missing_required:
