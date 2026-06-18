@@ -169,6 +169,48 @@ type LegalSourceForm = {
   raw_text: string;
 };
 
+type CompanyProfile = {
+  id: number;
+  full_name: string;
+  short_name: string;
+  legal_address: string | null;
+  actual_address: string | null;
+  tax_id: string | null;
+  oked: string | null;
+  bank_name: string | null;
+  bank_mfo: string | null;
+  bank_account: string | null;
+  director_name: string | null;
+  chief_accountant_name: string | null;
+  legal_responsible_name: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  logo_storage_key: string | null;
+  letterhead_storage_key: string | null;
+  is_active: boolean;
+  notes: string | null;
+};
+
+type CompanyProfileForm = {
+  full_name: string;
+  short_name: string;
+  legal_address: string;
+  actual_address: string;
+  tax_id: string;
+  oked: string;
+  bank_name: string;
+  bank_mfo: string;
+  bank_account: string;
+  director_name: string;
+  chief_accountant_name: string;
+  legal_responsible_name: string;
+  phone: string;
+  email: string;
+  website: string;
+  notes: string;
+};
+
 const fallbackAgents: Agent[] = [
   {
     id: 1,
@@ -291,6 +333,26 @@ export default function HomePage() {
   const [editingLegalSourceId, setEditingLegalSourceId] = useState<number | null>(null);
   const [expandedLegalSourceId, setExpandedLegalSourceId] = useState<number | null>(null);
   const [legalSourceChunks, setLegalSourceChunks] = useState<Record<number, LegalSourceChunk[]>>({});
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [companyProfileForm, setCompanyProfileForm] = useState<CompanyProfileForm>({
+    full_name: "",
+    short_name: "",
+    legal_address: "",
+    actual_address: "",
+    tax_id: "",
+    oked: "",
+    bank_name: "",
+    bank_mfo: "",
+    bank_account: "",
+    director_name: "",
+    chief_accountant_name: "",
+    legal_responsible_name: "",
+    phone: "",
+    email: "",
+    website: "",
+    notes: "",
+  });
+  const [companyProfileStatus, setCompanyProfileStatus] = useState("");
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
@@ -353,6 +415,7 @@ export default function HomePage() {
         setProviders(await providersResponse.json());
       }
       void loadLegalSources();
+      void loadCompanyProfile();
     } catch {
       setApiStatus("Backend недоступен: UI работает в демонстрационном режиме.");
     }
@@ -367,6 +430,78 @@ export default function HomePage() {
     } catch {
       setLegalSourceStatus("Юридическая база пока недоступна.");
     }
+  }
+
+  async function loadCompanyProfile() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/company-profile`);
+      if (response.status === 404) {
+        setCompanyProfile(null);
+        setCompanyProfileStatus("");
+        resetCompanyProfileForm();
+        return;
+      }
+      if (response.ok) {
+        const profile = (await response.json()) as CompanyProfile;
+        setCompanyProfile(profile);
+        setCompanyProfileForm({
+          full_name: profile.full_name,
+          short_name: profile.short_name,
+          legal_address: profile.legal_address ?? "",
+          actual_address: profile.actual_address ?? "",
+          tax_id: profile.tax_id ?? "",
+          oked: profile.oked ?? "",
+          bank_name: profile.bank_name ?? "",
+          bank_mfo: profile.bank_mfo ?? "",
+          bank_account: profile.bank_account ?? "",
+          director_name: profile.director_name ?? "",
+          chief_accountant_name: profile.chief_accountant_name ?? "",
+          legal_responsible_name: profile.legal_responsible_name ?? "",
+          phone: profile.phone ?? "",
+          email: profile.email ?? "",
+          website: profile.website ?? "",
+          notes: profile.notes ?? "",
+        });
+      }
+    } catch {
+      setCompanyProfileStatus("РџСЂРѕС„РёР»СЊ РєРѕРјРїР°РЅРёРё РїРѕРєР° РЅРµРґРѕСЃС‚СѓРїРµРЅ.");
+    }
+  }
+
+  async function saveCompanyProfile() {
+    setCompanyProfileStatus("");
+    const response = await fetch(`${API_BASE_URL}/api/company-profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: companyProfileForm.full_name,
+        short_name: companyProfileForm.short_name,
+        legal_address: emptyToNull(companyProfileForm.legal_address),
+        actual_address: emptyToNull(companyProfileForm.actual_address),
+        tax_id: emptyToNull(companyProfileForm.tax_id),
+        oked: emptyToNull(companyProfileForm.oked),
+        bank_name: emptyToNull(companyProfileForm.bank_name),
+        bank_mfo: emptyToNull(companyProfileForm.bank_mfo),
+        bank_account: emptyToNull(companyProfileForm.bank_account),
+        director_name: emptyToNull(companyProfileForm.director_name),
+        chief_accountant_name: emptyToNull(companyProfileForm.chief_accountant_name),
+        legal_responsible_name: emptyToNull(companyProfileForm.legal_responsible_name),
+        phone: emptyToNull(companyProfileForm.phone),
+        email: emptyToNull(companyProfileForm.email),
+        website: emptyToNull(companyProfileForm.website),
+        notes: emptyToNull(companyProfileForm.notes),
+        is_active: true,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ CompanyProfile." }));
+      setCompanyProfileStatus(error.detail ?? "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ CompanyProfile.");
+      return;
+    }
+    const profile = (await response.json()) as CompanyProfile;
+    setCompanyProfile(profile);
+    setCompanyProfileStatus("Р РµРєРІРёР·РёС‚С‹ РєРѕРјРїР°РЅРёРё СЃРѕС…СЂР°РЅРµРЅС‹.");
+    await loadCompanyProfile();
   }
 
   async function saveLegalSource() {
@@ -491,6 +626,27 @@ export default function HomePage() {
       last_checked_at: "",
       next_check_due_at: "",
       raw_text: "",
+    });
+  }
+
+  function resetCompanyProfileForm() {
+    setCompanyProfileForm({
+      full_name: "",
+      short_name: "",
+      legal_address: "",
+      actual_address: "",
+      tax_id: "",
+      oked: "",
+      bank_name: "",
+      bank_mfo: "",
+      bank_account: "",
+      director_name: "",
+      chief_accountant_name: "",
+      legal_responsible_name: "",
+      phone: "",
+      email: "",
+      website: "",
+      notes: "",
     });
   }
 
@@ -1293,6 +1449,39 @@ export default function HomePage() {
                 <p className="settings-hint">
                   Для Stage 7 желательно использовать LEX.UZ, действующую редакцию, заполнить номер, дату принятия, дату редакции и URL.
                 </p>
+                <h3>CompanyProfile</h3>
+                <p className="settings-hint">
+                  Stage 8-A stores company requisites for letters, claims, and future templates. Real stamp/signature assets must not be uploaded before access control and sensitive protection are implemented.
+                </p>
+                <div className="legal-source-form company-profile-form">
+                  <input placeholder="Full name *" value={companyProfileForm.full_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, full_name: event.target.value }))} />
+                  <input placeholder="Short name *" value={companyProfileForm.short_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, short_name: event.target.value }))} />
+                  <input placeholder="Legal address" value={companyProfileForm.legal_address} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, legal_address: event.target.value }))} />
+                  <input placeholder="Actual address" value={companyProfileForm.actual_address} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, actual_address: event.target.value }))} />
+                  <input placeholder="TIN / tax_id" value={companyProfileForm.tax_id} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, tax_id: event.target.value }))} />
+                  <input placeholder="OKED" value={companyProfileForm.oked} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, oked: event.target.value }))} />
+                  <input placeholder="Bank name" value={companyProfileForm.bank_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, bank_name: event.target.value }))} />
+                  <input placeholder="Bank MFO" value={companyProfileForm.bank_mfo} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, bank_mfo: event.target.value }))} />
+                  <input placeholder="Bank account" value={companyProfileForm.bank_account} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, bank_account: event.target.value }))} />
+                  <input placeholder="Director name" value={companyProfileForm.director_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, director_name: event.target.value }))} />
+                  <input placeholder="Chief accountant" value={companyProfileForm.chief_accountant_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, chief_accountant_name: event.target.value }))} />
+                  <input placeholder="Legal responsible" value={companyProfileForm.legal_responsible_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, legal_responsible_name: event.target.value }))} />
+                  <input placeholder="Phone" value={companyProfileForm.phone} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, phone: event.target.value }))} />
+                  <input placeholder="Email" value={companyProfileForm.email} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, email: event.target.value }))} />
+                  <input placeholder="Website" value={companyProfileForm.website} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, website: event.target.value }))} />
+                  <input disabled placeholder="Logo upload will be added later" value={companyProfile?.logo_storage_key ?? ""} readOnly />
+                  <input disabled placeholder="Letterhead upload will be added later" value={companyProfile?.letterhead_storage_key ?? ""} readOnly />
+                  <textarea placeholder="Notes" value={companyProfileForm.notes} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, notes: event.target.value }))} />
+                  <div className="company-profile-placeholder">
+                    <strong>Sensitive assets</strong>
+                    <span>Stamp/signature uploads are intentionally deferred until protected storage and access control exist.</span>
+                  </div>
+                  <button className="agent-chip active" type="button" onClick={saveCompanyProfile}>
+                    {companyProfile ? "Save CompanyProfile" : "Create CompanyProfile"}
+                  </button>
+                </div>
+                {companyProfileStatus ? <p className="settings-error">{companyProfileStatus}</p> : null}
+                <div className="company-profile-divider" />
                 <div className="legal-source-form">
                   <select value={legalSourceForm.document_type} onChange={(event) => setLegalSourceForm((current) => ({ ...current, document_type: event.target.value }))}>
                     <option value="code">Кодекс</option>

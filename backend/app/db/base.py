@@ -260,6 +260,31 @@ class AuditLog(Base):
     details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
+class CompanyProfile(Base, TimestampMixin):
+    __tablename__ = "company_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(500), nullable=False)
+    short_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    legal_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    actual_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    tax_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    oked: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    bank_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    bank_mfo: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bank_account: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    director_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    chief_accountant_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    legal_responsible_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    website: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    logo_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    letterhead_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
 class RedFlagRule(Base, TimestampMixin):
     __tablename__ = "red_flag_rules"
 

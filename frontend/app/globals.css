@@ -1040,6 +1040,27 @@ button {
   resize: vertical;
 }
 
+.company-profile-placeholder {
+  background: #f8fafc;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  display: grid;
+  gap: 4px;
+  grid-column: 1 / -1;
+  padding: 10px;
+}
+
+.company-profile-placeholder strong,
+.company-profile-placeholder span {
+  display: block;
+}
+
+.company-profile-divider {
+  border-top: 1px solid var(--line);
+  margin: 8px 0 14px;
+}
+
 .legal-source-row span {
   line-height: 1.35;
 }
