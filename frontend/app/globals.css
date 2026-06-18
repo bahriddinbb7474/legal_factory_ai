@@ -1051,6 +1051,24 @@ button {
   padding: 10px;
 }
 
+.company-asset-field {
+  align-content: start;
+  background: #fbfdff;
+  display: grid;
+  gap: 6px;
+}
+
+.company-asset-field strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.company-asset-field input[type="file"] {
+  border: 0;
+  min-height: auto;
+  padding: 0;
+}
+
 .company-profile-placeholder strong,
 .company-profile-placeholder span {
   display: block;

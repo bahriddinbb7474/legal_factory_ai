@@ -353,6 +353,7 @@ export default function HomePage() {
     notes: "",
   });
   const [companyProfileStatus, setCompanyProfileStatus] = useState("");
+  const [companyAssetUploading, setCompanyAssetUploading] = useState<"logo" | "letterhead" | null>(null);
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
@@ -502,6 +503,63 @@ export default function HomePage() {
     setCompanyProfile(profile);
     setCompanyProfileStatus("Р РµРєРІРёР·РёС‚С‹ РєРѕРјРїР°РЅРёРё СЃРѕС…СЂР°РЅРµРЅС‹.");
     await loadCompanyProfile();
+  }
+
+  async function uploadCompanyProfileAsset(assetType: "logo" | "letterhead", event: ChangeEvent<HTMLInputElement>) {
+    const selectedFile = event.target.files?.[0];
+    event.target.value = "";
+    if (!selectedFile) {
+      return;
+    }
+    if (!companyProfile) {
+      setCompanyProfileStatus("Create and save CompanyProfile before uploading assets.");
+      return;
+    }
+    setCompanyAssetUploading(assetType);
+    setCompanyProfileStatus("");
+    try {
+      const form = new FormData();
+      form.append("file", selectedFile);
+      const response = await fetch(`${API_BASE_URL}/api/company-profile/${assetType}`, {
+        method: "POST",
+        body: form,
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: `Failed to upload ${assetType}.` }));
+        setCompanyProfileStatus(error.detail ?? `Failed to upload ${assetType}.`);
+        return;
+      }
+      const profile = (await response.json()) as CompanyProfile;
+      setCompanyProfile(profile);
+      setCompanyProfileStatus(`${assetType === "logo" ? "Logo" : "Letterhead"} uploaded.`);
+      await loadCompanyProfile();
+    } finally {
+      setCompanyAssetUploading(null);
+    }
+  }
+
+  async function deleteCompanyProfileAsset(assetType: "logo" | "letterhead") {
+    if (!companyProfile) {
+      return;
+    }
+    setCompanyAssetUploading(assetType);
+    setCompanyProfileStatus("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/company-profile/${assetType}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: `Failed to delete ${assetType}.` }));
+        setCompanyProfileStatus(error.detail ?? `Failed to delete ${assetType}.`);
+        return;
+      }
+      const profile = (await response.json()) as CompanyProfile;
+      setCompanyProfile(profile);
+      setCompanyProfileStatus(`${assetType === "logo" ? "Logo" : "Letterhead"} removed.`);
+      await loadCompanyProfile();
+    } finally {
+      setCompanyAssetUploading(null);
+    }
   }
 
   async function saveLegalSource() {
@@ -1469,15 +1527,43 @@ export default function HomePage() {
                   <input placeholder="Phone" value={companyProfileForm.phone} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, phone: event.target.value }))} />
                   <input placeholder="Email" value={companyProfileForm.email} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, email: event.target.value }))} />
                   <input placeholder="Website" value={companyProfileForm.website} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, website: event.target.value }))} />
-                  <input disabled placeholder="Logo upload will be added later" value={companyProfile?.logo_storage_key ?? ""} readOnly />
-                  <input disabled placeholder="Letterhead upload will be added later" value={companyProfile?.letterhead_storage_key ?? ""} readOnly />
+                  <label className="company-asset-field">
+                    <span>Logo asset</span>
+                    <strong>{companyProfile?.logo_storage_key ? "uploaded" : "not uploaded"}</strong>
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.webp"
+                      onChange={(event) => void uploadCompanyProfileAsset("logo", event)}
+                      disabled={!companyProfile || companyAssetUploading !== null}
+                    />
+                    {companyProfile?.logo_storage_key ? (
+                      <button className="compact-button" type="button" onClick={() => void deleteCompanyProfileAsset("logo")} disabled={companyAssetUploading !== null}>
+                        Remove logo
+                      </button>
+                    ) : null}
+                  </label>
+                  <label className="company-asset-field">
+                    <span>Letterhead asset</span>
+                    <strong>{companyProfile?.letterhead_storage_key ? "uploaded" : "not uploaded"}</strong>
+                    <input
+                      type="file"
+                      accept=".doc,.docx,.pdf,.png,.jpg,.jpeg"
+                      onChange={(event) => void uploadCompanyProfileAsset("letterhead", event)}
+                      disabled={!companyProfile || companyAssetUploading !== null}
+                    />
+                    {companyProfile?.letterhead_storage_key ? (
+                      <button className="compact-button" type="button" onClick={() => void deleteCompanyProfileAsset("letterhead")} disabled={companyAssetUploading !== null}>
+                        Remove letterhead
+                      </button>
+                    ) : null}
+                  </label>
                   <textarea placeholder="Notes" value={companyProfileForm.notes} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, notes: event.target.value }))} />
                   <div className="company-profile-placeholder">
                     <strong>Sensitive assets</strong>
-                    <span>Stamp/signature uploads are intentionally deferred until protected storage and access control exist.</span>
+                    <span>Stamp/signature uploads are disabled until roles/auth and sensitive protection are implemented.</span>
                   </div>
                   <button className="agent-chip active" type="button" onClick={saveCompanyProfile}>
-                    {companyProfile ? "Save CompanyProfile" : "Create CompanyProfile"}
+                    {companyAssetUploading === null ? (companyProfile ? "Save CompanyProfile" : "Create CompanyProfile") : "Uploading..."}
                   </button>
                 </div>
                 {companyProfileStatus ? <p className="settings-error">{companyProfileStatus}</p> : null}

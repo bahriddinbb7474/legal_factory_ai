@@ -115,3 +115,5 @@ class CompanyProfileContext(BaseModel):
     phone: str | None = None
     email: str | None = None
     website: str | None = None
+    logo_storage_key: str | None = None
+    letterhead_storage_key: str | None = None

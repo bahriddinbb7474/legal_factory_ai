@@ -107,7 +107,50 @@ This helper is intended to provide stable company requisites for letters, claims
 ## Known limitations
 
 - only one company profile is supported for the MVP;
-- branding asset upload is deferred;
+- branding asset upload is limited to safe logo/letterhead storage only;
 - stamp/signature handling is deferred until protected storage and access control exist;
 - no Stage 9 template binding is implemented yet;
 - no role-based access separation is implemented yet.
+
+## Stage 8-B assets and safe letterhead context
+
+Stage 8-B extends the CompanyProfile foundation with safe asset handling for:
+
+- `logo`
+- `letterhead`
+
+Implemented backend endpoints:
+
+```text
+POST /api/company-profile/logo
+DELETE /api/company-profile/logo
+POST /api/company-profile/letterhead
+DELETE /api/company-profile/letterhead
+```
+
+Upload policy:
+
+- logo upload allows `png`, `jpg`, `jpeg`, and `webp`;
+- letterhead upload allows legacy Word `doc`, `docx`, `pdf`, `png`, `jpg`, and `jpeg`;
+- file extension, MIME type, max size, and empty-file rejection are enforced;
+- uploaded assets are stored through the existing `StorageProvider`;
+- uploaded real company letterhead must not be committed to Git.
+
+Security policy:
+
+- real stamp/signature assets are still forbidden;
+- no stamp upload endpoint exists;
+- no signature upload endpoint exists;
+- stamp/signature must remain disabled until roles/auth and sensitive protection are implemented.
+
+Future document usage:
+
+- `get_company_profile_context()` now includes `logo_storage_key` and `letterhead_storage_key`;
+- future Stage 9 templates may consume this safe context;
+- Stage 8-B still does not implement a template engine or automatic DOCX layout merge.
+
+Operational note:
+
+- the user-provided real company letterhead file is a reference for manual later upload only;
+- it must not be committed to the repository;
+- it must not be used as an automated test fixture.
