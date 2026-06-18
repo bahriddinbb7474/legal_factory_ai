@@ -122,6 +122,7 @@ class GeneratedDocument(Base, TimestampMixin):
     created_by_agent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("agents.id"), nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     document_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    template_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
@@ -283,6 +284,22 @@ class CompanyProfile(Base, TimestampMixin):
     letterhead_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class DocumentTemplate(Base, TimestampMixin):
+    __tablename__ = "document_templates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    template_key: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    category: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    language: Mapped[str] = mapped_column(String(32), default="ru", nullable=False)
+    template_type: Mapped[str] = mapped_column(String(64), default="text_to_docx", nullable=False)
+    body_template: Mapped[str] = mapped_column(Text, nullable=False)
+    docx_template_storage_key: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class RedFlagRule(Base, TimestampMixin):

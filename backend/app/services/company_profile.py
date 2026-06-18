@@ -21,6 +21,9 @@ class CompanyProfileService:
         for field, value in payload.model_dump().items():
             setattr(profile, field, value)
 
+        if profile.id is None:
+            await db.flush()
+
         if profile.is_active:
             await self._deactivate_other_profiles(db, profile.id)
 

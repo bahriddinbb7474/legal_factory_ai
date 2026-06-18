@@ -117,3 +117,5 @@ class CompanyProfileContext(BaseModel):
     website: str | None = None
     logo_storage_key: str | None = None
     letterhead_storage_key: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)

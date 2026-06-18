@@ -109,8 +109,22 @@ type GeneratedDocument = {
   created_by_agent_id: number | null;
   title: string;
   document_type: string;
+  template_key?: string | null;
   content: string;
   status: "draft" | "needs_review" | "approved" | "rejected" | "archived";
+};
+
+type DocumentTemplate = {
+  id: number;
+  template_key: string;
+  name: string;
+  description: string;
+  category: string;
+  language: string;
+  template_type: string;
+  body_template: string;
+  is_active: boolean;
+  requires_approval: boolean;
 };
 
 type UploadForm = {
@@ -354,8 +368,12 @@ export default function HomePage() {
   });
   const [companyProfileStatus, setCompanyProfileStatus] = useState("");
   const [companyAssetUploading, setCompanyAssetUploading] = useState<"logo" | "letterhead" | null>(null);
+  const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState("client_debt_reminder");
+  const [templateStatus, setTemplateStatus] = useState("");
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
+  const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
   const costBreakdown = useMemo(() => {
     const rows = new Map<string, { label: string; input: number; output: number; cost: number }>();
@@ -417,6 +435,7 @@ export default function HomePage() {
       }
       void loadLegalSources();
       void loadCompanyProfile();
+      void loadDocumentTemplates();
     } catch {
       setApiStatus("Backend недоступен: UI работает в демонстрационном режиме.");
     }
@@ -466,6 +485,22 @@ export default function HomePage() {
       }
     } catch {
       setCompanyProfileStatus("РџСЂРѕС„РёР»СЊ РєРѕРјРїР°РЅРёРё РїРѕРєР° РЅРµРґРѕСЃС‚СѓРїРµРЅ.");
+    }
+  }
+
+  async function loadDocumentTemplates() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/document-templates`);
+      if (!response.ok) {
+        return;
+      }
+      const templates = (await response.json()) as DocumentTemplate[];
+      setDocumentTemplates(templates);
+      if (templates.length && !templates.some((template) => template.template_key === selectedTemplateKey)) {
+        setSelectedTemplateKey(templates[0].template_key);
+      }
+    } catch {
+      setTemplateStatus("Шаблоны документов пока недоступны.");
     }
   }
 
@@ -959,6 +994,34 @@ export default function HomePage() {
     setOpenDocumentMenu(null);
   }
 
+  async function applySelectedTemplate() {
+    if (!generatedDocument?.id || !selectedTemplate) {
+      return;
+    }
+    setTemplateStatus("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/generated-documents/${generatedDocument.id}/apply-template`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template_key: selectedTemplate.template_key }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Не удалось применить шаблон." }));
+        throw new Error(error.detail ?? "Не удалось применить шаблон.");
+      }
+      const payload = await response.json();
+      setGeneratedDocument(payload.document);
+      if (payload.document.template_key) {
+        setSelectedTemplateKey(payload.document.template_key);
+      }
+      setDocumentBody(payload.document.content);
+      setSavedDocumentBody(payload.document.content);
+      setTemplateStatus(payload.missing_placeholders?.length ? `Не заполнены поля: ${payload.missing_placeholders.join(", ")}` : "Шаблон применён.");
+    } catch (error) {
+      setTemplateStatus(error instanceof Error ? error.message : "Не удалось применить шаблон.");
+    }
+  }
+
   function cancelDocumentChanges() {
     setDocumentBody(savedDocumentBody);
     setIsDocumentEditing(false);
@@ -1001,6 +1064,7 @@ export default function HomePage() {
 
   async function openGeneratedDocument(message: ChatMessage, messageKey: number) {
     setSelectedDocument(null);
+    setTemplateStatus("");
     if (activeVerdictMessageId !== messageKey && !message.is_verdict) {
       await markAsVerdict(message, messageKey);
     }
@@ -1011,7 +1075,8 @@ export default function HomePage() {
         verdict_message_id: 0,
         created_by_agent_id: null,
         title: "Письмо клиенту о задолженности",
-        document_type: "claim_letter",
+        document_type: selectedTemplate?.template_key ?? "claim_letter",
+        template_key: selectedTemplate?.template_key ?? null,
         content: documentBody,
         status: "draft",
       };
@@ -1028,7 +1093,8 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agent_code: selectedLawyer,
-          document_type: "claim_letter",
+          document_type: selectedTemplate?.template_key ?? "claim_letter",
+          template_key: selectedTemplate?.template_key ?? null,
           title: "Письмо клиенту о задолженности",
         }),
       });
@@ -1038,6 +1104,9 @@ export default function HomePage() {
       }
       const document = await response.json();
       setGeneratedDocument(document);
+      if (document.template_key) {
+        setSelectedTemplateKey(document.template_key);
+      }
       setDocumentBody(document.content);
       setSavedDocumentBody(document.content);
       setIsDocumentOpen(true);
@@ -1352,10 +1421,56 @@ export default function HomePage() {
                       </tr>
                     </tbody>
                   </table>
+                  {/*
+                      Применить шаблон
+                  <p className="settings-hint">Печать и подпись не вставляются до внедрения ролей и защищённого доступа.</p>
+                  <div className="template-toolbar">
+                    <select value={selectedTemplateKey} onChange={(event) => setSelectedTemplateKey(event.target.value)} disabled={!documentTemplates.length}>
+                      {documentTemplates.map((template) => (
+                        <option key={template.template_key} value={template.template_key}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="compact-button" type="button" onClick={() => void applySelectedTemplate()} disabled={!generatedDocument?.id || !selectedTemplate}>
+                      РџСЂРёРјРµРЅРёС‚СЊ С€Р°Р±Р»РѕРЅ
+                    </button>
+                  </div>
+                  <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
+                  {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
+                  <div className="template-toolbar">
+                    <select value={selectedTemplateKey} onChange={(event) => setSelectedTemplateKey(event.target.value)} disabled={!documentTemplates.length}>
+                      {documentTemplates.map((template) => (
+                        <option key={template.template_key} value={template.template_key}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="compact-button" type="button" onClick={() => void applySelectedTemplate()} disabled={!generatedDocument?.id || !selectedTemplate}>
+                      РџСЂРёРјРµРЅРёС‚СЊ С€Р°Р±Р»РѕРЅ
+                    </button>
+                  </div>
+                  <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
+                  {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
+                  <div className="template-toolbar">
+                    <select value={selectedTemplateKey} onChange={(event) => setSelectedTemplateKey(event.target.value)} disabled={!documentTemplates.length}>
+                      {documentTemplates.map((template) => (
+                        <option key={template.template_key} value={template.template_key}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="compact-button" type="button" onClick={() => void applySelectedTemplate()} disabled={!generatedDocument?.id || !selectedTemplate}>
+                      РџСЂРёРјРµРЅРёС‚СЊ С€Р°Р±Р»РѕРЅ
+                    </button>
+                  </div>
+                  <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
+                  {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
                   <section>
                     <h3>Извлечённый текст</h3>
                     <pre className="extracted-text">{selectedDocumentText || "Загрузка текста..."}</pre>
                   </section>
+                  */}
                 </>
               ) : (
                 <>
@@ -1364,6 +1479,20 @@ export default function HomePage() {
                   <p className="doc-center">111116, Республика Узбекистан, Ташкентская область</p>
                   <section>
                     <h3>{generatedDocument?.title ?? "Письмо о задолженности"}</h3>
+                    <div className="template-toolbar">
+                      <select value={selectedTemplateKey} onChange={(event) => setSelectedTemplateKey(event.target.value)} disabled={!documentTemplates.length}>
+                        {documentTemplates.map((template) => (
+                          <option key={template.template_key} value={template.template_key}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button className="compact-button" type="button" onClick={() => void applySelectedTemplate()} disabled={!generatedDocument?.id || !selectedTemplate}>
+                        РџСЂРёРјРµРЅРёС‚СЊ С€Р°Р±Р»РѕРЅ
+                      </button>
+                    </div>
+                    <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
+                    {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
                     {isDocumentEditing ? (
                       <textarea className="document-editor" aria-label="Текст документа" value={documentBody} onChange={(event) => setDocumentBody(event.target.value)} />
                     ) : (

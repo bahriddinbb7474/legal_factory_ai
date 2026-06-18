@@ -7,13 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import Approval, GeneratedDocument, Message
 from app.db.session import get_db
 from app.schemas.approvals import ApprovalRead
+from app.schemas.document_templates import ApplyDocumentTemplateRequest, ApplyDocumentTemplateResponse
 from app.schemas.generated_documents import (
     GeneratedDocumentRead,
     GeneratedDocumentUpdate,
     SendGeneratedDocumentToChatResponse,
 )
+from app.services.company_profile import get_company_profile_context
 from app.services.audit import write_audit_log
 from app.services.current_user import CurrentUser, get_current_user
+from app.services.document_templates import document_template_service
 from app.services.generated_documents import build_docx_export, build_pdf_export, save_generated_document_text
 
 
@@ -132,6 +135,51 @@ async def send_generated_document_to_chat(
     )
     await db.commit()
     return SendGeneratedDocumentToChatResponse(message_id=message.id, document_id=document.id)
+
+
+@router.post("/{document_id}/apply-template", response_model=ApplyDocumentTemplateResponse)
+async def apply_document_template(
+    document_id: int,
+    payload: ApplyDocumentTemplateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> ApplyDocumentTemplateResponse:
+    document = await _get_generated_document_or_404(document_id, db)
+    template = await document_template_service.get_template(payload.template_key, db)
+    if template is None or not template.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document template not found")
+    verdict = await document_template_service.get_verdict_message(document, db)
+    company = await get_company_profile_context(db)
+    render_context = document_template_service.build_render_context(
+        company=company,
+        document=document,
+        verdict=verdict,
+        counterparty_name=payload.counterparty_name,
+        counterparty_address=payload.counterparty_address,
+        counterparty_tax_id=payload.counterparty_tax_id,
+        amount=payload.amount,
+        due_date=payload.due_date,
+    )
+    rendered = document_template_service.render(template.body_template, render_context)
+    document.content = rendered.content
+    document.template_key = template.template_key
+    document.storage_key = await save_generated_document_text(document.content)
+    document.docx_storage_key = None
+    document.pdf_storage_key = None
+    await write_audit_log(
+        db,
+        action="generated_document.template_applied",
+        entity_type="generated_document",
+        entity_id=document.id,
+        user_id=current_user.id,
+        details={"template_key": template.template_key, "missing_placeholders": rendered.missing_placeholders},
+    )
+    await db.commit()
+    await db.refresh(document)
+    return ApplyDocumentTemplateResponse(
+        document=GeneratedDocumentRead.model_validate(document),
+        missing_placeholders=rendered.missing_placeholders,
+    )
 
 
 @router.post("/{document_id}/request-approval", response_model=GeneratedDocumentRead)

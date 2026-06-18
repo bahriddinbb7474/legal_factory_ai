@@ -7,6 +7,7 @@ class GenerateDocumentFromVerdictRequest(BaseModel):
     agent_code: str
     document_type: str
     title: str
+    template_key: str | None = None
 
 
 class GeneratedDocumentUpdate(BaseModel):
@@ -22,6 +23,7 @@ class GeneratedDocumentRead(BaseModel):
     created_by_agent_id: int | None = None
     title: str
     document_type: str
+    template_key: str | None = None
     content: str
     status: str
     storage_key: str | None = None

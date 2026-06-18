@@ -18,9 +18,11 @@ from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config
 from app.services.budget import budget_service
 from app.services.chat_context import author_type_for_agent, build_chat_context
 from app.services.citation_verifier import citation_verifier
+from app.services.company_profile import get_company_profile_context
 from app.services.costs import calculate_cost_usd
 from app.services.current_user import CurrentUser, get_current_user
 from app.services.document_access import DocumentAccessError, document_access_service
+from app.services.document_templates import document_template_service
 from app.services.audit import write_audit_log
 from app.services.generated_documents import save_generated_document_text
 from app.services.legal_retriever import build_trusted_legal_context, legal_retriever
@@ -181,6 +183,19 @@ async def generate_document_from_verdict(
 
     content = response.content.strip() or verdict.content
     document_status = "needs_review" if _verdict_requires_review(chat, verdict) else "draft"
+    template_key = payload.template_key
+    if template_key:
+        template = await document_template_service.get_template(template_key, db)
+        if template is None or not template.is_active:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document template not found")
+        company = await get_company_profile_context(db)
+        render_context = document_template_service.build_render_context(
+            company=company,
+            document=GeneratedDocument(title=payload.title, document_type=payload.document_type, content=content),
+            verdict=verdict,
+        )
+        rendered = document_template_service.render(template.body_template, render_context)
+        content = rendered.content
     storage_key = await save_generated_document_text(content)
     document = GeneratedDocument(
         chat_id=chat.id,
@@ -188,6 +203,7 @@ async def generate_document_from_verdict(
         created_by_agent_id=agent.id,
         title=payload.title,
         document_type=payload.document_type,
+        template_key=template_key,
         content=content,
         status=document_status,
         storage_key=storage_key,
@@ -223,6 +239,7 @@ async def generate_document_from_verdict(
             "verdict_message_id": verdict.id,
             "agent_code": agent.code,
             "document_type": document.document_type,
+            "template_key": document.template_key,
             "status": document.status,
         },
     )

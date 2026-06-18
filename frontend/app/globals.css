@@ -1079,6 +1079,21 @@ button {
   margin: 8px 0 14px;
 }
 
+.template-toolbar {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 8px;
+}
+
+.template-toolbar select {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
 .legal-source-row span {
   line-height: 1.35;
 }
