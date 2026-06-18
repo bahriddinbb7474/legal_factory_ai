@@ -197,3 +197,5 @@ Regression results:
 - Answer source cards still expose less metadata than admin source cards. This remains a non-blocking UI note and was not changed in R1a.
 
 No raw legal text, SQLite database, upload storage, external provider, crawler, or source status was changed.
+
+The operational handoff for maintaining this accepted legal source foundation is documented in `docs/STAGE7_6_LEGAL_SOURCE_ADMIN_INSTRUCTION.md`.

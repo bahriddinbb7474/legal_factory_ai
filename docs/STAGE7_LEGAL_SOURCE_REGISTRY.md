@@ -24,6 +24,12 @@ Version handling policy is defined in:
 docs/LEGAL_SOURCE_VERSION_POLICY.md
 ```
 
+The final administrator workflow and activation checklist are defined in:
+
+```text
+docs/STAGE7_6_LEGAL_SOURCE_ADMIN_INSTRUCTION.md
+```
+
 Ordinary legal answers use only active current official revisions. Draft/future revisions are preparation-only until their effective date and must not be used as active law. Outdated/archived revisions remain metadata/history records and must not participate in ordinary RAG. Codex must not automatically download or import all historical LEX.UZ versions.
 
 ## Source revision lifecycle
