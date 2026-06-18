@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import LegalChunk, LegalSource
+from app.services.legal_source_search_metadata import get_source_search_aliases
 
 
 @dataclass(frozen=True)
@@ -95,7 +96,7 @@ def _lexical_score(query_terms: set[str], text: str) -> float:
 
 def _source_metadata_score(query_terms: set[str], source: LegalSource) -> float:
     title_terms = _terms(source.title)
-    aliases = SOURCE_ALIASES_BY_DOCUMENT_NUMBER.get(_normalize(source.document_number or ""), ())
+    aliases = get_source_search_aliases(source)
     alias_terms = _terms(" ".join(aliases))
     title_and_alias_score = _metadata_overlap_score(query_terms, title_terms | alias_terms)
     number_score = _lexical_score(query_terms, source.document_number or "")
@@ -142,14 +143,6 @@ STOP_TERMS = {
     "это",
     "the",
     "and",
-}
-
-
-SOURCE_ALIASES_BY_DOCUMENT_NUMBER = {
-    "zru-547": ("персональные данные",),
-    "zru-410": ("охрана труда",),
-    "77-ii": ("внешнеэкономическая деятельность",),
-    "zru-573": ("валютное регулирование",),
 }
 
 

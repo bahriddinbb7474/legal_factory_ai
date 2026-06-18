@@ -133,3 +133,67 @@ Do not close Stage 7 first batch yet.
 Before repeating Stage 7.5-D, implement and test a narrowly scoped lexical retrieval quality fix. At minimum, the fix should consider source title/document number during ranking and prevent one broad source from consuming all `top_k` positions. Add deterministic acceptance tests for the failed probes using local fixture text; do not use network downloads or real provider calls.
 
 Do not start Stage 7.6 until the failed retrieval probes pass.
+
+## Post-R1a cleanup and repeat smoke
+
+Date: 2026-06-18
+
+### Alias cleanup
+
+R1 fixed the blocking retrieval ranks, but initially kept curated first-batch aliases inside `legal_retriever.py`. R1a moved that registry to:
+
+```text
+backend/app/services/legal_source_search_metadata.py
+```
+
+`LegalRetriever` now obtains aliases through `get_source_search_aliases(source)` and remains responsible for scoring only. No `LegalSource` alias field exists, so this small provider avoided a database migration during acceptance cleanup. The scoring weights remain unchanged:
+
+- title/alias score: `2.0`;
+- document-number score: `1.5`;
+- revision-date score: `0.25`.
+
+The provider contains curated Russian search metadata for approved sources whose imported titles may be English or transliterated. Unknown document numbers return no aliases. Source status and ordinary RAG filters are not changed.
+
+### Repeat acceptance result
+
+- Repeat Stage 7.5-D result: **PASS WITH NOTES**.
+- Stage 7 MVP first batch can be closed: **YES**.
+- The original blocking retrieval issue is resolved.
+
+Read-only smoke used the same ignored database with 16 sources and 8,416 chunks. Results:
+
+| Probe | Intended source | Rank |
+|---|---|---:|
+| персональные данные | ZRU-547 | 1 |
+| охрана труда | ZRU-410 | 1 |
+| внешнеэкономическая деятельность | 77-II | 1 |
+| валютное регулирование | ZRU-573 | 1 |
+| обращения физических и юридических лиц | ZRU-445 | 1 |
+| договор поставки гражданский кодекс | Civil Code, Part Two | 1 |
+| налоговый кодекс налоговое обязательство | Tax Code | 1 |
+| таможенный кодекс импорт сырья | Customs Code | 1 |
+| трудовой договор | Labor Code | 3 |
+| пожарная безопасность | ZRU-226 | 1 |
+| техническое регулирование | ZRU-819 | 1 |
+| сертификация продукции | ZRU-819 | 1 |
+| оценка соответствия | ZRU-819 | 1 |
+| аккредитация органов оценки соответствия | ZRU-820 | 1 |
+
+Regression results:
+
+- PP-4348 remained excluded from ordinary RAG for its number, benefit/raw-material, and future ONDATE probes.
+- ZRU-354 remained excluded from ordinary RAG for its number and conformity-assessment probes.
+- ZRU-819 remained the current primary first-batch source for technical regulation and conformity checks.
+- ZRU-820 remained the related active source for accreditation; it is not treated as a replacement for ZRU-354.
+- Confirmed/unconfirmed citation behavior, confidence downgrade, and `TRUSTED_LEGAL_SOURCE` / `UNTRUSTED_DOCUMENT` separation remain covered by the passing backend suite.
+
+### Verification and remaining notes
+
+- Targeted ranking and metadata-provider tests: `9 passed`.
+- Full backend suite: `59 passed`, 2 deprecation warnings.
+- Frontend production build: passed.
+- Retrieval matrix completed without timeout; measured calls were approximately 0.93-3.55 seconds on this workstation.
+- The retriever still scans all active chunks per request. This remains a non-blocking local-MVP performance note.
+- Answer source cards still expose less metadata than admin source cards. This remains a non-blocking UI note and was not changed in R1a.
+
+No raw legal text, SQLite database, upload storage, external provider, crawler, or source status was changed.

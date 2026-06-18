@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base, LegalChunk, LegalSource
 from app.services.legal_retriever import legal_retriever
+from app.services.legal_source_search_metadata import get_source_search_aliases
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,13 @@ class SourceFixture:
     document_number: str
     status: str = "active"
     official_status: str = "official"
+
+
+def test_curated_search_metadata_returns_known_alias_and_empty_for_unknown_source() -> None:
+    assert get_source_search_aliases(SourceFixture(title="Personal data", document_number="  ZRU-547  ")) == (
+        "персональные данные",
+    )
+    assert get_source_search_aliases(SourceFixture(title="Unknown", document_number="UNKNOWN")) == ()
 
 
 async def _retrieve(query: str, sources: list[SourceFixture]):
@@ -68,6 +76,8 @@ async def _retrieve(query: str, sources: list[SourceFixture]):
         ("охрана труда на предприятии", "Law of Uzbekistan on Occupational Safety", "ZRU-410"),
         ("внешнеэкономическая деятельность", "Law of Uzbekistan on Foreign Economic Activity", "77-II"),
         ("валютное регулирование", "Law of Uzbekistan on Currency Regulation", "ZRU-573"),
+        ("техническое регулирование", "Law of Uzbekistan on Technical Regulation", "ZRU-819"),
+        ("сертификация продукции", "Law of Uzbekistan on Technical Regulation", "ZRU-819"),
     ],
 )
 def test_first_batch_metadata_aliases_rank_target_source_in_top_five(query: str, title: str, document_number: str) -> None:
