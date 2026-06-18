@@ -28,8 +28,21 @@ class ApplyDocumentTemplateRequest(BaseModel):
     counterparty_name: str | None = None
     counterparty_address: str | None = None
     counterparty_tax_id: str | None = None
-    amount: str | None = None
+    debt_amount: str | None = None
+    currency: str | None = None
+    payment_basis: str | None = None
+    contract_number: str | None = None
+    contract_date: str | None = None
+    invoice_or_spec_number: str | None = None
     due_date: str | None = None
+    overdue_days: str | None = None
+    requested_payment_deadline: str | None = None
+    responsible_person: str | None = None
+    additional_note: str | None = None
+    bank_details_note: str | None = None
+    attached_documents_note: str | None = None
+    # Backward compatibility
+    amount: str | None = None
 
 
 class ApplyDocumentTemplateResponse(BaseModel):
