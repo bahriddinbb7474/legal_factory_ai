@@ -38,7 +38,7 @@ class LegalRetriever:
         )
         scored: list[RetrievedLegalChunk] = []
         for chunk, source in result.all():
-            score = _lexical_score(terms, chunk.chunk_text)
+            score = _lexical_score(terms, chunk.chunk_text) + _source_metadata_score(terms, source)
             if score < score_threshold:
                 continue
             scored.append(
@@ -93,6 +93,33 @@ def _lexical_score(query_terms: set[str], text: str) -> float:
     return len(overlap) / max(len(query_terms), 1)
 
 
+def _source_metadata_score(query_terms: set[str], source: LegalSource) -> float:
+    title_terms = _terms(source.title)
+    aliases = SOURCE_ALIASES_BY_DOCUMENT_NUMBER.get(_normalize(source.document_number or ""), ())
+    alias_terms = _terms(" ".join(aliases))
+    title_and_alias_score = _metadata_overlap_score(query_terms, title_terms | alias_terms)
+    number_score = _lexical_score(query_terms, source.document_number or "")
+    revision_score = _lexical_score(query_terms, source.revision_date or "")
+    return (2.0 * title_and_alias_score) + (1.5 * number_score) + (0.25 * revision_score)
+
+
+def _metadata_overlap_score(query_terms: set[str], metadata_terms: set[str]) -> float:
+    if not metadata_terms:
+        return 0.0
+    matched = sum(
+        1
+        for query_term in query_terms
+        if any(_metadata_terms_match(query_term, term) for term in metadata_terms)
+    )
+    return matched / max(len(query_terms), 1)
+
+
+def _metadata_terms_match(query_term: str, metadata_term: str) -> bool:
+    if query_term == metadata_term:
+        return True
+    return len(query_term) >= 5 and len(metadata_term) >= 5 and query_term[:5] == metadata_term[:5]
+
+
 def _normalize(value: str) -> str:
     value = unicodedata.normalize("NFKC", value)
     value = value.casefold()
@@ -115,6 +142,14 @@ STOP_TERMS = {
     "это",
     "the",
     "and",
+}
+
+
+SOURCE_ALIASES_BY_DOCUMENT_NUMBER = {
+    "zru-547": ("персональные данные",),
+    "zru-410": ("охрана труда",),
+    "77-ii": ("внешнеэкономическая деятельность",),
+    "zru-573": ("валютное регулирование",),
 }
 
 
