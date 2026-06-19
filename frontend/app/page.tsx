@@ -858,6 +858,11 @@ export default function HomePage() {
     }
   }
 
+  function filterAuditDetails(details: Record<string, unknown>): Record<string, unknown> {
+    const SENSITIVE = new Set(["password", "password_hash", "token", "cookie", "session", "secret", "new_password"]);
+    return Object.fromEntries(Object.entries(details).filter(([k]) => !SENSITIVE.has(k)));
+  }
+
   function extractApiError(detail: unknown, fallback: string): string {
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) return detail.map((e: { msg?: string }) => e.msg ?? String(e)).join("; ");
@@ -2268,8 +2273,8 @@ export default function HomePage() {
                               <strong>{entry.action}</strong>
                               <span>{entry.entity_type}{entry.entity_id != null ? ` #${entry.entity_id}` : ""}</span>
                               <span>Пользователь: {entry.user_id ?? "—"} · {new Date(entry.created_at).toLocaleString("ru-RU")}</span>
-                              {entry.details ? (
-                                <code style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>{JSON.stringify(entry.details)}</code>
+                              {entry.details && Object.keys(entry.details).length > 0 ? (
+                                <code style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>{JSON.stringify(filterAuditDetails(entry.details))}</code>
                               ) : null}
                             </div>
                           </article>
