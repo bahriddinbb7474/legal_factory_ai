@@ -156,7 +156,7 @@ def test_rejects_path_traversal_unsupported_type_and_size_limit(client, monkeypa
     assert upload(client, "too-big.txt", b"x", "text/plain").status_code == 413
 
 
-def test_role_based_access_blocks_hr_for_procurement(client) -> None:
+def test_role_based_access_blocks_supply_for_hr_document(client) -> None:
     response = upload(
         client,
         "hr.txt",
@@ -165,7 +165,7 @@ def test_role_based_access_blocks_hr_for_procurement(client) -> None:
         {"category": "hr_document", "sensitivity": "internal"},
     )
     document_id = response.json()["document"]["id"]
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=2, role="procurement")
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=2, role="supply")
 
     assert client.get(f"/api/documents/{document_id}").status_code == 403
 

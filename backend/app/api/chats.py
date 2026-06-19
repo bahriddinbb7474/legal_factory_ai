@@ -20,7 +20,7 @@ from app.services.chat_context import author_type_for_agent, build_chat_context
 from app.services.citation_verifier import citation_verifier
 from app.services.company_profile import get_company_profile_context
 from app.services.costs import calculate_cost_usd
-from app.services.current_user import CurrentUser, get_current_user
+from app.services.current_user import CurrentUser, get_current_user, require_workspace_writer
 from app.services.document_access import DocumentAccessError, document_access_service
 from app.services.document_templates import document_template_service
 from app.services.audit import write_audit_log
@@ -45,7 +45,7 @@ async def list_chats(db: AsyncSession = Depends(get_db)) -> list[Chat]:
     return list(result.scalars().all())
 
 
-@router.post("", response_model=ChatRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ChatRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_workspace_writer)])
 async def create_chat(payload: ChatCreate, db: AsyncSession = Depends(get_db)) -> Chat:
     chat = Chat(**payload.model_dump())
     db.add(chat)
@@ -76,7 +76,7 @@ async def create_message(
     chat_id: int,
     payload: MessageCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Message:
     chat = await _get_chat_or_404(chat_id, db)
     message = Message(chat_id=chat_id, **payload.model_dump())
@@ -95,7 +95,7 @@ async def mark_message_as_verdict(
     chat_id: int,
     message_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Message:
     chat = await _get_chat_or_404(chat_id, db)
     message = await _get_chat_message_or_404(chat_id, message_id, db)
@@ -126,7 +126,7 @@ async def mark_message_as_verdict(
 async def clear_chat_verdict(
     chat_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
     chat = await _get_chat_or_404(chat_id, db)
     previous_id = chat.active_verdict_message_id
@@ -161,7 +161,7 @@ async def generate_document_from_verdict(
     chat_id: int,
     payload: GenerateDocumentFromVerdictRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
     gateway: OpenRouterGateway = Depends(get_llm_gateway),
 ) -> GeneratedDocument:
     await ensure_default_config(db)
@@ -253,7 +253,7 @@ async def invoke_agent(
     chat_id: int,
     payload: InvokeAgentRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
     gateway: OpenRouterGateway = Depends(get_llm_gateway),
 ) -> Message:
     await ensure_default_config(db)
@@ -448,7 +448,7 @@ async def request_approval(
     chat_id: int,
     comment: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
     chat = await _get_chat_or_404(chat_id, db)
     await _record_approval_event(db, chat, "request", current_user, "needs_review", comment)
@@ -462,7 +462,7 @@ async def approve_chat(
     chat_id: int,
     comment: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
     _assert_can_approve(current_user)
     chat = await _get_chat_or_404(chat_id, db)
@@ -477,7 +477,7 @@ async def reject_chat(
     chat_id: int,
     comment: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
     _assert_can_approve(current_user)
     chat = await _get_chat_or_404(chat_id, db)

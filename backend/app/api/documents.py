@@ -12,7 +12,7 @@ from app.db.base import Chat, ChatDocument, Document, MessageDocument
 from app.db.session import get_db
 from app.schemas.documents import ChatDocumentRead, DocumentContentRead, DocumentRead, DocumentUploadResponse
 from app.services.audit import write_audit_log
-from app.services.current_user import CurrentUser, get_current_user
+from app.services.current_user import CurrentUser, get_current_user, require_workspace_writer
 from app.services.document_access import DocumentAccessError, document_access_service
 from app.services.document_categories import DOCUMENT_CATEGORIES, suggest_category
 from app.services.document_extractor import document_extractor
@@ -46,7 +46,7 @@ async def upload_document(
     document_date: str | None = Form(default=None),
     chat_id: int | None = Form(default=None),
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> DocumentUploadResponse:
     raw_filename = file.filename or "document"
     original_filename = Path(raw_filename).name
@@ -188,7 +188,7 @@ async def download_document(
 async def delete_document(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> None:
     document = await _get_document_or_404(document_id, db)
     _assert_access(current_user, document, "delete")
@@ -207,7 +207,7 @@ async def link_chat_document(
     chat_id: int,
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> ChatDocumentRead:
     await _get_chat_or_404(chat_id, db)
     document = await _get_document_or_404(document_id, db)
@@ -223,7 +223,7 @@ async def unlink_chat_document(
     chat_id: int,
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> None:
     document = await _get_document_or_404(document_id, db)
     _assert_access(current_user, document, "unlink")

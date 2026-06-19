@@ -15,7 +15,7 @@ from app.schemas.generated_documents import (
 )
 from app.services.company_profile import get_company_profile_context
 from app.services.audit import write_audit_log
-from app.services.current_user import CurrentUser, get_current_user
+from app.services.current_user import CurrentUser, get_current_user, require_workspace_writer
 from app.services.document_templates import document_template_service
 from app.services.generated_documents import build_docx_export, build_pdf_export, save_generated_document_text
 
@@ -33,7 +33,7 @@ async def update_generated_document(
     document_id: int,
     payload: GeneratedDocumentUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> GeneratedDocument:
     document = await _get_generated_document_or_404(document_id, db)
     updates = payload.model_dump(exclude_unset=True)
@@ -64,7 +64,7 @@ async def update_generated_document(
 async def download_generated_document_docx(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Response:
     document = await _get_generated_document_or_404(document_id, db)
     data, storage_key = await build_docx_export(document.title, document.content)
@@ -89,7 +89,7 @@ async def download_generated_document_docx(
 async def download_generated_document_pdf(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Response:
     document = await _get_generated_document_or_404(document_id, db)
     data, storage_key = await build_pdf_export(document.title, document.content)
@@ -114,7 +114,7 @@ async def download_generated_document_pdf(
 async def send_generated_document_to_chat(
     document_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> SendGeneratedDocumentToChatResponse:
     document = await _get_generated_document_or_404(document_id, db)
     message = Message(
@@ -142,7 +142,7 @@ async def apply_document_template(
     document_id: int,
     payload: ApplyDocumentTemplateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> ApplyDocumentTemplateResponse:
     document = await _get_generated_document_or_404(document_id, db)
     template = await document_template_service.get_template(payload.template_key, db)
@@ -220,7 +220,7 @@ async def request_generated_document_approval(
     document_id: int,
     comment: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> GeneratedDocument:
     document = await _get_generated_document_or_404(document_id, db)
     await _record_document_approval_event(db, document, "request", current_user, "needs_review", comment)
@@ -234,7 +234,7 @@ async def approve_generated_document(
     document_id: int,
     comment: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> GeneratedDocument:
     _assert_can_approve(current_user)
     document = await _get_generated_document_or_404(document_id, db)
@@ -249,7 +249,7 @@ async def reject_generated_document(
     document_id: int,
     comment: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> GeneratedDocument:
     _assert_can_approve(current_user)
     document = await _get_generated_document_or_404(document_id, db)

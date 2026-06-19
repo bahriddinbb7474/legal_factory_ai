@@ -48,3 +48,9 @@ def require_any_role(*roles: str) -> Callable:
 
 def require_role(role: str) -> Callable:
     return require_any_role(role)
+
+
+async def require_workspace_writer(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    if user.role == "viewer":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Viewer role is read-only")
+    return user
