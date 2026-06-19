@@ -14,6 +14,16 @@ type AuthUser = { id: number; email: string; full_name: string; role: string };
 
 type AdminUser = { id: number; email: string; full_name: string; role: string; is_active: boolean; last_login_at: string | null; };
 
+type AuditLogEntry = {
+  id: number;
+  created_at: string;
+  user_id: number | null;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  details: Record<string, unknown> | null;
+};
+
 type Agent = {
   id: number;
   code: "lawyer_1" | "lawyer_2" | "lawyer_3";
@@ -412,6 +422,8 @@ export default function HomePage() {
   const [resetPasswordForId, setResetPasswordForId] = useState<number | null>(null);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [settingsSection, setSettingsSection] = useState("");
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
@@ -829,6 +841,20 @@ export default function HomePage() {
       }
     } catch {
       setUserStatus("Не удалось загрузить пользователей.");
+    }
+  }
+
+  async function loadAuditLogs() {
+    setAuditLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/audit-logs?limit=100`);
+      if (response.ok) {
+        setAuditLogs(await response.json());
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setAuditLoading(false);
     }
   }
 
@@ -1866,6 +1892,7 @@ export default function HomePage() {
                    settingsSection === "providers" ? "Провайдеры" :
                    settingsSection === "agents" ? "Модели юристов" :
                    settingsSection === "legal" ? "Юридическая база" :
+                   settingsSection === "audit" ? "Журнал действий" :
                    "Настройки"}
                 </strong>
                 <span>Административная панель</span>
@@ -1900,6 +1927,10 @@ export default function HomePage() {
                 <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("legal")}>
                   <strong>Юридическая база</strong>
                   <span>Правовые источники</span>
+                </button>
+                <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("audit"); void loadAuditLogs(); }}>
+                  <strong>Журнал действий</strong>
+                  <span>Аудит операций</span>
                 </button>
               </div>
             ) : (
@@ -2218,6 +2249,33 @@ export default function HomePage() {
                     </article>
                   ))}
                 </div>
+                  </section>
+                )}
+                {settingsSection === "audit" && (
+                  <section>
+                    <div className="upload-actions">
+                      <button className="compact-button" type="button" onClick={() => void loadAuditLogs()} disabled={auditLoading}>
+                        {auditLoading ? "Загрузка..." : "Обновить"}
+                      </button>
+                    </div>
+                    <div className="settings-list">
+                      {!auditLoading && auditLogs.length === 0 ? (
+                        <p className="settings-hint">Записей нет.</p>
+                      ) : (
+                        auditLogs.map((entry) => (
+                          <article className="settings-row" key={entry.id}>
+                            <div>
+                              <strong>{entry.action}</strong>
+                              <span>{entry.entity_type}{entry.entity_id != null ? ` #${entry.entity_id}` : ""}</span>
+                              <span>Пользователь: {entry.user_id ?? "—"} · {new Date(entry.created_at).toLocaleString("ru-RU")}</span>
+                              {entry.details ? (
+                                <code style={{ fontSize: "0.75rem", wordBreak: "break-all" }}>{JSON.stringify(entry.details)}</code>
+                              ) : null}
+                            </div>
+                          </article>
+                        ))
+                      )}
+                    </div>
                   </section>
                 )}
               </div>
