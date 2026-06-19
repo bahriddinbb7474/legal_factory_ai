@@ -822,6 +822,12 @@ export default function HomePage() {
     } catch {}
   }
 
+  function extractApiError(detail: unknown, fallback: string): string {
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) return detail.map((e: { msg?: string }) => e.msg ?? String(e)).join("; ");
+    return fallback;
+  }
+
   async function createUser() {
     setUserStatus("");
     const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
@@ -830,13 +836,13 @@ export default function HomePage() {
       body: JSON.stringify(newUserForm),
     }).catch(() => null);
     if (!response?.ok) {
-      const error = await response?.json().catch(() => ({ detail: "Не удалось создать пользователя." }));
-      setUserStatus(error?.detail ?? "Не удалось создать пользователя.");
+      const errData = await response?.json().catch(() => null);
+      setUserStatus(extractApiError(errData?.detail, "Не удалось создать пользователя."));
       return;
     }
     setIsCreateUserOpen(false);
     setNewUserForm({ email: "", full_name: "", role: "viewer", password: "" });
-    setUserStatus("");
+    setUserStatus("Пользователь создан.");
     await loadAdminUsers();
   }
 
@@ -848,8 +854,8 @@ export default function HomePage() {
       body: JSON.stringify(editUserForm),
     }).catch(() => null);
     if (!response?.ok) {
-      const error = await response?.json().catch(() => ({ detail: "Не удалось обновить пользователя." }));
-      setUserStatus(error?.detail ?? "Не удалось обновить пользователя.");
+      const errData = await response?.json().catch(() => null);
+      setUserStatus(extractApiError(errData?.detail, "Не удалось обновить пользователя."));
       return;
     }
     setEditingUserId(null);
@@ -864,8 +870,8 @@ export default function HomePage() {
       body: JSON.stringify({ new_password: resetPasswordValue }),
     }).catch(() => null);
     if (!response?.ok) {
-      const error = await response?.json().catch(() => ({ detail: "Не удалось сбросить пароль." }));
-      setUserStatus(error?.detail ?? "Не удалось сбросить пароль.");
+      const errData = await response?.json().catch(() => null);
+      setUserStatus(extractApiError(errData?.detail, "Не удалось сбросить пароль."));
       return;
     }
     setResetPasswordForId(null);

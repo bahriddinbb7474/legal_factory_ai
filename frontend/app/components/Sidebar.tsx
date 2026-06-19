@@ -82,6 +82,14 @@ export default function Sidebar({ currentUser, onLogout, onOpenSettings }: Sideb
   const [expandedSection, setExpandedSection] = useState("");
   const [activeChat, setActiveChat] = useState("Проверка договора поставки N258");
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const initials = (currentUser.full_name.trim() || currentUser.email)
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const activeSection = useMemo(
     () => workspaceSections.find((section) => section.id === expandedSection) ?? workspaceSections[0],
@@ -174,19 +182,45 @@ export default function Sidebar({ currentUser, onLogout, onOpenSettings }: Sideb
       </div>
 
       <div className="profile-strip sidebar-profile">
+        {userMenuOpen && (
+          <div className="user-menu">
+            <div className="user-menu-header">
+              <strong>{currentUser.full_name || currentUser.email}</strong>
+              <span>{currentUser.email}</span>
+              <span className="user-menu-role">{currentUser.role}</span>
+            </div>
+            {onOpenSettings && (
+              <button
+                className="user-menu-item"
+                type="button"
+                onClick={() => { setUserMenuOpen(false); onOpenSettings(); }}
+              >
+                Настройки
+              </button>
+            )}
+            <button
+              className="user-menu-item user-menu-logout"
+              type="button"
+              onClick={() => { setUserMenuOpen(false); onLogout(); }}
+            >
+              Выйти
+            </button>
+          </div>
+        )}
         <button
-          className="avatar profile-button"
-          onClick={onOpenSettings}
-          aria-label="Профиль / Настройки"
+          className="profile-toggle"
+          onClick={() => setUserMenuOpen((v) => !v)}
           type="button"
+          aria-expanded={userMenuOpen}
+          aria-label="Меню пользователя"
         >
-          {currentUser.full_name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}
+          <span className="avatar">{initials}</span>
+          <span className="profile-info">
+            <strong>{currentUser.full_name || currentUser.email}</strong>
+            <span>{currentUser.role}</span>
+          </span>
+          <span className="profile-chevron" aria-hidden="true">{userMenuOpen ? "▴" : "▾"}</span>
         </button>
-        <button className="profile-copy" onClick={onOpenSettings} type="button">
-          <strong>{currentUser.full_name || currentUser.email}</strong>
-          <span>{currentUser.role}</span>
-        </button>
-        <button className="logout-button" onClick={onLogout} type="button" title="Выйти" aria-label="Выйти">↪</button>
       </div>
     </aside>
   );

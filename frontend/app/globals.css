@@ -1268,6 +1268,106 @@ input:disabled {
 .login-error { color: #a83b2f; font-size: 13px; }
 .logout-button { border-radius: 8px; flex: 0 0 auto; padding: 6px; }
 
+/* ── user menu ──────────────────────────────────────── */
+
+.sidebar-profile {
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+.profile-toggle {
+  align-items: center;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  padding: 4px 6px;
+  text-align: left;
+  width: 100%;
+}
+
+.profile-toggle:hover {
+  background: var(--panel-strong);
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-info strong,
+.profile-info span {
+  display: block;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-info span {
+  color: var(--muted);
+}
+
+.profile-chevron {
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-size: 11px;
+}
+
+.user-menu {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  bottom: calc(100% + 6px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  left: 0;
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  z-index: 200;
+}
+
+.user-menu-header {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+}
+
+.user-menu-header strong,
+.user-menu-header span {
+  display: block;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu-header span {
+  color: var(--muted);
+}
+
+.user-menu-role {
+  font-size: 11px !important;
+  margin-top: 2px;
+}
+
+.user-menu-item {
+  border-radius: 6px;
+  display: block;
+  font-size: 13px;
+  padding: 7px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.user-menu-item:hover {
+  background: var(--panel-strong);
+}
+
+.user-menu-logout {
+  color: #a83b2f;
+}
+
 .document-pane {
   background: var(--doc-bg);
   border-left: 1px solid var(--line);
