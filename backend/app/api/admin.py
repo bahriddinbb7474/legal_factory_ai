@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import Agent, AuditLog, ProviderConfig
+from app.db.base import Agent, AuditLog, AuthSession, ProviderConfig, User
 from app.db.session import get_db
 from app.schemas.agents import AgentRead, AgentUpdate
 from app.schemas.audit import AuditLogRead
 from app.schemas.openrouter import OpenRouterModelRead
 from app.schemas.providers import ProviderRead, ProviderUpdate
+from app.schemas.users import UserCreate, UserPasswordReset, UserRead, UserRole, UserUpdate
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
+from app.services.auth import hash_password
 from app.services.current_user import require_role
 from app.services.openrouter_models import openrouter_model_service
 
@@ -113,6 +115,85 @@ async def refresh_openrouter_models(db: AsyncSession = Depends(get_db)) -> list[
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter model list unavailable") from exc
     await _ensure_model_providers(models, db)
     return models
+
+
+@router.get("/users", response_model=list[UserRead])
+async def list_admin_users(db: AsyncSession = Depends(get_db)) -> list[User]:
+    result = await db.execute(select(User).order_by(User.id))
+    return list(result.scalars().all())
+
+
+@router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def create_admin_user(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
+    email = payload.email.strip().lower()
+    existing = await db.scalar(select(User).where(User.email == email))
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    user = User(
+        email=email,
+        full_name=payload.full_name.strip(),
+        role=payload.role.value,
+        password_hash=hash_password(payload.password),
+        is_active=payload.is_active,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.patch("/users/{user_id}", response_model=UserRead)
+async def update_admin_user(user_id: int, payload: UserUpdate, db: AsyncSession = Depends(get_db)) -> User:
+    user = await _get_user_or_404(user_id, db)
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if user.role == UserRole.admin.value:
+        will_deactivate = "is_active" in update_data and not update_data["is_active"]
+        will_demote = "role" in update_data and update_data["role"] != UserRole.admin
+        if will_deactivate or will_demote:
+            await _check_last_active_admin(user_id, db)
+
+    for field, value in update_data.items():
+        setattr(user, field, value.value if isinstance(value, UserRole) else value)
+
+    await db.commit()
+
+    if "is_active" in update_data and not update_data["is_active"]:
+        await db.execute(delete(AuthSession).where(AuthSession.user_id == user_id))
+        await db.commit()
+
+    await db.refresh(user)
+    return user
+
+
+@router.post("/users/{user_id}/reset-password", response_model=UserRead)
+async def reset_admin_user_password(user_id: int, payload: UserPasswordReset, db: AsyncSession = Depends(get_db)) -> User:
+    user = await _get_user_or_404(user_id, db)
+    user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+    await db.execute(delete(AuthSession).where(AuthSession.user_id == user_id))
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def _get_user_or_404(user_id: int, db: AsyncSession) -> User:
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
+
+
+async def _check_last_active_admin(excluded_user_id: int, db: AsyncSession) -> None:
+    count = await db.scalar(
+        select(func.count(User.id)).where(
+            User.role == UserRole.admin.value,
+            User.is_active.is_(True),
+            User.id != excluded_user_id,
+        )
+    )
+    if count == 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot deactivate or demote the last active admin")
 
 
 async def _get_agent_or_404(agent_code: str, db: AsyncSession) -> Agent:

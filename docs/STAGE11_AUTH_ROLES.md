@@ -56,9 +56,9 @@ Bootstrap is available only while there is no active administrator with a non-em
 
 Unauthenticated visitors see the login form. Authenticated users see their name/email and role in the sidebar and can log out. The settings entry and settings modal are available only to admins. API requests include the HTTP-only session cookie.
 
-## Deferred work
+## Deferred work (after Stage 11-A)
 
-- full user creation, editing, deactivation, and password-reset UI;
+- full user creation, editing, deactivation, and password-reset UI → **implemented in Stage 11-B1**
 - full role/category and viewer read-only enforcement;
 - full director/chief-accountant approval workflow;
 - full audit log;
@@ -66,3 +66,64 @@ Unauthenticated visitors see the login form. Authenticated users see their name/
 - local network deployment, Telegram, and VPS.
 
 Security warning: **Do not upload real stamp/signature assets until roles/auth and the sensitive-asset policy are fully implemented, reviewed, and accepted.** No stamp/signature endpoint or insertion flow is enabled in Stage 11-A.
+
+---
+
+# Stage 11-B1 Admin User Management
+
+## Scope
+
+Stage 11-B1 adds admin-only user management. Admin can list, create, edit, deactivate, and reset passwords for users. No self-registration, no invite links, no email sending.
+
+## User creation rules
+
+- Admin-only: `POST /api/admin/users`
+- Email is normalized (lowercase, trimmed) and must be unique; duplicate returns 409
+- Password is hashed with salted scrypt; plaintext is never stored or logged
+- `password_hash` is never included in any API response
+- `is_active` defaults to true
+
+## Supported roles
+
+`admin`, `director`, `chief_accountant`, `legal_responsible`, `sales`, `supply`, `hr`, `accountant`, `viewer`
+
+## User update rules
+
+- Admin-only: `PATCH /api/admin/users/{user_id}`
+- Admin can update `full_name`, `role`, `is_active`
+- **Last-admin protection**: deactivating or demoting the last active admin returns 409
+- Sessions for a deactivated user are invalidated immediately
+
+## Password reset
+
+- Admin-only: `POST /api/admin/users/{user_id}/reset-password`
+- Sets a new hashed password; old password stops working immediately
+- All existing sessions for that user are invalidated after reset
+
+## Admin user endpoints
+
+```text
+GET    /api/admin/users
+POST   /api/admin/users
+PATCH  /api/admin/users/{user_id}
+POST   /api/admin/users/{user_id}/reset-password
+```
+
+All routes require `role == "admin"`.
+
+## Frontend
+
+Users section appears at the top of the admin settings modal, visible only to admins. Non-admins cannot see it. The section allows listing users, creating a new user (inline form), editing full_name/role/is_active, and resetting a user's password.
+
+## Deferred after Stage 11-B1
+
+- viewer read-only enforcement for legal workspace
+- audit log for user management actions
+- approval workflow
+- granular workspace permissions by document category
+- HTTPS deployment hardening
+- multi-worker bootstrap lock (race-condition hardening)
+- Telegram / VPS
+- stamp/signature sensitive storage and insertion policy
+
+Security warning: **Do not upload real stamp/signature assets until roles/auth and the sensitive-asset policy are fully implemented, reviewed, and accepted.**

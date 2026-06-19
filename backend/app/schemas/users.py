@@ -51,6 +51,16 @@ class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None
+
+
+class UserPasswordReset(BaseModel):
+    new_password: str = Field(min_length=12, max_length=256)
+
+
 class BootstrapAdminRequest(BaseModel):
     email: str
     full_name: str

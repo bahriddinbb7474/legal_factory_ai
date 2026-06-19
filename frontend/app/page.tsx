@@ -12,6 +12,8 @@ function fetch(input: RequestInfo | URL, init: RequestInit = {}) {
 
 type AuthUser = { id: number; email: string; full_name: string; role: string };
 
+type AdminUser = { id: number; email: string; full_name: string; role: string; is_active: boolean; last_login_at: string | null; };
+
 type Agent = {
   id: number;
   code: "lawyer_1" | "lawyer_2" | "lawyer_3";
@@ -401,6 +403,15 @@ export default function HomePage() {
     attached_documents_note: "",
   });
 
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [userStatus, setUserStatus] = useState("");
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({ email: "", full_name: "", role: "viewer", password: "" });
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editUserForm, setEditUserForm] = useState({ full_name: "", role: "viewer", is_active: true });
+  const [resetPasswordForId, setResetPasswordForId] = useState<number | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
@@ -496,6 +507,7 @@ export default function HomePage() {
       void loadLegalSources();
       void loadCompanyProfile();
       void loadDocumentTemplates();
+      void loadAdminUsers();
     } catch {
       setApiStatus("Backend недоступен: UI работает в демонстрационном режиме.");
     }
@@ -801,6 +813,64 @@ export default function HomePage() {
       website: "",
       notes: "",
     });
+  }
+
+  async function loadAdminUsers() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`);
+      if (response.ok) setAdminUsers(await response.json());
+    } catch {}
+  }
+
+  async function createUser() {
+    setUserStatus("");
+    const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUserForm),
+    }).catch(() => null);
+    if (!response?.ok) {
+      const error = await response?.json().catch(() => ({ detail: "Не удалось создать пользователя." }));
+      setUserStatus(error?.detail ?? "Не удалось создать пользователя.");
+      return;
+    }
+    setIsCreateUserOpen(false);
+    setNewUserForm({ email: "", full_name: "", role: "viewer", password: "" });
+    setUserStatus("");
+    await loadAdminUsers();
+  }
+
+  async function saveUserEdit(userId: number) {
+    setUserStatus("");
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editUserForm),
+    }).catch(() => null);
+    if (!response?.ok) {
+      const error = await response?.json().catch(() => ({ detail: "Не удалось обновить пользователя." }));
+      setUserStatus(error?.detail ?? "Не удалось обновить пользователя.");
+      return;
+    }
+    setEditingUserId(null);
+    await loadAdminUsers();
+  }
+
+  async function doResetPassword(userId: number) {
+    setUserStatus("");
+    const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ new_password: resetPasswordValue }),
+    }).catch(() => null);
+    if (!response?.ok) {
+      const error = await response?.json().catch(() => ({ detail: "Не удалось сбросить пароль." }));
+      setUserStatus(error?.detail ?? "Не удалось сбросить пароль.");
+      return;
+    }
+    setResetPasswordForId(null);
+    setResetPasswordValue("");
+    setUserStatus("Пароль успешно сброшен.");
   }
 
   async function ensureChat(): Promise<number> {
@@ -1771,6 +1841,76 @@ export default function HomePage() {
               </button>
             </header>
             <div className="settings-body">
+              <section>
+                <h2>Пользователи</h2>
+                {isCreateUserOpen ? (
+                  <div className="legal-source-form">
+                    <input placeholder="Email *" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((f) => ({ ...f, email: e.target.value }))} />
+                    <input placeholder="Полное имя *" value={newUserForm.full_name} onChange={(e) => setNewUserForm((f) => ({ ...f, full_name: e.target.value }))} />
+                    <select value={newUserForm.role} onChange={(e) => setNewUserForm((f) => ({ ...f, role: e.target.value }))}>
+                      <option value="viewer">viewer</option>
+                      <option value="admin">admin</option>
+                      <option value="director">director</option>
+                      <option value="chief_accountant">chief_accountant</option>
+                      <option value="legal_responsible">legal_responsible</option>
+                      <option value="sales">sales</option>
+                      <option value="supply">supply</option>
+                      <option value="hr">hr</option>
+                      <option value="accountant">accountant</option>
+                    </select>
+                    <input placeholder="Пароль (мин. 12 символов) *" type="password" value={newUserForm.password} onChange={(e) => setNewUserForm((f) => ({ ...f, password: e.target.value }))} />
+                    <div className="upload-actions">
+                      <button className="compact-button" type="button" onClick={() => { setIsCreateUserOpen(false); setUserStatus(""); }}>Отмена</button>
+                      <button className="agent-chip active" type="button" onClick={() => void createUser()}>Создать</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button className="compact-button" type="button" onClick={() => setIsCreateUserOpen(true)}>Создать пользователя</button>
+                )}
+                {userStatus ? <p className="settings-hint">{userStatus}</p> : null}
+                <div className="settings-list">
+                  {adminUsers.map((user) => (
+                    <article className="settings-row" key={user.id}>
+                      <div>
+                        <strong>{user.full_name}</strong>
+                        <span>{user.email} · {user.role} · {user.is_active ? "активен" : "деактивирован"}</span>
+                      </div>
+                      <div className="legal-source-actions">
+                        {editingUserId === user.id ? (
+                          <>
+                            <input value={editUserForm.full_name} onChange={(e) => setEditUserForm((f) => ({ ...f, full_name: e.target.value }))} />
+                            <select value={editUserForm.role} onChange={(e) => setEditUserForm((f) => ({ ...f, role: e.target.value }))}>
+                              <option value="viewer">viewer</option>
+                              <option value="admin">admin</option>
+                              <option value="director">director</option>
+                              <option value="chief_accountant">chief_accountant</option>
+                              <option value="legal_responsible">legal_responsible</option>
+                              <option value="sales">sales</option>
+                              <option value="supply">supply</option>
+                              <option value="hr">hr</option>
+                              <option value="accountant">accountant</option>
+                            </select>
+                            <label><input type="checkbox" checked={editUserForm.is_active} onChange={(e) => setEditUserForm((f) => ({ ...f, is_active: e.target.checked }))} /> Активен</label>
+                            <button className="compact-button" type="button" onClick={() => void saveUserEdit(user.id)}>Сохранить</button>
+                            <button className="compact-button" type="button" onClick={() => setEditingUserId(null)}>Отмена</button>
+                          </>
+                        ) : resetPasswordForId === user.id ? (
+                          <>
+                            <input type="password" placeholder="Новый пароль (мин. 12)" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} />
+                            <button className="compact-button" type="button" onClick={() => void doResetPassword(user.id)}>Сохранить пароль</button>
+                            <button className="compact-button" type="button" onClick={() => setResetPasswordForId(null)}>Отмена</button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="compact-button" type="button" onClick={() => { setEditingUserId(user.id); setEditUserForm({ full_name: user.full_name, role: user.role, is_active: user.is_active }); setUserStatus(""); }}>Редактировать</button>
+                            <button className="compact-button" type="button" onClick={() => { setResetPasswordForId(user.id); setResetPasswordValue(""); setUserStatus(""); }}>Сбросить пароль</button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
               <section>
                 <h2>Модели юристов</h2>
                 <div className="settings-list">
