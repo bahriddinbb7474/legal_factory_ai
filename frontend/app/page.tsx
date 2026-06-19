@@ -415,6 +415,9 @@ export default function HomePage() {
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
+  const isAdmin = currentUser?.role === "admin";
+  const canWriteWorkspace = currentUser !== null && currentUser.role !== "viewer";
+  const canUseApprovalControls = currentUser?.role === "director" || currentUser?.role === "chief_accountant";
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
   const costBreakdown = useMemo(() => {
     const rows = new Map<string, { label: string; input: number; output: number; cost: number }>();
@@ -1328,7 +1331,12 @@ export default function HomePage() {
 
   return (
     <main className={isDocumentOpen ? "workspace-shell document-open" : "workspace-shell"}>
-      <Sidebar currentUser={currentUser} onLogout={logout} onOpenSettings={currentUser.role === "admin" ? () => setIsSettingsOpen(true) : undefined} />
+      <Sidebar
+        currentUser={currentUser}
+        canWriteWorkspace={canWriteWorkspace}
+        onLogout={logout}
+        onOpenSettings={isAdmin ? () => setIsSettingsOpen(true) : undefined}
+      />
 
       <section className="chat-area">
         <header className="topbar">
@@ -1382,7 +1390,7 @@ export default function HomePage() {
                 <div className="message-toolbar">
                   <span className="assistant-meta">{messageLabel(message)}</span>
                   {message.author_type.startsWith("agent") ? <span className={`risk-badge ${message.risk ?? message.structured_payload?.risk ?? "yellow"}`}>{riskLabel(message.risk ?? message.structured_payload?.risk ?? "yellow")}</span> : null}
-                  {message.author_type.startsWith("agent") ? (
+                  {message.author_type.startsWith("agent") && canWriteWorkspace ? (
                     <button className={isActiveVerdict ? "pill-button verdict-button active-verdict" : "pill-button verdict-button"} onClick={() => markAsVerdict(message, messageKey)} type="button">
                       {isActiveVerdict ? "Действующий вердикт" : "Пометить как вердикт"}
                     </button>
@@ -1407,6 +1415,7 @@ export default function HomePage() {
                         <strong>${Number(message.cost_usd ?? 0).toFixed(6)}</strong>
                       </div>
                     </div>
+                    {canWriteWorkspace ? (
                     <button className="document-card document-card-button" onClick={() => openGeneratedDocument(message, messageKey)} type="button">
                       <div className="doc-icon">DOCX</div>
                       <div>
@@ -1415,11 +1424,12 @@ export default function HomePage() {
                       </div>
                       <span className="compact-button">{generatedDocument ? "Открыть справа" : "Создать справа"}</span>
                     </button>
-                    <div className="message-actions">
+                    ) : null}
+                    {canWriteWorkspace ? <div className="message-actions">
                       <button type="button">Копировать</button>
                       <button type="button">Нравится</button>
                       <button type="button" onClick={() => openGeneratedDocument(message, messageKey)}>Сгенерировать документ</button>
-                    </div>
+                    </div> : null}
                   </>
                 ) : null}
               </article>
@@ -1434,7 +1444,7 @@ export default function HomePage() {
               <span>Рекомендуется мнение Юриста 2 или Юриста 3 и требуется утверждение руководства.</span>
             </div>
           ) : null}
-          <div className="approval-panel">
+          {canWriteWorkspace ? <div className="approval-panel">
             <input
               value={approvalComment}
               onChange={(event) => setApprovalComment(event.target.value)}
@@ -1443,13 +1453,13 @@ export default function HomePage() {
             <button type="button" className="compact-button" onClick={() => changeApproval("request-approval")}>
               На согласование
             </button>
-            <button type="button" className="compact-button" onClick={() => changeApproval("approve")}>
+            {canUseApprovalControls ? <button type="button" className="compact-button" onClick={() => changeApproval("approve")}>
               Утвердить
-            </button>
-            <button type="button" className="compact-button" onClick={() => changeApproval("reject")}>
+            </button> : null}
+            {canUseApprovalControls ? <button type="button" className="compact-button" onClick={() => changeApproval("reject")}>
               Отклонить
-            </button>
-          </div>
+            </button> : null}
+          </div> : null}
           {uploadedDocuments.length ? (
             <div className="uploaded-documents">
               {uploadedDocuments.map((document) => (
@@ -1458,13 +1468,14 @@ export default function HomePage() {
                     <strong>{document.original_filename}</strong>
                     <span>{document.category} · {document.sensitivity} · {document.extraction_status}</span>
                   </button>
-                  <button type="button" aria-label="Убрать документ из чата" onClick={() => removeDocumentFromChat(document.id)}>
+                  {canWriteWorkspace ? <button type="button" aria-label="Убрать документ из чата" onClick={() => removeDocumentFromChat(document.id)}>
                     ×
-                  </button>
+                  </button> : null}
                 </div>
               ))}
             </div>
           ) : null}
+          {canWriteWorkspace ? <>
           <input
             ref={fileInputRef}
             className="hidden-file-input"
@@ -1506,6 +1517,7 @@ export default function HomePage() {
               </button>
             ))}
           </div>
+          </> : <p className="disclaimer">Режим просмотра: изменение рабочего пространства недоступно.</p>}
           <p className="disclaimer">{apiStatus || "Legal Factory AI может ошибаться. Важные выводы проверяются ответственным специалистом."}</p>
         </div>
       </section>
@@ -1519,7 +1531,7 @@ export default function HomePage() {
             </div>
             <div className="document-actions">
               <div className="document-action-group">
-                {isDocumentEditing ? (
+                {isDocumentEditing && canWriteWorkspace ? (
                   <>
                     <button className="document-icon-button" onClick={saveDocumentChanges} title="Сохранить изменения" type="button" aria-label="Сохранить изменения">
                       ✓
@@ -1528,14 +1540,14 @@ export default function HomePage() {
                       ×
                     </button>
                   </>
-                ) : !selectedDocument ? (
+                ) : !selectedDocument && canWriteWorkspace ? (
                   <button className="document-icon-button" onClick={() => setIsDocumentEditing(true)} title="Редактировать документ" type="button" aria-label="Редактировать документ">
                     ✎
                   </button>
                 ) : (
                   <span className="document-action-placeholder" aria-hidden="true" />
                 )}
-                <div className="document-menu-wrap">
+                {selectedDocument || canWriteWorkspace ? <div className="document-menu-wrap">
                   <button className="document-icon-button" onClick={() => toggleDocumentMenu("download")} title="Скачать документ" type="button" aria-label="Скачать документ" aria-expanded={openDocumentMenu === "download"}>
                     ⇩
                   </button>
@@ -1556,8 +1568,8 @@ export default function HomePage() {
                       )}
                     </div>
                   ) : null}
-                </div>
-                <div className="document-menu-wrap">
+                </div> : null}
+                {canWriteWorkspace ? <div className="document-menu-wrap">
                   <button className="document-icon-button" onClick={() => toggleDocumentMenu("reply")} title="Отправить документ в чат" type="button" aria-label="Отправить документ в чат" aria-expanded={openDocumentMenu === "reply"}>
                     ↩
                   </button>
@@ -1566,7 +1578,7 @@ export default function HomePage() {
                       <button type="button" onClick={sendDocumentToChat}>Отправить в общий чат</button>
                     </div>
                   ) : null}
-                </div>
+                </div> : null}
               </div>
               <span className="document-action-separator" aria-hidden="true" />
               <button className="document-icon-button document-close-button" onClick={closeDocumentPanel} title="Закрыть документ" type="button" aria-label="Закрыть документ">
@@ -1658,6 +1670,7 @@ export default function HomePage() {
                   <p className="doc-center">111116, Республика Узбекистан, Ташкентская область</p>
                   <section>
                     <h3>{generatedDocument?.title ?? "Письмо о задолженности"}</h3>
+                    {canWriteWorkspace ? <>
                     <div className="template-toolbar">
                       <select value={selectedTemplateKey} onChange={(event) => setSelectedTemplateKey(event.target.value)} disabled={!documentTemplates.length}>
                         {documentTemplates.map((template) => (
@@ -1742,10 +1755,11 @@ export default function HomePage() {
                         Применить шаблон
                       </button>
                     </div>
+                    </> : null}
 
                     <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
                     {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
-                    {isDocumentEditing ? (
+                    {isDocumentEditing && canWriteWorkspace ? (
                       <textarea className="document-editor" aria-label="Текст документа" value={documentBody} onChange={(event) => setDocumentBody(event.target.value)} />
                     ) : (
                       <p>{documentBody}</p>
@@ -1778,7 +1792,7 @@ export default function HomePage() {
         </aside>
       ) : null}
 
-      {pendingFile ? (
+      {pendingFile && canWriteWorkspace ? (
         <div className="modal-backdrop">
           <section className="upload-modal">
             <header className="settings-header">
@@ -1841,7 +1855,7 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      {isSettingsOpen && currentUser.role === "admin" ? (
+      {isSettingsOpen && isAdmin ? (
         <div className="modal-backdrop">
           <section className="settings-modal">
             <header className="settings-header">

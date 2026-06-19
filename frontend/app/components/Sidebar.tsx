@@ -74,11 +74,12 @@ const workspaceSections: WorkspaceSection[] = [
 
 type SidebarProps = {
   currentUser: { email: string; full_name: string; role: string };
+  canWriteWorkspace: boolean;
   onLogout: () => void;
   onOpenSettings?: () => void;
 };
 
-export default function Sidebar({ currentUser, onLogout, onOpenSettings }: SidebarProps) {
+export default function Sidebar({ currentUser, canWriteWorkspace, onLogout, onOpenSettings }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState("");
   const [activeChat, setActiveChat] = useState("Проверка договора поставки N258");
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
@@ -133,15 +134,17 @@ export default function Sidebar({ currentUser, onLogout, onOpenSettings }: Sideb
                   <span className="section-chevron">{isExpanded ? "v" : ">"}</span>
                   <span>{section.title}</span>
                 </button>
-                <button
-                  className="compose-button"
-                  onClick={() => startSectionChat(section)}
-                  title={`Новый чат: ${section.title}`}
-                  type="button"
-                  aria-label={`Новый чат в разделе ${section.title}`}
-                >
-                  <span className="compose-glyph">✎</span>
-                </button>
+                {canWriteWorkspace ? (
+                  <button
+                    className="compose-button"
+                    onClick={() => startSectionChat(section)}
+                    title={`Новый чат: ${section.title}`}
+                    type="button"
+                    aria-label={`Новый чат в разделе ${section.title}`}
+                  >
+                    <span className="compose-glyph">✎</span>
+                  </button>
+                ) : null}
               </div>
 
               {isExpanded && section.chats.length > 3 ? (
