@@ -1,6 +1,6 @@
 # Roadmap to Final
 
-Current status: Stages 1-6 are complete. Stage 6 smoke passed with curated legal RAG, ПП/ПКМ chunking, confirmed `source_type=law` citations, rejected wrong quotes, and freshness warnings.
+Current status: Stages 1–6, 7, 8, 9, 11-A, and 11-B1 are complete. See `CURRENT_STATE.md` for the full status snapshot. Next recommended stage: 11-B2.
 
 ## Completed
 
@@ -49,7 +49,7 @@ Current status: Stages 1-6 are complete. Stage 6 smoke passed with curated legal
 - Generated-document approval.
 - Send generated document back to the shared chat without automatic LLM invocation.
 
-### Stage 6 — Curated Legal RAG
+### Stage 6 — Curated Legal RAG (complete)
 
 - `LegalSource`.
 - `LegalChunk`.
@@ -70,129 +70,56 @@ correct quote -> confirmed
 wrong quote -> unconfirmed, risk yellow, confidence medium
 ```
 
+### Stage 7 — Factory Legal Base (complete)
+
+Real official Uzbek legal sources loaded (contracts/obligations, customs, taxes, labor/HR,
+occupational safety, production/certification, government bodies). Chunking, retrieval, citation
+confirmation, freshness checks implemented and tested.
+
+### Stage 8 — Company Profile (complete)
+
+`CompanyProfile` model, admin CRUD API, and settings UI (`Настройки → Профиль компании`).
+Stamp/signature fields are reserved in the model but upload/rendering is not implemented.
+
+### Stage 9 — Document Templates (complete)
+
+Basic debt/claim template with `CompanyProfile` substitution, DOCX export, and tests.
+
+### Stage 11-A — Auth and Roles Foundation (complete)
+
+Database-backed users, salted `scrypt` passwords, HTTP-only SameSite=Lax session cookies.
+Login/logout/me/bootstrap endpoints. All workspace and admin routes protected.
+Admin-only enforcement on settings/admin routes and CompanyProfile writes.
+
+### Stage 11-B1 — Admin User Management (complete)
+
+Admin can list, create, edit (name/role/active), deactivate, and reset passwords for users.
+Last-active-admin protection. Session invalidation on deactivate/reset. Frontend settings modal
+with section navigation, inline user creation, inline edit, inline password reset. Admin UI
+is hidden from non-admin users including viewer. Self-registration is forbidden.
+
 ## Main Path Now
 
-### Stage 7 — Factory Legal Base
+### Stage 11-B2 — Viewer Read-Only and Basic Audit Log
 
-Goal: load 15-30 real official sources needed by the cable factory.
+Do not implement until explicitly instructed. Scope is planned only.
 
-Priority categories:
+Goal: enforce role-based read-only access and add a basic audit log.
 
-- contracts and obligations;
-- import and customs;
-- taxes;
-- labor and HR;
-- occupational safety;
-- production, certification, and technical regulation;
-- government bodies.
+Planned scope:
 
-Each source must include:
+- `viewer` role can read allowed workspace areas but cannot create, update, or delete anything.
+- `sales`, `supply`, `hr`, `accountant` roles get basic safe restrictions matching their category.
+- Basic audit log for important actions:
+  - login and logout;
+  - user created, updated, and deactivated;
+  - password reset;
+  - CompanyProfile update;
+  - template applied;
+  - legal-source admin changes.
 
-```text
-document_type
-title
-document_number
-adoption_date
-revision_date
-source_name
-source_url
-official_status
-status=active
-language
-last_checked_at
-next_check_due_at
-```
-
-Primary source: `LEX.UZ`.
-
-Acceptance criteria:
-
-- at least 15 real sources loaded;
-- every source has a LEX.UZ URL and revision date;
-- chunking succeeds;
-- retriever finds expected clauses;
-- lawyers cite `source_type=law`;
-- correct quotes are confirmed;
-- wrong quotes are rejected;
-- stale revisions show warning.
-
-### Stage 8 — Company Profile
-
-Goal: store official company data and reuse it in generated letters and documents.
-
-Planned `CompanyProfile` fields:
-
-```text
-full_name
-short_name
-legal_address
-actual_address
-tin
-oked
-registration_details
-bank_name
-mfo
-settlement_account
-currency_accounts
-director_name
-chief_accountant_name
-legal_responsible_name
-phone
-email
-website
-logo_storage_key
-letterhead_storage_key
-stamp_storage_key
-signature_storage_key
-created_at
-updated_at
-```
-
-UI: `Настройки -> Данные компании`.
-
-Security: stamp/signature are sensitive; access only for director/admin; all changes go to `AuditLog`.
-
-### Stage 9 — Document Templates
-
-Goal: generate documents from approved factory templates, not free text.
-
-Planned `DocumentTemplate` fields:
-
-```text
-id
-name
-document_type
-category
-language
-version
-status
-content_template
-required_fields
-company_profile_fields
-approval_required
-created_at
-updated_at
-```
-
-Statuses:
-
-```text
-draft
-active
-archived
-```
-
-Template categories:
-
-- debts/claims;
-- contracts;
-- government bodies;
-- HR;
-- production/certification.
-
-UI: `Настройки -> Шаблоны документов`.
-
-Acceptance criteria: at least five active templates, template-based `GeneratedDocument`, CompanyProfile substitution, DOCX brand layout, archive old versions, preview, and tests.
+Acceptance criteria: viewer confirmed read-only in UI and API; audit entries appear for all listed
+actions; admin can view recent audit log in settings.
 
 ### Stage 10 — Laptop Local Server
 
@@ -228,25 +155,11 @@ logs
 
 SQLite is acceptable only for tests/minimal local launch. Local PostgreSQL is preferred if practical. PostgreSQL remains the production target.
 
-### Stage 11 — Roles and Local Auth
+### Stage 11 — Roles and Local Auth (in progress)
 
-Goal: remove the dev current-user stub.
-
-Roles:
-
-```text
-admin
-director
-chief_accountant
-legal_responsible
-sales
-supply
-hr
-accountant
-viewer
-```
-
-Required: login/password, password change, disabled users, role assignment, current user without dev stub, backend role checks, approval restricted to director/chief_accountant where required.
+Stage 11-A and 11-B1 are complete. Stage 11-B2 (viewer read-only and audit log) is next.
+Remaining after 11-B2: HTTPS hardening, approval workflow, granular category permissions,
+and multi-worker bootstrap lock hardening.
 
 ### Stage 12 — Final Factory Scenarios
 

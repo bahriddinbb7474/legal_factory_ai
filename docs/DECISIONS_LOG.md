@@ -48,6 +48,10 @@
 - Telegram will be a quick entry point later, not a replacement for the Web UI.
 - Real company documents may be sent to external LLM APIs only after the responsible business owner approves this operating model.
 - Both Web UI and Telegram may be useful, but Web UI and local operational readiness come first.
+- Stage 11-A decided: self-registration is permanently and unconditionally forbidden. User creation is admin-only. This rule must not be removed or worked around without an explicit separate approval stage.
+- Stage 11-A decided: the first admin is created by `POST /api/auth/bootstrap` only; this endpoint closes permanently once an active admin with a password hash exists.
+- Stage 11-B1 decided: the current dev database is SQLite (`sqlite+aiosqlite:///./legal_factory.db`). PostgreSQL restore is deferred to a separate stage before local network or production launch.
+- Stage 11-B1 decided: `localhost` must be used consistently for both frontend (`localhost:3000`) and backend (`localhost:8000`) in development. Mixing `127.0.0.1` and `localhost` suppresses SameSite=Lax session cookies on POST/PATCH/DELETE requests and must be avoided.
 
 ## Pending Decisions
 

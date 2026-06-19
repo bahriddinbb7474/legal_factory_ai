@@ -62,6 +62,17 @@ Do not enable these unless a separate approved stage explicitly requires it:
 - mass historical legal text import
 - stamp/signature upload or rendering
 
+## Dev URL rule
+
+Always use `localhost` for both frontend and backend in development.
+
+- Frontend: `localhost:3000`
+- Backend: `localhost:8000`
+
+Do not mix `localhost` and `127.0.0.1`. Session cookies use `SameSite=Lax`. Cross-origin requests
+from `localhost:3000` to `127.0.0.1:8000` are treated as cross-site; the browser suppresses the
+cookie on POST/PATCH/DELETE, causing 401 authentication errors.
+
 ## Auth and user rules
 
 Users must not self-register.

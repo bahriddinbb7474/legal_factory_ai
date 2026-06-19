@@ -117,8 +117,8 @@ Users section appears at the top of the admin settings modal, visible only to ad
 
 ## Deferred after Stage 11-B1
 
-- viewer read-only enforcement for legal workspace
-- audit log for user management actions
+- viewer read-only enforcement for legal workspace → **planned in Stage 11-B2**
+- audit log for user management actions → **planned in Stage 11-B2**
 - approval workflow
 - granular workspace permissions by document category
 - HTTPS deployment hardening
@@ -127,3 +127,47 @@ Users section appears at the top of the admin settings modal, visible only to ad
 - stamp/signature sensitive storage and insertion policy
 
 Security warning: **Do not upload real stamp/signature assets until roles/auth and the sensitive-asset policy are fully implemented, reviewed, and accepted.**
+
+---
+
+# Stage 11-B2 — Viewer Read-Only and Basic Audit Log
+
+## Status
+
+Planned. Do not implement until explicitly instructed.
+
+## Scope
+
+### Role enforcement
+
+- `viewer` role: read-only across the legal workspace. Cannot create, update, or delete chats,
+  messages, documents, or generated documents.
+- `sales`, `supply`, `hr`, `accountant` roles: basic category restrictions matching their
+  function. Exact per-category mapping to be specified in the implementation task.
+- Enforcement is both backend (API returns 403 for disallowed actions) and frontend (write controls
+  are hidden or disabled for roles that cannot use them).
+
+### Audit log
+
+Append-only `AuditLog` entries for:
+
+- user login and logout;
+- user created, updated (role/name/active), and deactivated;
+- password reset;
+- CompanyProfile update;
+- document template applied;
+- legal-source admin changes (add, update, deactivate).
+
+Each entry records: `action`, `actor_user_id`, `target_id` (if applicable), `detail` (JSON),
+`created_at`. Password hashes and plaintext passwords must never appear in audit log entries.
+
+Admin can view recent audit entries in the settings modal.
+
+## Deferred after Stage 11-B2
+
+- full director/chief-accountant approval workflow;
+- granular workspace permissions by document category;
+- HTTPS deployment hardening;
+- multi-worker bootstrap lock (race-condition hardening);
+- Telegram / VPS;
+- stamp/signature sensitive storage and insertion policy.

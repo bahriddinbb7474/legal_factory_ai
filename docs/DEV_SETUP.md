@@ -1,6 +1,6 @@
 # Development Setup
 
-Stage 6 v2 has a runnable backend/frontend foundation with core chat APIs, OpenRouter lawyer invocation, model settings, document upload, local file storage, text extraction, structured legal answers, generated documents, and curated legal RAG.
+Stage 11-B1 is the current completed stage. The following is running: auth/sessions, admin user management, core chat APIs, OpenRouter lawyer invocation, model settings, document upload, local file storage, text extraction, structured legal answers, generated documents, curated legal RAG, CompanyProfile, and basic document templates.
 
 ## Backend
 
@@ -79,13 +79,16 @@ If a new PowerShell window can find Python in PATH, `python` may also work. The 
 
 ## Database
 
-Runtime database target:
+Current dev database (SQLite):
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/legal_factory_ai
+DATABASE_URL=sqlite+aiosqlite:///./legal_factory.db
 ```
 
-The backend normalizes `postgresql://` to the async SQLAlchemy driver form internally. PostgreSQL is not required for tests; tests override the DB session with SQLite in-memory.
+PostgreSQL is the production target but is deferred until a local network or production launch
+stage. Tests always override the DB session with a SQLite in-memory database regardless of the
+configured `DATABASE_URL`. The backend normalizes `postgresql://` to the async SQLAlchemy driver
+form internally when PostgreSQL is used.
 
 Run Alembic migrations when PostgreSQL is available:
 
@@ -129,8 +132,15 @@ npm run dev
 The frontend calls the backend through:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
+
+**Important**: always use `localhost`, not `127.0.0.1`, for both frontend and backend in
+development. Session cookies use `SameSite=Lax`. If the frontend origin is `localhost:3000`
+and the backend URL is `127.0.0.1:8000`, the browser treats this as cross-site and suppresses
+the session cookie on POST/PATCH/DELETE requests, causing 401 authentication errors.
+
+When `NEXT_PUBLIC_API_BASE_URL` is not set, the frontend defaults to `http://localhost:8000`.
 
 Build production assets:
 
@@ -174,6 +184,15 @@ The folder is ignored by git. Stage 3 supports PDF, DOCX, XLSX, TXT, JPG, PNG, a
 
 ## Current Scope
 
-Implemented: backend health endpoint, core backend models, chat/message/agent/cost APIs, OpenRouter gateway foundation, mock-tested lawyer invocation, admin model/provider endpoints, document upload APIs, local document storage, text extraction, basic role/sensitivity checks, structured legal JSON, citation verification, red flags, approval, generated documents, DOCX/PDF endpoints, curated legal RAG, Alembic migrations, backend tests, connected Next.js chat workspace, document chips, right editor, legal source settings UI, and model settings UI.
+Implemented (Stage 11-B1 and earlier): database-backed users and auth sessions, login/logout/me,
+admin bootstrap, role protection on all workspace and admin routes, admin user management
+(create/edit/deactivate/reset-password), last-active-admin protection, session invalidation on
+deactivate/reset, settings modal with section navigation, backend health endpoint, core backend
+models, chat/message/agent/cost APIs, OpenRouter gateway, admin model/provider endpoints,
+document upload APIs, local document storage, text extraction, structured legal JSON,
+citation verification, red flags, approval, generated documents, DOCX/PDF endpoints, curated legal
+RAG, CompanyProfile CRUD, basic document templates, Alembic migrations, and backend tests.
 
-Not implemented: Stage 7 real legal base population, CompanyProfile, document templates, local laptop server hardening, production auth, production OCR hardening, production-grade PDF rendering, Telegram, and VPS/production deployment.
+Not implemented: viewer read-only enforcement, audit log, approval workflow, granular category
+permissions, local laptop server hardening, production OCR hardening, production-grade PDF
+rendering, PostgreSQL restore, Telegram, stamp/signature upload, and VPS/production deployment.
