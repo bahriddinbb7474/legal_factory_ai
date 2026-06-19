@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +10,9 @@ from app.schemas.openrouter import OpenRouterModelRead
 from app.schemas.providers import ProviderRead, ProviderUpdate
 from app.schemas.users import UserCreate, UserPasswordReset, UserRead, UserRole, UserUpdate
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
+from app.services.audit import write_audit_log
 from app.services.auth import hash_password
-from app.services.current_user import require_role
+from app.services.current_user import CurrentUser, get_current_user, require_role
 from app.services.openrouter_models import openrouter_model_service
 
 
@@ -96,6 +97,8 @@ async def list_openrouter_models(db: AsyncSession = Depends(get_db)) -> list[Ope
 async def list_audit_logs(
     action: str | None = None,
     entity_type: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ) -> list[AuditLog]:
     query = select(AuditLog).order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
@@ -103,6 +106,7 @@ async def list_audit_logs(
         query = query.where(AuditLog.action == action)
     if entity_type is not None:
         query = query.where(AuditLog.entity_type == entity_type)
+    query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -124,7 +128,11 @@ async def list_admin_users(db: AsyncSession = Depends(get_db)) -> list[User]:
 
 
 @router.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def create_admin_user(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
+async def create_admin_user(
+    payload: UserCreate,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
     email = payload.email.strip().lower()
     existing = await db.scalar(select(User).where(User.email == email))
     if existing is not None:
@@ -137,13 +145,27 @@ async def create_admin_user(payload: UserCreate, db: AsyncSession = Depends(get_
         is_active=payload.is_active,
     )
     db.add(user)
+    await db.flush()
+    await write_audit_log(
+        db,
+        action="user.created",
+        entity_type="user",
+        entity_id=user.id,
+        user_id=current_user.id,
+        details={"email": user.email, "role": user.role},
+    )
     await db.commit()
     await db.refresh(user)
     return user
 
 
 @router.patch("/users/{user_id}", response_model=UserRead)
-async def update_admin_user(user_id: int, payload: UserUpdate, db: AsyncSession = Depends(get_db)) -> User:
+async def update_admin_user(
+    user_id: int,
+    payload: UserUpdate,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
     user = await _get_user_or_404(user_id, db)
     update_data = payload.model_dump(exclude_unset=True)
 
@@ -153,8 +175,40 @@ async def update_admin_user(user_id: int, payload: UserUpdate, db: AsyncSession 
         if will_deactivate or will_demote:
             await _check_last_active_admin(user_id, db)
 
+    old_role = user.role
+    old_is_active = user.is_active
+
     for field, value in update_data.items():
         setattr(user, field, value.value if isinstance(value, UserRole) else value)
+
+    _SAFE_AUDIT_FIELDS = {"full_name", "role", "is_active"}
+    changed_fields = [f for f in update_data if f in _SAFE_AUDIT_FIELDS]
+    changes: dict = {}
+    if "role" in update_data:
+        changes["role"] = {"from": old_role, "to": user.role}
+    if "is_active" in update_data:
+        changes["is_active"] = {"from": old_is_active, "to": user.is_active}
+    if "full_name" in update_data:
+        changes["full_name_changed"] = True
+
+    await write_audit_log(
+        db,
+        action="user.updated",
+        entity_type="user",
+        entity_id=user_id,
+        user_id=current_user.id,
+        details={"changed_fields": changed_fields, "changes": changes},
+    )
+
+    deactivating = old_is_active and "is_active" in update_data and not update_data["is_active"]
+    if deactivating:
+        await write_audit_log(
+            db,
+            action="user.deactivated",
+            entity_type="user",
+            entity_id=user_id,
+            user_id=current_user.id,
+        )
 
     await db.commit()
 
@@ -167,9 +221,21 @@ async def update_admin_user(user_id: int, payload: UserUpdate, db: AsyncSession 
 
 
 @router.post("/users/{user_id}/reset-password", response_model=UserRead)
-async def reset_admin_user_password(user_id: int, payload: UserPasswordReset, db: AsyncSession = Depends(get_db)) -> User:
+async def reset_admin_user_password(
+    user_id: int,
+    payload: UserPasswordReset,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
     user = await _get_user_or_404(user_id, db)
     user.password_hash = hash_password(payload.new_password)
+    await write_audit_log(
+        db,
+        action="user.password_reset",
+        entity_type="user",
+        entity_id=user_id,
+        user_id=current_user.id,
+    )
     await db.commit()
     await db.execute(delete(AuthSession).where(AuthSession.user_id == user_id))
     await db.commit()
