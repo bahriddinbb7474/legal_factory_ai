@@ -134,40 +134,59 @@ Security warning: **Do not upload real stamp/signature assets until roles/auth a
 
 ## Status
 
-Planned. Do not implement until explicitly instructed.
+**COMPLETE** as of commit `711a271 — feat: audit auth and admin user actions`.
 
-## Scope
+## Implementation Summary
 
-### Role enforcement
+### Role enforcement (COMPLETE)
 
-- `viewer` role: read-only across the legal workspace. Cannot create, update, or delete chats,
-  messages, documents, or generated documents.
-- `sales`, `supply`, `hr`, `accountant` roles: basic category restrictions matching their
-  function. Exact per-category mapping to be specified in the implementation task.
-- Enforcement is both backend (API returns 403 for disallowed actions) and frontend (write controls
-  are hidden or disabled for roles that cannot use them).
+- `viewer` role is now read-only across the legal workspace. Returns 403 on workspace mutations:
+  - Chat create/update/delete
+  - Message create/update/delete
+  - Document create/update/delete
+  - GeneratedDocument create/update/delete
+  - CompanyProfile mutations (already admin-only in 11-A)
+  - Legal source mutations (already admin-only)
+- Safe GET/read routes remain available; viewer can view chats, messages, documents, generated documents, and audit log.
+- Role-name policy fixed for `supply` and `accountant` roles to match role enum correctly.
+- Frontend: write controls (buttons, inputs) hidden for viewer role; admin settings and user list hidden from non-admin users.
+- Enforcement is both backend (403 API responses) and frontend (UI hiding and defensive detail filtering).
 
-### Audit log
+### Audit log (COMPLETE)
 
-Append-only `AuditLog` entries for:
+Append-only `AuditLog` table with entries for:
 
-- user login and logout;
-- user created, updated (role/name/active), and deactivated;
-- password reset;
-- CompanyProfile update;
-- document template applied;
-- legal-source admin changes (add, update, deactivate).
+- `auth.login` — user login
+- `auth.logout` — user logout
+- `user.created` — admin creates new user
+- `user.updated` — admin updates user (role/name/active)
+- `user.deactivated` — user deactivated by admin
+- `user.password_reset` — admin resets user password
 
-Each entry records: `action`, `actor_user_id`, `target_id` (if applicable), `detail` (JSON),
-`created_at`. Password hashes and plaintext passwords must never appear in audit log entries.
+Each entry records: `action` (string), `actor_user_id` (who performed it), `target_id` (user being acted upon, nullable),
+`detail` (JSON), `created_at` (timestamp).
 
-Admin can view recent audit entries in the settings modal.
+**Audit safety enforced:**
+- No `password`, `password_hash`, `token`, `cookie`, `session`, `secret`, or `new_password` in audit details.
+- `GET /api/admin/audit` endpoint requires `admin` role and supports `limit` and `offset` pagination.
+- Frontend audit log section in admin settings filters sensitive detail keys defensively before display.
+
+Admin can view recent audit entries in the settings modal with pagination.
 
 ## Deferred after Stage 11-B2
 
-- full director/chief-accountant approval workflow;
-- granular workspace permissions by document category;
-- HTTPS deployment hardening;
-- multi-worker bootstrap lock (race-condition hardening);
-- Telegram / VPS;
-- stamp/signature sensitive storage and insertion policy.
+- Full director/chief-accountant approval workflow (approval role enforcement).
+- Granular workspace permissions by document category (`sales`, `supply`, `hr`, `accountant` category-based restrictions).
+- Audit log expansion (document/template/legal-source mutations; approval workflow events).
+- HTTPS deployment hardening.
+- Multi-worker bootstrap lock (race-condition hardening for bootstrap endpoint).
+- Telegram / VPS.
+- Stamp/signature sensitive storage and insertion policy.
+
+## Commits in Stage 11-B2
+
+- `606eb29 — feat: enforce viewer read-only access` (backend 403 enforcement)
+- `b775422 — feat: hide read-only viewer workspace controls` (frontend UI hiding)
+- `711a271 — feat: audit auth and admin user actions` (audit log implementation)
+- `f395c4b` (audit UI frontend part 1)
+- `7f4b07c` (audit UI frontend part 2)

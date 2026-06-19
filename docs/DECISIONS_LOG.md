@@ -52,6 +52,10 @@
 - Stage 11-A decided: the first admin is created by `POST /api/auth/bootstrap` only; this endpoint closes permanently once an active admin with a password hash exists.
 - Stage 11-B1 decided: the current dev database is SQLite (`sqlite+aiosqlite:///./legal_factory.db`). PostgreSQL restore is deferred to a separate stage before local network or production launch.
 - Stage 11-B1 decided: `localhost` must be used consistently for both frontend (`localhost:3000`) and backend (`localhost:8000`) in development. Mixing `127.0.0.1` and `localhost` suppresses SameSite=Lax session cookies on POST/PATCH/DELETE requests and must be avoided.
+- Stage 11-B2 decided: `viewer` role is read-only across the entire legal workspace. Returns 403 on all mutations (chat, message, document, generated document). Safe GET/read routes remain available.
+- Stage 11-B2 decided: Audit log covers authentication and user management actions only (`auth.login`, `auth.logout`, `user.created`, `user.updated`, `user.deactivated`, `user.password_reset`). CompanyProfile, document templates, and legal source mutations are deferred to future audit expansion.
+- Stage 11-B2 decided: Audit entries must never contain password, password_hash, token, cookie, session, secret, or new_password. Frontend audit section filters sensitive detail keys defensively as secondary protection.
+- Stage 11-B2 decided: Admin audit UI section is read-only and shows recent audit entries with `limit`/`offset` pagination.
 
 ## Pending Decisions
 

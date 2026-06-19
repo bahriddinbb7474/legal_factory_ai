@@ -1,7 +1,7 @@
 # Current State
 
-Last updated after Stage 11-B1 Admin User Management.
-Master commit: `c30ea53 — merge: stage 11-b1 user menu UI fixes`.
+Last updated after Stage 11-B2 Viewer Read-Only and Basic Audit Log.
+Master commit: `711a271 — feat: audit auth and admin user actions`.
 
 ## Completed stages
 
@@ -23,6 +23,14 @@ Master commit: `c30ea53 — merge: stage 11-b1 user menu UI fixes`.
   section navigation, users list, inline user creation, inline edit, inline password reset.
   Admin UI is visible only to the `admin` role; non-admin users (including viewer) cannot see
   the Settings button or the admin user list.
+- **Stage 11-B2**: Viewer read-only and basic audit log. `viewer` role enforced read-only:
+  returns 403 on workspace mutations (chat/message/document/generated-document create/update/delete);
+  safe GET/read routes remain available. Frontend: viewer write controls hidden; admin/settings
+  hidden from non-admin. Role-name policy fixed for `supply`/`accountant`. Audit log added for
+  `auth.login`, `auth.logout`, `user.created`, `user.updated`, `user.deactivated`,
+  `user.password_reset`. Audit safety: no password/password_hash/token/cookie/session/secret in
+  audit details; endpoint has `limit`/`offset`. Admin audit UI section shows recent audit entries;
+  frontend filters sensitive detail keys defensively.
 
 ## Active database
 
@@ -51,7 +59,15 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
   separate secure stage is explicitly approved.
 - Deferred: Telegram, VPS/deployment, pgvector, LEX.UZ crawler, mass historical legal import.
 
-## Next stage
+## Next major direction
 
-**Stage 11-B2 — Viewer read-only and basic audit log.**
-See `STAGE11_AUTH_ROLES.md` for planned scope. Do not implement until explicitly instructed.
+After Stage 11-B2, remaining priorities before final launch:
+
+1. UI/page cleanup and polish.
+2. Chat functionality cleanup and comprehensive testing.
+3. Correct CompanyProfile data and ensure admin setup workflow.
+4. Document templates quality and completeness.
+5. Approval workflow clarity and enforcement.
+6. Legal source expansion and RAG testing with real factory scenarios.
+7. AI testing by demo topics (debt claim, contract review, tax letter, HR, customs, etc.).
+8. Founder demo preparation with realistic end-to-end scenarios.

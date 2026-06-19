@@ -1,6 +1,6 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, and 11-B1 are complete. See `CURRENT_STATE.md` for the full status snapshot. Next recommended stage: 11-B2.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, and 11-B2 are complete. See `CURRENT_STATE.md` for the full status snapshot. Next priority: UI/page cleanup and chat functionality testing.
 
 ## Completed
 
@@ -100,26 +100,22 @@ is hidden from non-admin users including viewer. Self-registration is forbidden.
 
 ## Main Path Now
 
-### Stage 11-B2 — Viewer Read-Only and Basic Audit Log
-
-Do not implement until explicitly instructed. Scope is planned only.
+### Stage 11-B2 — Viewer Read-Only and Basic Audit Log (complete)
 
 Goal: enforce role-based read-only access and add a basic audit log.
 
-Planned scope:
+Completed scope:
 
-- `viewer` role can read allowed workspace areas but cannot create, update, or delete anything.
-- `sales`, `supply`, `hr`, `accountant` roles get basic safe restrictions matching their category.
+- `viewer` role is now read-only: returns 403 on workspace mutations (chat/message/document/generated-document); safe GET routes available.
+- Frontend: viewer write controls hidden; admin/settings hidden from non-admin.
 - Basic audit log for important actions:
   - login and logout;
   - user created, updated, and deactivated;
-  - password reset;
-  - CompanyProfile update;
-  - template applied;
-  - legal-source admin changes.
+  - password reset.
+- Audit safety: no password/password_hash/token/cookie/session/secret/new_password in audit details.
+- Admin can view recent audit entries in settings modal with `limit`/`offset`.
 
-Acceptance criteria: viewer confirmed read-only in UI and API; audit entries appear for all listed
-actions; admin can view recent audit log in settings.
+Status: viewer read-only verified in UI and API; audit entries logged for all covered actions; admin audit UI section functional.
 
 ### Stage 10 — Laptop Local Server
 
@@ -155,11 +151,11 @@ logs
 
 SQLite is acceptable only for tests/minimal local launch. Local PostgreSQL is preferred if practical. PostgreSQL remains the production target.
 
-### Stage 11 — Roles and Local Auth (in progress)
+### Stage 11 — Roles and Local Auth (complete)
 
-Stage 11-A and 11-B1 are complete. Stage 11-B2 (viewer read-only and audit log) is next.
-Remaining after 11-B2: HTTPS hardening, approval workflow, granular category permissions,
-and multi-worker bootstrap lock hardening.
+Stage 11-A, 11-B1, and 11-B2 are all complete.
+Remaining after Stage 11: HTTPS hardening, approval workflow, granular category permissions,
+and multi-worker bootstrap lock hardening (deferred to later stages).
 
 ### Stage 12 — Final Factory Scenarios
 
