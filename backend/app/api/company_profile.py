@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.schemas.company_profile import CompanyProfileRead, CompanyProfileUpdate
 from app.services.audit import write_audit_log
 from app.services.company_profile import company_profile_service
-from app.services.current_user import CurrentUser, get_current_user
+from app.services.current_user import CurrentUser, require_role
 from app.storage.local import local_storage
 
 
@@ -43,7 +43,7 @@ async def get_company_profile(db: AsyncSession = Depends(get_db)) -> CompanyProf
 async def put_company_profile(
     payload: CompanyProfileUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("admin")),
 ) -> CompanyProfileRead:
     existing = await company_profile_service.get_profile(db)
     profile = await company_profile_service.upsert_profile(db, payload)
@@ -64,7 +64,7 @@ async def put_company_profile(
 async def upload_company_profile_logo(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("admin")),
 ) -> CompanyProfileRead:
     profile = await _get_company_profile_or_404(db)
     content, suffix, mime_type, original_filename = await _read_asset_upload(file, LOGO_ALLOWED_EXTENSIONS)
@@ -88,7 +88,7 @@ async def upload_company_profile_logo(
 @router.delete("/logo", response_model=CompanyProfileRead)
 async def delete_company_profile_logo(
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("admin")),
 ) -> CompanyProfileRead:
     profile = await _get_company_profile_or_404(db)
     if profile.logo_storage_key:
@@ -110,7 +110,7 @@ async def delete_company_profile_logo(
 async def upload_company_profile_letterhead(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("admin")),
 ) -> CompanyProfileRead:
     profile = await _get_company_profile_or_404(db)
     content, suffix, mime_type, original_filename = await _read_asset_upload(file, LETTERHEAD_ALLOWED_EXTENSIONS)
@@ -134,7 +134,7 @@ async def upload_company_profile_letterhead(
 @router.delete("/letterhead", response_model=CompanyProfileRead)
 async def delete_company_profile_letterhead(
     db: AsyncSession = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("admin")),
 ) -> CompanyProfileRead:
     profile = await _get_company_profile_or_404(db)
     if profile.letterhead_storage_key:

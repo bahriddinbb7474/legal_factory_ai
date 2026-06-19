@@ -1,6 +1,20 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class UserRole(StrEnum):
+    admin = "admin"
+    director = "director"
+    chief_accountant = "chief_accountant"
+    legal_responsible = "legal_responsible"
+    sales = "sales"
+    supply = "supply"
+    hr = "hr"
+    accountant = "accountant"
+    viewer = "viewer"
 
 
 class RoleCreate(BaseModel):
@@ -19,13 +33,30 @@ class RoleRead(RoleCreate):
 class UserCreate(BaseModel):
     email: str
     full_name: str
-    role_id: int | None = None
+    role: UserRole = UserRole.viewer
+    password: str = Field(min_length=12, max_length=256)
     is_active: bool = True
 
 
-class UserRead(UserCreate):
+class UserRead(BaseModel):
     id: int
+    email: str
+    full_name: str
+    role: UserRole
+    is_active: bool
+    last_login_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class BootstrapAdminRequest(BaseModel):
+    email: str
+    full_name: str
+    password: str = Field(min_length=12, max_length=256)
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.admin import router as admin_router
 from app.api.agents import router as agents_router
+from app.api.auth import router as auth_router
 from app.api.chats import router as chats_router
 from app.api.company_profile import router as company_profile_router
 from app.api.document_templates import router as document_templates_router
@@ -23,6 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(agents_router)
 app.include_router(chats_router)
 app.include_router(company_profile_router)

@@ -18,12 +18,12 @@ from app.schemas.legal_sources import (
     LegalSourceUpdate,
 )
 from app.services.audit import write_audit_log
-from app.services.current_user import CurrentUser, get_current_user
+from app.services.current_user import CurrentUser, get_current_user, require_role
 from app.services.legal_chunker import legal_chunker
 from app.storage.local import local_storage
 
 
-router = APIRouter(prefix="/api/admin/legal-sources", tags=["admin-legal-sources"])
+router = APIRouter(prefix="/api/admin/legal-sources", tags=["admin-legal-sources"], dependencies=[Depends(require_role("admin"))])
 
 
 @router.post("", response_model=LegalSourceDetailRead, status_code=status.HTTP_201_CREATED)

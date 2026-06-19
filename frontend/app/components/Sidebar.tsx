@@ -73,10 +73,12 @@ const workspaceSections: WorkspaceSection[] = [
 ];
 
 type SidebarProps = {
+  currentUser: { email: string; full_name: string; role: string };
+  onLogout: () => void;
   onOpenSettings?: () => void;
 };
 
-export default function Sidebar({ onOpenSettings }: SidebarProps) {
+export default function Sidebar({ currentUser, onLogout, onOpenSettings }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState("");
   const [activeChat, setActiveChat] = useState("Проверка договора поставки N258");
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
@@ -178,12 +180,13 @@ export default function Sidebar({ onOpenSettings }: SidebarProps) {
           aria-label="Профиль / Настройки"
           type="button"
         >
-          BB
+          {currentUser.full_name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}
         </button>
         <button className="profile-copy" onClick={onOpenSettings} type="button">
-          <strong>Bahriddin Boboev</strong>
-          <span>фин.директор</span>
+          <strong>{currentUser.full_name || currentUser.email}</strong>
+          <span>{currentUser.role}</span>
         </button>
+        <button className="logout-button" onClick={onLogout} type="button" title="Выйти" aria-label="Выйти">↪</button>
       </div>
     </aside>
   );

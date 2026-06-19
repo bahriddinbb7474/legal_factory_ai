@@ -9,10 +9,11 @@ from app.schemas.audit import AuditLogRead
 from app.schemas.openrouter import OpenRouterModelRead
 from app.schemas.providers import ProviderRead, ProviderUpdate
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
+from app.services.current_user import require_role
 from app.services.openrouter_models import openrouter_model_service
 
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_role("admin"))])
 
 
 @router.get("/agents", response_model=list[AgentRead])

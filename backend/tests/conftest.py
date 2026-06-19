@@ -12,7 +12,7 @@ from app.main import app
 
 
 @pytest.fixture()
-def client() -> Generator[TestClient, None, None]:
+def raw_client() -> Generator[TestClient, None, None]:
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -36,3 +36,13 @@ def client() -> Generator[TestClient, None, None]:
 
     app.dependency_overrides.clear()
     asyncio.run(engine.dispose())
+
+
+@pytest.fixture()
+def client(raw_client: TestClient) -> TestClient:
+    response = raw_client.post(
+        "/api/auth/bootstrap",
+        json={"email": "admin@example.test", "full_name": "Test Admin", "password": "test-admin-password"},
+    )
+    assert response.status_code == 201
+    return raw_client

@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     embedding_model: str = ""
     embedding_provider: str = ""
     embedding_dimensions: int = 0
-    dev_current_user_role: str = "admin"
-    dev_current_user_id: int = 1
+    auth_session_days: int = 7
+    auth_cookie_secure: bool = False
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
 
     model_config = SettingsConfigDict(

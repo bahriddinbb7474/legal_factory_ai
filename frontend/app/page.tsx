@@ -6,6 +6,12 @@ import Sidebar from "./components/Sidebar";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
+function fetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  return globalThis.fetch(input, { ...init, credentials: "include" });
+}
+
+type AuthUser = { id: number; email: string; full_name: string; role: string };
+
 type Agent = {
   id: number;
   code: "lawyer_1" | "lawyer_2" | "lawyer_3";
@@ -287,6 +293,11 @@ const authorMeta: Record<ChatMessage["author_type"], string> = {
 };
 
 export default function HomePage() {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [agents, setAgents] = useState<Agent[]>(fallbackAgents);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedLawyer, setSelectedLawyer] = useState<Agent["code"]>("lawyer_1");
@@ -436,8 +447,39 @@ export default function HomePage() {
     if (menu === "download" || menu === "reply") {
       setOpenDocumentMenu(menu);
     }
-    void loadSettingsData();
+    void loadCurrentUser();
   }, []);
+
+  async function loadCurrentUser() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`);
+      if (response.ok) {
+        const user = (await response.json()) as AuthUser;
+        setCurrentUser(user);
+        if (user.role === "admin") void loadSettingsData();
+        else { void loadCompanyProfile(); void loadDocumentTemplates(); }
+      }
+    } finally { setAuthLoading(false); }
+  }
+
+  async function login(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoginError("");
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+    }).catch(() => null);
+    if (!response?.ok) { setLoginError(response ? "Неверный email или пароль." : "Backend недоступен."); return; }
+    const user = (await response.json()) as AuthUser;
+    setCurrentUser(user); setLoginPassword("");
+    if (user.role === "admin") void loadSettingsData();
+    else { void loadCompanyProfile(); void loadDocumentTemplates(); }
+  }
+
+  async function logout() {
+    await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST" }).catch(() => undefined);
+    setCurrentUser(null); setIsSettingsOpen(false);
+  }
 
   async function loadSettingsData() {
     try {
@@ -1190,9 +1232,20 @@ export default function HomePage() {
     setOpenDocumentMenu((currentMenu) => (currentMenu === menu ? null : menu));
   }
 
+  if (authLoading) return <main className="auth-screen"><p>Проверка сессии…</p></main>;
+  if (!currentUser) return (
+    <main className="auth-screen"><form className="login-card" onSubmit={login}>
+      <div className="brand-mark">KT</div><h1>Legal Factory AI</h1><p>Войдите в рабочее пространство</p>
+      <label>Email<input type="email" autoComplete="username" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} required /></label>
+      <label>Пароль<input type="password" autoComplete="current-password" value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} required /></label>
+      {loginError ? <span className="login-error">{loginError}</span> : null}
+      <button className="compact-button" type="submit">Войти</button>
+    </form></main>
+  );
+
   return (
     <main className={isDocumentOpen ? "workspace-shell document-open" : "workspace-shell"}>
-      <Sidebar onOpenSettings={() => setIsSettingsOpen(true)} />
+      <Sidebar currentUser={currentUser} onLogout={logout} onOpenSettings={currentUser.role === "admin" ? () => setIsSettingsOpen(true) : undefined} />
 
       <section className="chat-area">
         <header className="topbar">
@@ -1705,7 +1758,7 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      {isSettingsOpen ? (
+      {isSettingsOpen && currentUser.role === "admin" ? (
         <div className="modal-backdrop">
           <section className="settings-modal">
             <header className="settings-header">
