@@ -22,7 +22,7 @@ Supported roles:
 - `accountant`
 - `viewer`
 
-Stage 11-A enforces `admin` on admin/settings API routes and on CompanyProfile create/update and asset upload/delete. Other roles can authenticate and use the existing legal workspace; finer document-category and read-only enforcement is deferred.
+Stage 11-A requires an active authenticated user for all legal workspace API routes. It enforces `admin` on admin/settings API routes and on CompanyProfile create/update and asset upload/delete. Other roles can authenticate and use the existing legal workspace; finer document-category and read-only enforcement is deferred.
 
 ## Passwords and sessions
 
@@ -41,14 +41,16 @@ For HTTPS deployment, set `AUTH_COOKIE_SECURE=true`. CORS must list the exact fr
 
 ## Initial admin bootstrap
 
-On a fresh database, create the first administrator once:
+Create the first usable administrator once:
 
 ```powershell
 $body = @{ email = "your-admin@example.com"; full_name = "Local Administrator"; password = Read-Host "Strong password" } | ConvertTo-Json
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/auth/bootstrap -ContentType application/json -Body $body -SessionVariable session
 ```
 
-Use a unique password of at least 12 characters. Do not place credentials in source files, `.env`, shell history, documentation, or screenshots. Bootstrap returns `409` after any user exists and cannot create a second administrator.
+Use a unique password of at least 12 characters. Do not place credentials in source files, `.env`, shell history, documentation, or screenshots.
+
+Bootstrap is available only while there is no active administrator with a non-empty password hash. This permits a database migrated from an earlier stage to initialize its first usable administrator even if legacy user rows already exist. If the submitted email belongs to a legacy user, that row is initialized as the administrator instead of creating a duplicate. Bootstrap is serialized by an application-level lock and re-checks the usable-admin condition inside the lock; after a usable administrator exists, it returns `409`.
 
 ## Frontend behavior
 

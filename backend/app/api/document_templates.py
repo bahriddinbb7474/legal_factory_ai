@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.document_templates import DocumentTemplateRead
+from app.services.current_user import get_current_user
 from app.services.document_templates import document_template_service
 
 
-router = APIRouter(prefix="/api/document-templates", tags=["document-templates"])
+router = APIRouter(prefix="/api/document-templates", tags=["document-templates"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[DocumentTemplateRead])

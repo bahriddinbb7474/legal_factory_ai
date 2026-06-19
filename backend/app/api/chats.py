@@ -32,7 +32,7 @@ from app.services.structured_response import StructuredResponseError, invoke_str
 from app.storage.local import local_storage
 
 
-router = APIRouter(prefix="/api/chats", tags=["chats"])
+router = APIRouter(prefix="/api/chats", tags=["chats"], dependencies=[Depends(get_current_user)])
 
 
 def get_llm_gateway() -> OpenRouterGateway:

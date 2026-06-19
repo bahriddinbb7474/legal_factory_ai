@@ -20,8 +20,8 @@ from app.services.red_flags import red_flag_service
 from app.storage.local import local_storage
 
 
-router = APIRouter(prefix="/api/documents", tags=["documents"])
-chat_router = APIRouter(prefix="/api/chats", tags=["chat-documents"])
+router = APIRouter(prefix="/api/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
+chat_router = APIRouter(prefix="/api/chats", tags=["chat-documents"], dependencies=[Depends(get_current_user)])
 
 ALLOWED_EXTENSIONS = {
     ".pdf": "application/pdf",

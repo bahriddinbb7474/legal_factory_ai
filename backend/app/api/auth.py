@@ -1,7 +1,8 @@
+import asyncio
 from datetime import datetime
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -12,6 +13,7 @@ from app.services.auth import create_session, hash_password, hash_session_token,
 from app.services.current_user import CurrentUser, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+_bootstrap_lock = asyncio.Lock()
 
 
 def _read_user(user: User) -> UserRead:
@@ -24,16 +26,34 @@ def _set_cookie(response: Response, token: str) -> None:
 
 @router.post("/bootstrap", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def bootstrap_admin(payload: BootstrapAdminRequest, response: Response, db: AsyncSession = Depends(get_db)) -> UserRead:
-    if (await db.scalar(select(func.count(User.id)))) != 0:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bootstrap is already disabled")
-    user = User(email=payload.email.strip().lower(), full_name=payload.full_name.strip(), role=UserRole.admin.value, password_hash=hash_password(payload.password), is_active=True)
-    db.add(user)
-    await db.flush()
-    token = await create_session(db, user)
-    await db.commit()
-    await db.refresh(user)
-    _set_cookie(response, token)
-    return _read_user(user)
+    async with _bootstrap_lock:
+        usable_admin_id = await db.scalar(
+            select(User.id)
+            .where(
+                User.role == UserRole.admin.value,
+                User.is_active.is_(True),
+                User.password_hash != "",
+            )
+            .limit(1)
+        )
+        if usable_admin_id is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bootstrap is already disabled")
+
+        email = payload.email.strip().lower()
+        user = await db.scalar(select(User).where(User.email == email))
+        if user is None:
+            user = User(email=email, full_name=payload.full_name.strip())
+            db.add(user)
+        user.full_name = payload.full_name.strip()
+        user.role = UserRole.admin.value
+        user.password_hash = hash_password(payload.password)
+        user.is_active = True
+        await db.flush()
+        token = await create_session(db, user)
+        await db.commit()
+        await db.refresh(user)
+        _set_cookie(response, token)
+        return _read_user(user)
 
 
 @router.post("/login", response_model=UserRead)

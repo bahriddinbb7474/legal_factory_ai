@@ -9,11 +9,11 @@ from app.db.session import get_db
 from app.schemas.company_profile import CompanyProfileRead, CompanyProfileUpdate
 from app.services.audit import write_audit_log
 from app.services.company_profile import company_profile_service
-from app.services.current_user import CurrentUser, require_role
+from app.services.current_user import CurrentUser, get_current_user, require_role
 from app.storage.local import local_storage
 
 
-router = APIRouter(prefix="/api/company-profile", tags=["company-profile"])
+router = APIRouter(prefix="/api/company-profile", tags=["company-profile"], dependencies=[Depends(get_current_user)])
 
 LOGO_ALLOWED_EXTENSIONS = {
     ".png": "image/png",

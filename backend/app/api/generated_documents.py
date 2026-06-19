@@ -20,7 +20,7 @@ from app.services.document_templates import document_template_service
 from app.services.generated_documents import build_docx_export, build_pdf_export, save_generated_document_text
 
 
-router = APIRouter(prefix="/api/generated-documents", tags=["generated-documents"])
+router = APIRouter(prefix="/api/generated-documents", tags=["generated-documents"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/{document_id}", response_model=GeneratedDocumentRead)
