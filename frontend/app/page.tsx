@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useMemo, useState } from "re
 
 import Sidebar from "./components/Sidebar";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 function fetch(input: RequestInfo | URL, init: RequestInit = {}) {
   return globalThis.fetch(input, { ...init, credentials: "include" });
@@ -819,8 +819,14 @@ export default function HomePage() {
   async function loadAdminUsers() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/users`);
-      if (response.ok) setAdminUsers(await response.json());
-    } catch {}
+      if (response.ok) {
+        setAdminUsers(await response.json());
+      } else if (response.status === 401 || response.status === 403) {
+        setUserStatus("Сессия истекла или нет доступа. Войдите как администратор.");
+      }
+    } catch {
+      setUserStatus("Не удалось загрузить пользователей.");
+    }
   }
 
   function extractApiError(detail: unknown, fallback: string): string {
@@ -837,7 +843,7 @@ export default function HomePage() {
       body: JSON.stringify(newUserForm),
     }).catch(() => null);
     if (!response?.ok) {
-      const errData = await response?.json().catch(() => null);
+      const errData = response ? await response.json().catch(() => null) : null;
       setUserStatus(extractApiError(errData?.detail, "Не удалось создать пользователя."));
       return;
     }
@@ -855,7 +861,7 @@ export default function HomePage() {
       body: JSON.stringify(editUserForm),
     }).catch(() => null);
     if (!response?.ok) {
-      const errData = await response?.json().catch(() => null);
+      const errData = response ? await response.json().catch(() => null) : null;
       setUserStatus(extractApiError(errData?.detail, "Не удалось обновить пользователя."));
       return;
     }
@@ -871,7 +877,7 @@ export default function HomePage() {
       body: JSON.stringify({ new_password: resetPasswordValue }),
     }).catch(() => null);
     if (!response?.ok) {
-      const errData = await response?.json().catch(() => null);
+      const errData = response ? await response.json().catch(() => null) : null;
       setUserStatus(extractApiError(errData?.detail, "Не удалось сбросить пароль."));
       return;
     }
@@ -1861,7 +1867,7 @@ export default function HomePage() {
             </header>
             {!settingsSection ? (
               <div className="settings-sections-nav">
-                <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("users"); void loadAdminUsers(); }}>
+                <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("users"); setUserStatus(""); void loadAdminUsers(); }}>
                   <strong>Пользователи</strong>
                   <span>Создание, редактирование, доступ</span>
                 </button>
