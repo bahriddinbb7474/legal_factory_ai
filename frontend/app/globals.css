@@ -1268,6 +1268,84 @@ input:disabled {
 .login-error { color: #a83b2f; font-size: 13px; }
 .logout-button { border-radius: 8px; flex: 0 0 auto; padding: 6px; }
 
+/* ── settings section nav ───────────────────────────── */
+
+.settings-sections-nav {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  padding: 20px 24px 24px;
+}
+
+.settings-section-btn {
+  align-items: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  text-align: left;
+}
+
+.settings-section-btn:hover {
+  background: var(--panel-strong);
+  border-color: var(--accent);
+}
+
+.settings-section-btn strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings-section-btn span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-back {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.settings-back:hover {
+  color: var(--text);
+}
+
+.settings-add-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding: 0 4px 4px;
+}
+
+.user-active {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.user-inactive {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.user-edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.user-reset-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* ── user menu ──────────────────────────────────────── */
 
 .sidebar-profile {

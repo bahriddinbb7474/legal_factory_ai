@@ -411,6 +411,7 @@ export default function HomePage() {
   const [editUserForm, setEditUserForm] = useState({ full_name: "", role: "viewer", is_active: true });
   const [resetPasswordForId, setResetPasswordForId] = useState<number | null>(null);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [settingsSection, setSettingsSection] = useState("");
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
@@ -1839,122 +1840,191 @@ export default function HomePage() {
           <section className="settings-modal">
             <header className="settings-header">
               <div>
-                <strong>Профиль / Настройки</strong>
-                <span>Модели юристов и провайдеры</span>
+                <strong>
+                  {settingsSection === "users" ? "Пользователи" :
+                   settingsSection === "company" ? "Профиль компании" :
+                   settingsSection === "providers" ? "Провайдеры" :
+                   settingsSection === "agents" ? "Модели юристов" :
+                   settingsSection === "legal" ? "Юридическая база" :
+                   "Настройки"}
+                </strong>
+                <span>Административная панель</span>
               </div>
-              <button className="document-icon-button" onClick={() => setIsSettingsOpen(false)} type="button" aria-label="Закрыть настройки">
+              <button
+                className="document-icon-button"
+                onClick={() => { setIsSettingsOpen(false); setSettingsSection(""); setIsCreateUserOpen(false); setEditingUserId(null); setUserStatus(""); }}
+                type="button"
+                aria-label="Закрыть настройки"
+              >
                 ×
               </button>
             </header>
-            <div className="settings-body">
-              <section>
-                <h2>Пользователи</h2>
-                {isCreateUserOpen ? (
-                  <div className="legal-source-form">
-                    <input placeholder="Email *" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((f) => ({ ...f, email: e.target.value }))} />
-                    <input placeholder="Полное имя *" value={newUserForm.full_name} onChange={(e) => setNewUserForm((f) => ({ ...f, full_name: e.target.value }))} />
-                    <select value={newUserForm.role} onChange={(e) => setNewUserForm((f) => ({ ...f, role: e.target.value }))}>
-                      <option value="viewer">viewer</option>
-                      <option value="admin">admin</option>
-                      <option value="director">director</option>
-                      <option value="chief_accountant">chief_accountant</option>
-                      <option value="legal_responsible">legal_responsible</option>
-                      <option value="sales">sales</option>
-                      <option value="supply">supply</option>
-                      <option value="hr">hr</option>
-                      <option value="accountant">accountant</option>
-                    </select>
-                    <input placeholder="Пароль (мин. 12 символов) *" type="password" value={newUserForm.password} onChange={(e) => setNewUserForm((f) => ({ ...f, password: e.target.value }))} />
-                    <div className="upload-actions">
-                      <button className="compact-button" type="button" onClick={() => { setIsCreateUserOpen(false); setUserStatus(""); }}>Отмена</button>
-                      <button className="agent-chip active" type="button" onClick={() => void createUser()}>Создать</button>
+            {!settingsSection ? (
+              <div className="settings-sections-nav">
+                <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("users"); void loadAdminUsers(); }}>
+                  <strong>Пользователи</strong>
+                  <span>Создание, редактирование, доступ</span>
+                </button>
+                <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("company")}>
+                  <strong>Профиль компании</strong>
+                  <span>Реквизиты и ресурсы</span>
+                </button>
+                <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("providers")}>
+                  <strong>Провайдеры</strong>
+                  <span>OpenRouter провайдеры</span>
+                </button>
+                <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("agents")}>
+                  <strong>Модели юристов</strong>
+                  <span>AI-юристы и модели</span>
+                </button>
+                <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("legal")}>
+                  <strong>Юридическая база</strong>
+                  <span>Правовые источники</span>
+                </button>
+              </div>
+            ) : (
+              <div className="settings-body">
+                <button
+                  className="settings-back"
+                  type="button"
+                  onClick={() => { setSettingsSection(""); setIsCreateUserOpen(false); setEditingUserId(null); setResetPasswordForId(null); setUserStatus(""); }}
+                >
+                  ← Назад
+                </button>
+                {settingsSection === "users" && (
+                  <section>
+                    <div className="settings-list">
+                      {adminUsers.map((user) => (
+                        <article className="settings-row" key={user.id}>
+                          <div>
+                            <strong>{user.full_name}</strong>
+                            <span>{user.email} · {user.role}</span>
+                            <span className={user.is_active ? "user-active" : "user-inactive"}>
+                              {user.is_active ? "Активен" : "Деактивирован"}
+                            </span>
+                          </div>
+                          <div className="legal-source-actions">
+                            {editingUserId === user.id ? (
+                              <div className="user-edit-panel">
+                                <input
+                                  value={editUserForm.full_name}
+                                  onChange={(e) => setEditUserForm((f) => ({ ...f, full_name: e.target.value }))}
+                                  placeholder="Полное имя"
+                                />
+                                <select value={editUserForm.role} onChange={(e) => setEditUserForm((f) => ({ ...f, role: e.target.value }))}>
+                                  <option value="viewer">viewer</option>
+                                  <option value="admin">admin</option>
+                                  <option value="director">director</option>
+                                  <option value="chief_accountant">chief_accountant</option>
+                                  <option value="legal_responsible">legal_responsible</option>
+                                  <option value="sales">sales</option>
+                                  <option value="supply">supply</option>
+                                  <option value="hr">hr</option>
+                                  <option value="accountant">accountant</option>
+                                </select>
+                                <label>
+                                  <input type="checkbox" checked={editUserForm.is_active} onChange={(e) => setEditUserForm((f) => ({ ...f, is_active: e.target.checked }))} />
+                                  {" "}{editUserForm.is_active ? "Активен" : "Деактивирован — нажмите Сохранить чтобы активировать"}
+                                </label>
+                                <div className="user-reset-row">
+                                  <input
+                                    type="password"
+                                    placeholder="Новый пароль (мин. 12, оставьте пустым чтобы не менять)"
+                                    value={resetPasswordValue}
+                                    onChange={(e) => setResetPasswordValue(e.target.value)}
+                                  />
+                                  {resetPasswordValue.length >= 12 && (
+                                    <button className="compact-button" type="button" onClick={() => void doResetPassword(user.id)}>
+                                      Сбросить пароль
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="upload-actions">
+                                  <button className="compact-button" type="button" onClick={() => { setEditingUserId(null); setResetPasswordValue(""); setUserStatus(""); }}>Отмена</button>
+                                  <button className="agent-chip active" type="button" onClick={() => void saveUserEdit(user.id)}>Сохранить</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                className="compact-button"
+                                type="button"
+                                onClick={() => { setEditingUserId(user.id); setEditUserForm({ full_name: user.full_name, role: user.role, is_active: user.is_active }); setResetPasswordValue(""); setUserStatus(""); }}
+                              >
+                                Редактировать
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      ))}
                     </div>
-                  </div>
-                ) : (
-                  <button className="compact-button" type="button" onClick={() => setIsCreateUserOpen(true)}>Создать пользователя</button>
+                    {userStatus ? <p className="settings-hint">{userStatus}</p> : null}
+                    {isCreateUserOpen ? (
+                      <div className="legal-source-form">
+                        <input placeholder="Email *" type="email" value={newUserForm.email} onChange={(e) => setNewUserForm((f) => ({ ...f, email: e.target.value }))} />
+                        <input placeholder="Полное имя *" value={newUserForm.full_name} onChange={(e) => setNewUserForm((f) => ({ ...f, full_name: e.target.value }))} />
+                        <select value={newUserForm.role} onChange={(e) => setNewUserForm((f) => ({ ...f, role: e.target.value }))}>
+                          <option value="viewer">viewer</option>
+                          <option value="admin">admin</option>
+                          <option value="director">director</option>
+                          <option value="chief_accountant">chief_accountant</option>
+                          <option value="legal_responsible">legal_responsible</option>
+                          <option value="sales">sales</option>
+                          <option value="supply">supply</option>
+                          <option value="hr">hr</option>
+                          <option value="accountant">accountant</option>
+                        </select>
+                        <input placeholder="Пароль (мин. 12 символов) *" type="password" value={newUserForm.password} onChange={(e) => setNewUserForm((f) => ({ ...f, password: e.target.value }))} />
+                        <div className="upload-actions">
+                          <button className="compact-button" type="button" onClick={() => { setIsCreateUserOpen(false); setUserStatus(""); }}>Отмена</button>
+                          <button className="agent-chip active" type="button" onClick={() => void createUser()}>Создать</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="settings-add-row">
+                        <button className="agent-chip active" type="button" onClick={() => { setIsCreateUserOpen(true); setUserStatus(""); }}>
+                          + Добавить
+                        </button>
+                      </div>
+                    )}
+                  </section>
                 )}
-                {userStatus ? <p className="settings-hint">{userStatus}</p> : null}
-                <div className="settings-list">
-                  {adminUsers.map((user) => (
-                    <article className="settings-row" key={user.id}>
-                      <div>
-                        <strong>{user.full_name}</strong>
-                        <span>{user.email} · {user.role} · {user.is_active ? "активен" : "деактивирован"}</span>
-                      </div>
-                      <div className="legal-source-actions">
-                        {editingUserId === user.id ? (
-                          <>
-                            <input value={editUserForm.full_name} onChange={(e) => setEditUserForm((f) => ({ ...f, full_name: e.target.value }))} />
-                            <select value={editUserForm.role} onChange={(e) => setEditUserForm((f) => ({ ...f, role: e.target.value }))}>
-                              <option value="viewer">viewer</option>
-                              <option value="admin">admin</option>
-                              <option value="director">director</option>
-                              <option value="chief_accountant">chief_accountant</option>
-                              <option value="legal_responsible">legal_responsible</option>
-                              <option value="sales">sales</option>
-                              <option value="supply">supply</option>
-                              <option value="hr">hr</option>
-                              <option value="accountant">accountant</option>
-                            </select>
-                            <label><input type="checkbox" checked={editUserForm.is_active} onChange={(e) => setEditUserForm((f) => ({ ...f, is_active: e.target.checked }))} /> Активен</label>
-                            <button className="compact-button" type="button" onClick={() => void saveUserEdit(user.id)}>Сохранить</button>
-                            <button className="compact-button" type="button" onClick={() => setEditingUserId(null)}>Отмена</button>
-                          </>
-                        ) : resetPasswordForId === user.id ? (
-                          <>
-                            <input type="password" placeholder="Новый пароль (мин. 12)" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} />
-                            <button className="compact-button" type="button" onClick={() => void doResetPassword(user.id)}>Сохранить пароль</button>
-                            <button className="compact-button" type="button" onClick={() => setResetPasswordForId(null)}>Отмена</button>
-                          </>
-                        ) : (
-                          <>
-                            <button className="compact-button" type="button" onClick={() => { setEditingUserId(user.id); setEditUserForm({ full_name: user.full_name, role: user.role, is_active: user.is_active }); setUserStatus(""); }}>Редактировать</button>
-                            <button className="compact-button" type="button" onClick={() => { setResetPasswordForId(user.id); setResetPasswordValue(""); setUserStatus(""); }}>Сбросить пароль</button>
-                          </>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <h2>Модели юристов</h2>
-                <div className="settings-list">
-                  {agents.map((agent) => (
-                    <article className="settings-row" key={agent.code}>
-                      <div>
-                        <strong>{agent.display_name}</strong>
-                        <span>{agent.provider_code} · {agent.model_name}</span>
-                      </div>
-                      <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
-                        Изменить
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <h2>Провайдеры</h2>
-                <div className="provider-grid">
-                  {providers.map((provider) => (
-                    <article className="provider-card" key={provider.provider_code}>
-                      <strong>{provider.display_name}</strong>
-                      <span>{provider.is_allowlisted ? "разрешен" : "запрещен"}</span>
-                      <span>{provider.supports_zdr ? "ZDR" : "без ZDR"}</span>
-                      <span>{provider.is_trusted_for_sensitive ? "доверен" : "не доверен для чувствительных документов"}</span>
-                    </article>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <h2>Юридическая база</h2>
-                <p className="settings-hint">
-                  Для Stage 7 желательно использовать LEX.UZ, действующую редакцию, заполнить номер, дату принятия, дату редакции и URL.
-                </p>
-                <h3>CompanyProfile</h3>
-                <p className="settings-hint">
-                  Stage 8-A stores company requisites for letters, claims, and future templates. Real stamp/signature assets must not be uploaded before access control and sensitive protection are implemented.
-                </p>
+                {settingsSection === "agents" && (
+                  <section>
+                    <h2>Модели юристов</h2>
+                    <div className="settings-list">
+                      {agents.map((agent) => (
+                        <article className="settings-row" key={agent.code}>
+                          <div>
+                            <strong>{agent.display_name}</strong>
+                            <span>{agent.provider_code} · {agent.model_name}</span>
+                          </div>
+                          <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
+                            Изменить
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {settingsSection === "providers" && (
+                  <section>
+                    <div className="provider-grid">
+                      {providers.map((provider) => (
+                        <article className="provider-card" key={provider.provider_code}>
+                          <strong>{provider.display_name}</strong>
+                          <span>{provider.is_allowlisted ? "разрешен" : "запрещен"}</span>
+                          <span>{provider.supports_zdr ? "ZDR" : "без ZDR"}</span>
+                          <span>{provider.is_trusted_for_sensitive ? "доверен" : "не доверен для чувствительных документов"}</span>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {settingsSection === "company" && (
+                  <section>
+                    <p className="settings-hint">
+                      Stage 8-A stores company requisites for letters, claims, and future templates. Real stamp/signature assets must not be uploaded before access control and sensitive protection are implemented.
+                    </p>
                 <div className="legal-source-form company-profile-form">
                   <input placeholder="Full name *" value={companyProfileForm.full_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, full_name: event.target.value }))} />
                   <input placeholder="Short name *" value={companyProfileForm.short_name} onChange={(event) => setCompanyProfileForm((current) => ({ ...current, short_name: event.target.value }))} />
@@ -2011,7 +2081,13 @@ export default function HomePage() {
                   </button>
                 </div>
                 {companyProfileStatus ? <p className="settings-error">{companyProfileStatus}</p> : null}
-                <div className="company-profile-divider" />
+                  </section>
+                )}
+                {settingsSection === "legal" && (
+                  <section>
+                    <p className="settings-hint">
+                      Для Stage 7 желательно использовать LEX.UZ, действующую редакцию, заполнить номер, дату принятия, дату редакции и URL.
+                    </p>
                 <div className="legal-source-form">
                   <select value={legalSourceForm.document_type} onChange={(event) => setLegalSourceForm((current) => ({ ...current, document_type: event.target.value }))}>
                     <option value="code">Кодекс</option>
@@ -2122,8 +2198,10 @@ export default function HomePage() {
                     </article>
                   ))}
                 </div>
-              </section>
-            </div>
+                  </section>
+                )}
+              </div>
+            )}
           </section>
         </div>
       ) : null}
