@@ -572,7 +572,7 @@ export default function HomePage() {
         });
       }
     } catch {
-      setCompanyProfileStatus("РџСЂРѕС„РёР»СЊ РєРѕРјРїР°РЅРёРё РїРѕРєР° РЅРµРґРѕСЃС‚СѓРїРµРЅ.");
+      setCompanyProfileStatus("Профиль компании пока недоступен.");
     }
   }
 
@@ -618,13 +618,13 @@ export default function HomePage() {
       }),
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ CompanyProfile." }));
-      setCompanyProfileStatus(error.detail ?? "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ CompanyProfile.");
+      const error = await response.json().catch(() => ({ detail: "Не удалось сохранить профиль компании." }));
+      setCompanyProfileStatus(error.detail ?? "Не удалось сохранить профиль компании.");
       return;
     }
     const profile = (await response.json()) as CompanyProfile;
     setCompanyProfile(profile);
-    setCompanyProfileStatus("Р РµРєРІРёР·РёС‚С‹ РєРѕРјРїР°РЅРёРё СЃРѕС…СЂР°РЅРµРЅС‹.");
+    setCompanyProfileStatus("Реквизиты компании сохранены.");
     await loadCompanyProfile();
   }
 
@@ -1788,7 +1788,7 @@ export default function HomePage() {
                     </div>
                     </> : null}
 
-                    <p className="settings-hint">РџРµС‡Р°С‚СЊ Рё РїРѕРґРїРёСЃСЊ РЅРµ РІСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РґРѕ РІРЅРµРґСЂРµРЅРёСЏ СЂРѕР»РµР№ Рё Р·Р°С‰РёС‰С‘РЅРЅРѕРіРѕ РґРѕСЃС‚СѓРїР°.</p>
+                    <p className="settings-hint">Печать и подпись не вставляются до отдельной защищённой стадии.</p>
                     {templateStatus ? <p className="settings-hint">{templateStatus}</p> : null}
                     {isDocumentEditing && canWriteWorkspace ? (
                       <textarea className="document-editor" aria-label="Текст документа" value={documentBody} onChange={(event) => setDocumentBody(event.target.value)} />
