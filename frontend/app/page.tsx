@@ -280,6 +280,14 @@ const initialDocumentBody =
   "Уважаемые партнеры, просим провести сверку взаиморасчетов и подтвердить срок оплаты задолженности по договору поставки.";
 
 
+const WORKSPACE_SECTIONS = [
+  "Долги / претензии",
+  "Договоры",
+  "Кадры",
+  "Снабжение",
+  "Общий юридический вопрос",
+];
+
 const authorMeta: Record<ChatMessage["author_type"], string> = {
   user: "Пользователь",
   agent1: "Ю1",
@@ -298,6 +306,8 @@ export default function HomePage() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedLawyer, setSelectedLawyer] = useState<Agent["code"]>("lawyer_1");
   const [chatId, setChatId] = useState<number | null>(null);
+  const [chatTitle, setChatTitle] = useState("");
+  const [selectedSection, setSelectedSection] = useState(WORKSPACE_SECTIONS[0]);
   const [chatApprovalStatus, setChatApprovalStatus] = useState<"draft" | "needs_review" | "approved" | "rejected" | "archived">("draft");
   const [approvalComment, setApprovalComment] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -904,20 +914,21 @@ export default function HomePage() {
     setUserStatus("Пароль успешно сброшен.");
   }
 
-  async function ensureChat(): Promise<number> {
+  async function ensureChat(title?: string): Promise<number> {
     if (chatId !== null) {
       return chatId;
     }
     const response = await fetch(`${API_BASE_URL}/api/chats`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Письмо клиенту о задолженности" }),
+      body: JSON.stringify({ title: title ?? "Новый чат" }),
     });
     if (!response.ok) {
       throw new Error("Не удалось создать чат в backend.");
     }
     const chat = await response.json();
     setChatId(chat.id);
+    setChatTitle(chat.title);
     setChatApprovalStatus(chat.approval_status ?? "draft");
     setActiveVerdictMessageId(chat.active_verdict_message_id ?? null);
     return chat.id;
@@ -960,7 +971,7 @@ export default function HomePage() {
     setApiStatus("");
 
     try {
-      const nextChatId = await ensureChat();
+      const nextChatId = await ensureChat(`${selectedSection} · ${content.slice(0, 60)}`);
       await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1353,10 +1364,10 @@ export default function HomePage() {
         onOpenSettings={isAdmin ? () => setIsSettingsOpen(true) : undefined}
       />
 
-      <section className="chat-area">
+      <section className={messages.length === 0 ? "chat-area chat-area-empty" : "chat-area"}>
         <header className="topbar">
-          <h1 className="chat-title">Долги / претензии · Письмо клиенту о задолженности…</h1>
-          <div className="topbar-actions">
+          <h1 className="chat-title">{messages.length > 0 ? (chatTitle || "Чат") : ""}</h1>
+          {messages.length > 0 ? <div className="topbar-actions">
             <span className={`approval-status ${chatApprovalStatus}`}>{approvalStatusLabel(chatApprovalStatus)}</span>
             <div className="cost-menu-wrap">
               <button className="compact-button" onClick={() => setIsCostOpen((current) => !current)} type="button" aria-expanded={isCostOpen}>
@@ -1383,14 +1394,13 @@ export default function HomePage() {
                 </div>
               ) : null}
             </div>
-          </div>
+          </div> : null}
         </header>
 
         <div className="conversation">
           {messages.length === 0 ? (
             <div className="chat-empty-state">
-              <h2>Новый юридический чат</h2>
-              <p>Выберите раздел и задайте вопрос юристу.</p>
+              <h2>Что нужно проверить юристу?</h2>
             </div>
           ) : messages.map((message, index) => {
             const messageKey = message.id ?? -index;
@@ -1495,6 +1505,20 @@ export default function HomePage() {
             accept=".pdf,.docx,.xlsx,.txt,.jpg,.jpeg,.png,.webp"
             onChange={handleFileSelection}
           />
+          {messages.length === 0 ? (
+            <div className="section-pills">
+              {WORKSPACE_SECTIONS.map((section) => (
+                <button
+                  key={section}
+                  type="button"
+                  className={section === selectedSection ? "section-pill active" : "section-pill"}
+                  onClick={() => setSelectedSection(section)}
+                >
+                  {section}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <form className="composer" onSubmit={handleSubmit}>
             <button type="button" className="icon-button" aria-label="Добавить файл" onClick={() => fileInputRef.current?.click()}>
               +

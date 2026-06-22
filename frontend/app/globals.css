@@ -267,7 +267,7 @@ button {
 .section-chevron {
   color: var(--muted);
   flex: 0 0 12px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
 }
 
@@ -409,6 +409,10 @@ button {
   padding: 10px 18px;
 }
 
+.chat-area.chat-area-empty .topbar {
+  visibility: hidden;
+}
+
 .chat-title {
   font-size: 15px;
   font-weight: 600;
@@ -494,27 +498,50 @@ button {
   grid-column: 2;
   max-width: none;
   overflow: auto;
-  padding: 48px 28px 24px;
+  padding: 32px 28px 24px;
   width: 100%;
 }
 
 .chat-empty-state {
-  align-self: center;
-  color: var(--muted);
-  margin: auto;
-  padding: 48px 24px;
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  padding: 24px;
   text-align: center;
 }
 
 .chat-empty-state h2 {
-  font-size: 18px;
+  color: var(--text);
+  font-size: 24px;
   font-weight: 600;
-  margin: 0 0 8px;
+  margin: 0;
 }
 
-.chat-empty-state p {
-  font-size: 14px;
-  margin: 0;
+.section-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.section-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 5px 14px;
+}
+
+.section-pill:hover {
+  background: var(--panel-strong);
+  color: var(--text);
+}
+
+.section-pill.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
 }
 
 .message {
