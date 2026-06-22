@@ -1,7 +1,7 @@
 # Current State
 
-Last updated after Stage 11-B2 Viewer Read-Only and Basic Audit Log.
-Master commit: `711a271 — feat: audit auth and admin user actions`.
+Last updated after Demo-1 new-chat UI cleanup.
+Master commit on origin/master: `df9916a — fix: compact section selector and widen composer`
 
 ## Completed stages
 
@@ -31,6 +31,25 @@ Master commit: `711a271 — feat: audit auth and admin user actions`.
   `user.password_reset`. Audit safety: no password/password_hash/token/cookie/session/secret in
   audit details; endpoint has `limit`/`offset`. Admin audit UI section shows recent audit entries;
   frontend filters sensitive detail keys defensively.
+- **Demo-1 new-chat UI**: ChatGPT-style new-chat start screen. Fake initial messages removed;
+  empty state is the default when opening a new chat. Compact "Выбрать раздел" dropdown selector
+  above the input (no auto-selected section on load; placeholder shown until user picks).
+  Selected section + first question generate the chat title on first send. Lawyer selector chips
+  remain below the input in both empty and active chat states. No "Черновик" shown in empty-state
+  topbar. Dead UI buttons removed. Corrupted Cyrillic strings fixed.
+
+## What is intentionally NOT done yet
+
+- **Fake document panel data**: still present in the document/right panel. Must be replaced
+  during the real document generation and templates stage — not before.
+- **Real sidebar chat list**: sidebar still shows fake/static chat history. Real `GET /api/chats`
+  integration is the first item in the next phase.
+- **Model/provider display**: raw `model_id` strings (e.g. `inclusionai/ling-2.6-flash`) and
+  `$0.000000` cost display still visible in message toolbar. Cleanup deferred to the
+  OpenRouter/model settings stage.
+- **Advanced department permissions**: current baseline (admin-created users, viewer read-only,
+  audit log) is sufficient before the founder presentation. Department-level visibility, approval
+  routing, and export rights are deferred to post-presentation.
 
 ## Active database
 
@@ -61,13 +80,18 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 ## Next major direction
 
-After Stage 11-B2, remaining priorities before final launch:
+Six phases remain before the founder presentation:
 
-1. UI/page cleanup and polish.
-2. Chat functionality cleanup and comprehensive testing.
-3. Correct CompanyProfile data and ensure admin setup workflow.
-4. Document templates quality and completeness.
-5. Approval workflow clarity and enforcement.
-6. Legal source expansion and RAG testing with real factory scenarios.
-7. AI testing by demo topics (debt claim, contract review, tax letter, HR, customs, etc.).
-8. Founder demo preparation with realistic end-to-end scenarios.
+1. **Real working chat** — real sidebar chat list from backend; create chat; click opens messages;
+   reload-safe; no fake sidebar data in main user flow.
+2. **OpenRouter and model settings** — API key via `.env`; admin model settings; user-facing
+   modes (`Экономно`, `Быстро`, `Качественно`); hide raw `model_id` from normal UI.
+   Must be done before RAG quality verification.
+3. **Company details and document templates** — real requisites; approved templates; remove fake
+   document panel data; generate real documents; export Word/PDF.
+4. **Legal base and RAG verification** — audit sources; add missing laws/PKM/codes; run 20–30
+   control questions; ensure source cards and uncertainty warnings work.
+5. **Real factory scenarios** — debt claim, supply contract, procurement risk, HR, finance/legal
+   document; each must test chat + RAG + sources + document generation + saved history + UI.
+6. **Founder presentation polish** — no fake data in visible demo paths; no raw errors; no
+   technical model IDs in normal UI; clean page, chat, sources, generated document.

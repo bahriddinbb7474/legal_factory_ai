@@ -1,6 +1,8 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, and 11-B2 are complete. See `CURRENT_STATE.md` for the full status snapshot. Next priority: UI/page cleanup and chat functionality testing.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, and Demo-1 new-chat UI are complete.
+See `CURRENT_STATE.md` for the full status snapshot.
+Next priority: real sidebar chat list and working chat flow.
 
 ## Completed
 
@@ -98,24 +100,145 @@ Last-active-admin protection. Session invalidation on deactivate/reset. Frontend
 with section navigation, inline user creation, inline edit, inline password reset. Admin UI
 is hidden from non-admin users including viewer. Self-registration is forbidden.
 
-## Main Path Now
-
 ### Stage 11-B2 — Viewer Read-Only and Basic Audit Log (complete)
 
-Goal: enforce role-based read-only access and add a basic audit log.
-
-Completed scope:
-
-- `viewer` role is now read-only: returns 403 on workspace mutations (chat/message/document/generated-document); safe GET routes available.
+- `viewer` role is read-only: returns 403 on workspace mutations; safe GET routes available.
 - Frontend: viewer write controls hidden; admin/settings hidden from non-admin.
-- Basic audit log for important actions:
-  - login and logout;
-  - user created, updated, and deactivated;
-  - password reset.
-- Audit safety: no password/password_hash/token/cookie/session/secret/new_password in audit details.
-- Admin can view recent audit entries in settings modal with `limit`/`offset`.
+- Basic audit log: login, logout, user created/updated/deactivated, password reset.
+- Audit safety: no secrets in audit details. Admin reads entries with limit/offset.
 
-Status: viewer read-only verified in UI and API; audit entries logged for all covered actions; admin audit UI section functional.
+### Demo-1 — New-Chat UI Cleanup (complete)
+
+- Fake initial messages removed; empty new-chat state is now the default.
+- ChatGPT-style start screen: centered composer block, title heading above input.
+- Compact "Выбрать раздел" dropdown above the input field (placeholder until user picks).
+- Selected section + first 60 chars of question generate chat title on first send.
+- Lawyer selector chips below the input, visible in both empty and active chat states.
+- No "Черновик" shown in empty-state topbar.
+- Dead UI buttons removed. Corrupted Cyrillic fixed.
+- Fake document panel data and raw model/provider display are intentionally deferred.
+
+Latest pushed commit: `df9916a — fix: compact section selector and widen composer`
+
+---
+
+## Phase A — Real Working Chat
+
+Goal: replace all fake/static sidebar and chat data with real backend data.
+No fake chats or sidebar entries in the main user flow.
+
+Scope:
+
+- Load real chat list from `GET /api/chats` into the sidebar, grouped by section prefix in title.
+- "New chat" button creates a real backend chat on first message send.
+- Selected section + first question generate the title (already wired; confirm end-to-end).
+- Chat appears under the matching section group in the sidebar after creation.
+- Clicking a sidebar chat loads real messages via `GET /api/chats/{id}/messages`.
+- Reloading the page and reopening a chat restores full message history.
+- Remove all remaining fake/static sidebar entries from the main user flow.
+
+Acceptance: open the app, send a question, see the chat appear in the sidebar under the correct
+section, reload, reopen, see the same messages.
+
+---
+
+## Phase B — OpenRouter and Model Settings
+
+Goal: complete minimal working OpenRouter integration with admin model settings and clean
+user-facing model UX. Must be done before RAG quality verification so test answers use real models.
+
+Scope:
+
+- OpenRouter API key via `.env` (not hardcoded, not committed).
+- Admin model settings: assign model per lawyer (Lawyer 1, 2, 3).
+- Display prices as `$ / 1M input tokens` and `$ / 1M output tokens`.
+- User-facing modes: `Экономно`, `Быстро`, `Качественно` (map to model presets).
+- Hide raw `model_id` strings from the normal chat UI; keep technical IDs in admin/logs only.
+- Replace `$0.000000` cost display with either real cost or hidden when zero.
+
+---
+
+## Phase C — Company Details and Document Templates
+
+Goal: replace fake document panel data with real generated documents based on real company data
+and approved templates.
+
+Scope:
+
+- Enter real company requisites into `CompanyProfile` via admin settings.
+- Approve and finalize document templates (at minimum: debt/claim letter, supply contract notice).
+- Remove fake demo document data from the document panel.
+- Generate real letters/claims/legal conclusions from the active verdict.
+- Document statuses: draft / review / approved.
+- Word export (DOCX already supported); PDF export as a follow-up if not already working.
+
+---
+
+## Phase D — Legal Base and RAG Verification
+
+Goal: ensure the legal knowledge base is correct, current, and covers the main factory use cases.
+
+Scope:
+
+- Audit current legal sources: confirm active status, official status, freshness.
+- Add missing key laws, ПКМ, and codes relevant to the factory's legal topics.
+- Verify chunking quality, retrieval ranking, and source cards in real answers.
+- Run 20–30 control legal questions across all main categories.
+- Confirm that answers include source citations with correct quotes.
+- Confirm uncertainty warnings appear for missing or outdated sources.
+
+---
+
+## Phase E — Real Factory Scenarios
+
+Goal: end-to-end test of all main business workflows with real data and real AI answers.
+
+Scenarios:
+
+1. Debt / client claim — chat, RAG, claim letter generation, director approval.
+2. Supply contract check — upload contract, structured answer, risk card, sources.
+3. Procurement risk question — procurement department user, supplier document upload.
+4. HR question — HR user, labor code source, answer with citations.
+5. Accounting/finance legal document question — accountant user, tax source, document generation.
+
+Each scenario must cover: chat flow, RAG sources, generated document, saved history, sidebar,
+UI clarity. No fake data must appear in any step.
+
+---
+
+## Phase F — Founder Presentation Polish
+
+Goal: prepare a clean, coherent demo for the company founder with no visible rough edges.
+
+Criteria:
+
+- No fake data in any visible demo path.
+- No raw technical errors on screen.
+- No raw `model_id` strings in normal chat UI.
+- Clean page load, clean new-chat start, clean source cards, clean generated document.
+- Sidebar shows only real chats.
+- At least one complete end-to-end scenario works without manual workarounds.
+
+---
+
+## After Presentation — Extended Permissions
+
+Keep current baseline through the presentation:
+
+- Admin-created users only, no self-registration.
+- `viewer` role is read-only.
+- Basic audit log covers auth and user management.
+
+Improvements to consider after a successful presentation:
+
+- Department-level visibility: users see only their section's chats.
+- Approval routing: send to specific approver role based on risk level.
+- Export rights: control who can export DOCX/PDF.
+- Model settings rights: allow a "senior user" to switch modes without admin access.
+
+---
+
+## Later
 
 ### Stage 10 — Laptop Local Server
 
@@ -149,53 +272,8 @@ restart script
 logs
 ```
 
-SQLite is acceptable only for tests/minimal local launch. Local PostgreSQL is preferred if practical. PostgreSQL remains the production target.
-
-### Stage 11 — Roles and Local Auth (complete)
-
-Stage 11-A, 11-B1, and 11-B2 are all complete.
-Remaining after Stage 11: HTTPS hardening, approval workflow, granular category permissions,
-and multi-worker bootstrap lock hardening (deferred to later stages).
-
-### Stage 12 — Final Factory Scenarios
-
-Run end-to-end:
-
-1. Client owes money.
-2. Claim letter.
-3. Supplier missed deadline.
-4. Contract review.
-5. Import contract.
-6. Tax letter.
-7. Customs letter.
-8. HR question.
-9. Occupational safety.
-10. Certification/technical regulation.
-11. State body reply.
-12. Template document generation.
-13. Director approval.
-14. DOCX export.
-15. Legal source verification.
-
-### Stage 13 — Mini Launch
-
-Prepare:
-
-```text
-user instruction
-admin instruction
-rules for legal source upload
-rules for revision checks
-rules for approval
-rules for sensitive documents
-backup schedule
-restore guide
-known limitations
-```
-
-Acceptance criteria: 3-4 users trained, instructions exist, backup exists, and responsible owners are assigned for legal base, templates, and technical launch.
-
-## Later
+SQLite is acceptable only for tests/minimal local launch. Local PostgreSQL is preferred if
+practical. PostgreSQL remains the production target.
 
 ### Stage 14 — Telegram
 

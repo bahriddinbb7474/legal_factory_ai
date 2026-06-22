@@ -57,6 +57,24 @@
 - Stage 11-B2 decided: Audit entries must never contain password, password_hash, token, cookie, session, secret, or new_password. Frontend audit section filters sensitive detail keys defensively as secondary protection.
 - Stage 11-B2 decided: Admin audit UI section is read-only and shows recent audit entries with `limit`/`offset` pagination.
 
+- Demo-1 decided: fake initial chat messages are permanently removed. The new-chat state defaults
+  to an empty message list. Any initial content must come from the real backend, not hardcoded
+  frontend state.
+- Demo-1 decided: `Chat` has no `section` field in v1. The selected section is encoded as a
+  prefix in the chat title (`"{section} · {first 60 chars}"`). A dedicated `section` field may be
+  added in a later migration if grouping logic requires it.
+- Demo-1 decided: `selectedSection` defaults to `null` on page load (no auto-selection). The
+  section selector shows "Выбрать раздел" until the user picks a section. If no section is
+  selected when the first message is sent, the chat title is just the first 60 chars of the
+  question without a section prefix.
+- Demo-1 decided: fake document panel data is intentionally left in place. It must be replaced
+  during Phase C (real document generation and templates), not before.
+- Demo-1 decided: raw `model_id` display and `$0.000000` cost formatting are deferred to Phase B
+  (OpenRouter and model settings). They are known issues, not regressions.
+- Demo-1 decided: advanced department-level permissions (section visibility, approval routing,
+  export rights) are deferred until after the founder presentation. The current baseline of
+  admin-created users, viewer read-only, and basic audit log is sufficient.
+
 ## Pending Decisions
 
 - Exact production OpenRouter models for Lawyer 1, Lawyer 2, and Lawyer 3 after manual testing.
