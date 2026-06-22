@@ -279,22 +279,6 @@ const fallbackAgents: Agent[] = [
 const initialDocumentBody =
   "Уважаемые партнеры, просим провести сверку взаиморасчетов и подтвердить срок оплаты задолженности по договору поставки.";
 
-const initialMessages: ChatMessage[] = [
-  {
-    author_type: "user",
-    content: "Подготовь черновик ответа клиенту по задолженности и укажи, нужно ли согласование директора.",
-  },
-  {
-    author_type: "agent1",
-    content:
-      "Можно направить клиенту мягкое письмо с требованием сверки и оплаты. Финальное признание долга или уступки по срокам оплаты давать нельзя без проверки договора и бухгалтерии.",
-    model_id: "inclusionai/ling-2.6-flash",
-    provider_code: "novita",
-    input_tokens: 0,
-    output_tokens: 0,
-    cost_usd: "0.000000",
-  },
-];
 
 const authorMeta: Record<ChatMessage["author_type"], string> = {
   user: "Пользователь",
@@ -316,7 +300,7 @@ export default function HomePage() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatApprovalStatus, setChatApprovalStatus] = useState<"draft" | "needs_review" | "approved" | "rejected" | "archived">("draft");
   const [approvalComment, setApprovalComment] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isInvoking, setIsInvoking] = useState(false);
   const [apiStatus, setApiStatus] = useState("");
@@ -1403,7 +1387,12 @@ export default function HomePage() {
         </header>
 
         <div className="conversation">
-          {messages.map((message, index) => {
+          {messages.length === 0 ? (
+            <div className="chat-empty-state">
+              <h2>Новый юридический чат</h2>
+              <p>Выберите раздел и задайте вопрос юристу.</p>
+            </div>
+          ) : messages.map((message, index) => {
             const messageKey = message.id ?? -index;
             const isActiveVerdict = message.is_verdict || activeVerdictMessageId === messageKey;
             return message.author_type === "user" ? (

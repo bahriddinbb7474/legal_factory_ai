@@ -498,6 +498,25 @@ button {
   width: 100%;
 }
 
+.chat-empty-state {
+  align-self: center;
+  color: var(--muted);
+  margin: auto;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.chat-empty-state h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.chat-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
 .message {
   font-size: 16px;
   line-height: 1.6;
