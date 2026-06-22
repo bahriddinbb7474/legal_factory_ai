@@ -409,8 +409,22 @@ button {
   padding: 10px 18px;
 }
 
-.chat-area.chat-area-empty .topbar {
-  visibility: hidden;
+.chat-area.chat-area-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chat-area.chat-area-empty .topbar,
+.chat-area.chat-area-empty .conversation {
+  display: none;
+}
+
+.chat-area.chat-area-empty .composer-wrap {
+  align-self: center;
+  max-width: 720px;
+  padding: 0 28px 24px;
+  width: 100%;
 }
 
 .chat-title {
@@ -518,6 +532,14 @@ button {
   margin: 0;
 }
 
+.new-chat-title {
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0 0 20px;
+  text-align: center;
+}
+
 .section-pills {
   display: flex;
   flex-wrap: wrap;
@@ -529,7 +551,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   padding: 5px 14px;
 }
 
@@ -862,7 +884,7 @@ button {
 
 .agent-chip {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   min-height: 30px;
 }
 
@@ -940,7 +962,7 @@ button {
 
 .disclaimer {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   margin: 8px 0 0;
   text-align: center;
 }

@@ -1398,11 +1398,7 @@ export default function HomePage() {
         </header>
 
         <div className="conversation">
-          {messages.length === 0 ? (
-            <div className="chat-empty-state">
-              <h2>Что нужно проверить юристу?</h2>
-            </div>
-          ) : messages.map((message, index) => {
+          {messages.map((message, index) => {
             const messageKey = message.id ?? -index;
             const isActiveVerdict = message.is_verdict || activeVerdictMessageId === messageKey;
             return message.author_type === "user" ? (
@@ -1460,13 +1456,13 @@ export default function HomePage() {
         </div>
 
         <div className="composer-wrap">
-          {chatApprovalStatus === "needs_review" ? (
+          {chatApprovalStatus === "needs_review" && messages.length > 0 ? (
             <div className="red-flag-banner">
               <strong>Тема серьёзная.</strong>
               <span>Рекомендуется мнение Юриста 2 или Юриста 3 и требуется утверждение руководства.</span>
             </div>
           ) : null}
-          {canWriteWorkspace ? <div className="approval-panel">
+          {canWriteWorkspace && messages.length > 0 ? <div className="approval-panel">
             <input
               value={approvalComment}
               onChange={(event) => setApprovalComment(event.target.value)}
@@ -1506,18 +1502,21 @@ export default function HomePage() {
             onChange={handleFileSelection}
           />
           {messages.length === 0 ? (
-            <div className="section-pills">
-              {WORKSPACE_SECTIONS.map((section) => (
-                <button
-                  key={section}
-                  type="button"
-                  className={section === selectedSection ? "section-pill active" : "section-pill"}
-                  onClick={() => setSelectedSection(section)}
-                >
-                  {section}
-                </button>
-              ))}
-            </div>
+            <>
+              <h2 className="new-chat-title">Что нужно проверить юристу?</h2>
+              <div className="section-pills">
+                {WORKSPACE_SECTIONS.map((section) => (
+                  <button
+                    key={section}
+                    type="button"
+                    className={section === selectedSection ? "section-pill active" : "section-pill"}
+                    onClick={() => setSelectedSection(section)}
+                  >
+                    {section}
+                  </button>
+                ))}
+              </div>
+            </>
           ) : null}
           <form className="composer" onSubmit={handleSubmit}>
             <button type="button" className="icon-button" aria-label="Добавить файл" onClick={() => fileInputRef.current?.click()}>
