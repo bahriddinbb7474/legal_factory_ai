@@ -308,6 +308,8 @@ export default function HomePage() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatTitle, setChatTitle] = useState("");
   const [selectedSection, setSelectedSection] = useState(WORKSPACE_SECTIONS[0]);
+  const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false);
+  const sectionSelectorRef = useRef<HTMLDivElement>(null);
   const [chatApprovalStatus, setChatApprovalStatus] = useState<"draft" | "needs_review" | "approved" | "rejected" | "archived">("draft");
   const [approvalComment, setApprovalComment] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -469,6 +471,16 @@ export default function HomePage() {
       setOpenDocumentMenu(menu);
     }
     void loadCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sectionSelectorRef.current && !sectionSelectorRef.current.contains(event.target as Node)) {
+        setSectionDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   async function loadCurrentUser() {
@@ -1504,17 +1516,28 @@ export default function HomePage() {
           {messages.length === 0 ? (
             <>
               <h2 className="new-chat-title">Что нужно проверить юристу?</h2>
-              <div className="section-pills">
-                {WORKSPACE_SECTIONS.map((section) => (
-                  <button
-                    key={section}
-                    type="button"
-                    className={section === selectedSection ? "section-pill active" : "section-pill"}
-                    onClick={() => setSelectedSection(section)}
-                  >
-                    {section}
-                  </button>
-                ))}
+              <div className="section-selector" ref={sectionSelectorRef}>
+                <button
+                  type="button"
+                  className="section-selector-btn"
+                  onClick={() => setSectionDropdownOpen((prev) => !prev)}
+                >
+                  {selectedSection} <span className="section-chevron">▾</span>
+                </button>
+                {sectionDropdownOpen ? (
+                  <div className="section-dropdown">
+                    {WORKSPACE_SECTIONS.map((section) => (
+                      <button
+                        key={section}
+                        type="button"
+                        className={section === selectedSection ? "section-dropdown-item active" : "section-dropdown-item"}
+                        onClick={() => { setSelectedSection(section); setSectionDropdownOpen(false); }}
+                      >
+                        {section}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </>
           ) : null}

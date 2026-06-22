@@ -422,7 +422,7 @@ button {
 
 .chat-area.chat-area-empty .composer-wrap {
   align-self: center;
-  max-width: 720px;
+  max-width: 860px;
   padding: 0 28px 24px;
   width: 100%;
 }
@@ -540,30 +540,61 @@ button {
   text-align: center;
 }
 
-.section-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+.section-selector {
+  margin-bottom: 12px;
+  position: relative;
 }
 
-.section-pill {
+.section-selector-btn {
+  align-items: center;
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 14px;
-  padding: 5px 14px;
-}
-
-.section-pill:hover {
-  background: var(--panel-strong);
+  border-radius: 8px;
   color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 14px;
+  gap: 6px;
+  padding: 7px 14px;
 }
 
-.section-pill.active {
-  background: #111;
-  border-color: #111;
-  color: #fff;
+.section-selector-btn:hover {
+  background: var(--panel-strong);
+}
+
+.section-dropdown {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  min-width: 220px;
+  padding: 4px;
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 20;
+}
+
+.section-dropdown-item {
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.section-dropdown-item:hover {
+  background: var(--panel-strong);
+}
+
+.section-dropdown-item.active {
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .message {
