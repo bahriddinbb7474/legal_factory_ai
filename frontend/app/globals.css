@@ -41,13 +41,13 @@ button {
 .workspace-shell {
   background: var(--bg);
   display: grid;
-  grid-template-columns: 260px minmax(640px, 1fr);
+  grid-template-columns: 272px minmax(640px, 1fr);
   height: 100vh;
   overflow: hidden;
 }
 
 .workspace-shell.document-open {
-  grid-template-columns: 260px minmax(520px, 1fr) minmax(480px, 46vw);
+  grid-template-columns: 272px minmax(520px, 1fr) minmax(480px, 46vw);
 }
 
 .sidebar {
@@ -104,9 +104,9 @@ button {
   border-radius: 8px;
   color: #333;
   display: inline-flex;
-  height: 32px;
+  height: 36px;
   justify-content: center;
-  min-width: 32px;
+  min-width: 36px;
   padding: 0 8px;
 }
 
@@ -202,7 +202,7 @@ button {
 }
 
 .brand-copy strong {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.2;
 }
 
@@ -244,7 +244,7 @@ button {
   border-radius: 8px;
   display: flex;
   flex: 1;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
   gap: 6px;
   min-width: 0;
@@ -326,7 +326,7 @@ button {
 .section-chat {
   border-radius: 8px;
   color: #333;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.25;
   min-height: 28px;
   overflow: hidden;
@@ -422,7 +422,7 @@ button {
 
 .chat-area.chat-area-empty .composer-wrap {
   align-self: center;
-  max-width: 860px;
+  max-width: 820px;
   padding: 0 28px 24px;
   width: 100%;
 }
@@ -502,7 +502,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   min-height: 32px;
-  padding: 6px 12px;
+  padding: 6px 14px;
 }
 
 .conversation {
@@ -534,9 +534,9 @@ button {
 
 .new-chat-title {
   color: var(--text);
-  font-size: 26px;
-  font-weight: 600;
-  margin: 0 0 20px;
+  font-size: 30px;
+  font-weight: 500;
+  margin: 0 0 26px;
   text-align: center;
 }
 
@@ -910,13 +910,13 @@ button {
 .agent-row {
   gap: 8px;
   justify-content: flex-start;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .agent-chip {
   color: var(--muted);
   font-size: 14px;
-  min-height: 30px;
+  min-height: 32px;
 }
 
 .agent-chip.active {
@@ -932,11 +932,11 @@ button {
 
 .composer {
   border: 1px solid #dddddd;
-  border-radius: 24px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.08);
-  gap: 8px;
-  min-height: 58px;
-  padding: 9px;
+  border-radius: 26px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 12px;
 }
 
 .composer input {

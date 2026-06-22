@@ -307,7 +307,7 @@ export default function HomePage() {
   const [selectedLawyer, setSelectedLawyer] = useState<Agent["code"]>("lawyer_1");
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatTitle, setChatTitle] = useState("");
-  const [selectedSection, setSelectedSection] = useState(WORKSPACE_SECTIONS[0]);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false);
   const sectionSelectorRef = useRef<HTMLDivElement>(null);
   const [chatApprovalStatus, setChatApprovalStatus] = useState<"draft" | "needs_review" | "approved" | "rejected" | "archived">("draft");
@@ -983,7 +983,7 @@ export default function HomePage() {
     setApiStatus("");
 
     try {
-      const nextChatId = await ensureChat(`${selectedSection} · ${content.slice(0, 60)}`);
+      const nextChatId = await ensureChat(`${selectedSection ? `${selectedSection} · ` : ""}${content.slice(0, 60)}`);
       await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1522,7 +1522,7 @@ export default function HomePage() {
                   className="section-selector-btn"
                   onClick={() => setSectionDropdownOpen((prev) => !prev)}
                 >
-                  {selectedSection} <span className="section-chevron">▾</span>
+                  {selectedSection ?? "Выбрать раздел"} <span className="section-chevron">▾</span>
                 </button>
                 {sectionDropdownOpen ? (
                   <div className="section-dropdown">
