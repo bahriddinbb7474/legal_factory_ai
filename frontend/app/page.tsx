@@ -1399,12 +1399,6 @@ export default function HomePage() {
                 </div>
               ) : null}
             </div>
-            <button className="icon-button" aria-label="Свернуть" type="button">
-              ^
-            </button>
-            <button className="icon-button" aria-label="Еще" type="button">
-              ...
-            </button>
           </div>
         </header>
 
@@ -1457,8 +1451,6 @@ export default function HomePage() {
                     </button>
                     ) : null}
                     {canWriteWorkspace ? <div className="message-actions">
-                      <button type="button">Копировать</button>
-                      <button type="button">Нравится</button>
                       <button type="button" onClick={() => openGeneratedDocument(message, messageKey)}>Сгенерировать документ</button>
                     </div> : null}
                   </>
