@@ -323,6 +323,7 @@ export default function HomePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isInvoking, setIsInvoking] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAgentForSettings, setSelectedAgentForSettings] = useState<Agent | null>(null);
@@ -906,6 +907,44 @@ export default function HomePage() {
     if (section !== undefined) setSelectedSection(section ?? null);
   }
 
+  async function handleSelectChat(selectedId: number) {
+    if (selectedId === chatId) return;
+    setChatLoading(true);
+    setMessages([]);
+    setChatTitle("");
+    setChatApprovalStatus("draft");
+    setActiveVerdictMessageId(null);
+    setUploadedDocuments([]);
+    setGeneratedDocument(null);
+    setIsDocumentOpen(false);
+    setIsInvoking(false);
+    setApiStatus("");
+    setChatId(selectedId);
+    try {
+      const [chatResponse, msgsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/chats/${selectedId}`),
+        fetch(`${API_BASE_URL}/api/chats/${selectedId}/messages`),
+      ]);
+      if (!chatResponse.ok || !msgsResponse.ok) {
+        setApiStatus(chatResponse.status === 404 ? "Чат не найден или доступ запрещён." : "Не удалось загрузить чат.");
+        setChatId(null);
+        return;
+      }
+      const chat = await chatResponse.json();
+      const loadedMessages = (await msgsResponse.json()) as ChatMessage[];
+      setChatTitle(chat.title ?? "");
+      setChatApprovalStatus(chat.approval_status ?? "draft");
+      setActiveVerdictMessageId(chat.active_verdict_message_id ?? null);
+      if (chat.section) setSelectedSection(chat.section as string);
+      setMessages(loadedMessages);
+    } catch {
+      setApiStatus("Ошибка при загрузке истории чата.");
+      setChatId(null);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
   function filterAuditDetails(details: Record<string, unknown>): Record<string, unknown> {
     const SENSITIVE = new Set(["password", "password_hash", "token", "cookie", "session", "secret", "new_password"]);
     return Object.fromEntries(Object.entries(details).filter(([k]) => !SENSITIVE.has(k)));
@@ -1424,7 +1463,7 @@ export default function HomePage() {
         activeChatId={chatId}
         selectedSection={selectedSection}
         onNewChat={handleNewChat}
-        onSelectChat={() => { /* Stage A-3: load chat messages */ }}
+        onSelectChat={handleSelectChat}
       />
 
       <section className={messages.length === 0 ? "chat-area chat-area-empty" : "chat-area"}>
@@ -1461,6 +1500,11 @@ export default function HomePage() {
         </header>
 
         <div className="conversation">
+          {chatLoading ? (
+            <article className="message system-message">
+              <p>Загрузка истории чата…</p>
+            </article>
+          ) : null}
           {messages.map((message, index) => {
             const messageKey = message.id ?? -index;
             const isActiveVerdict = message.is_verdict || activeVerdictMessageId === messageKey;
