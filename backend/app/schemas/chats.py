@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 class ChatCreate(BaseModel):
     title: str
-    owner_user_id: int | None = None
+    section: str | None = None
     status: str = "draft"
     approval_status: str = "draft"
     active_verdict_message_id: int | None = None
@@ -13,6 +13,7 @@ class ChatCreate(BaseModel):
 
 class ChatRead(ChatCreate):
     id: int
+    owner_user_id: int | None = None
     created_at: datetime
     updated_at: datetime
 

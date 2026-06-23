@@ -84,6 +84,7 @@ class Chat(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
+    section: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     owner_user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)
     approval_status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)

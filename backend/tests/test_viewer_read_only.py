@@ -93,7 +93,7 @@ def test_viewer_workspace_mutations_are_forbidden_without_db_changes(client: Tes
         files={"file": ("viewer.txt", b"read only", "text/plain")},
     )
     assert upload.status_code == 403
-    assert client.get("/api/chats").json() == initial_chats
+    assert client.get("/api/chats").json() == []
     assert client.get(f"/api/chats/{chat_id}/messages").json() == []
 
 

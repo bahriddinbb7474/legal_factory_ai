@@ -40,14 +40,24 @@ def get_llm_gateway() -> OpenRouterGateway:
 
 
 @router.get("", response_model=list[ChatRead])
-async def list_chats(db: AsyncSession = Depends(get_db)) -> list[Chat]:
-    result = await db.execute(select(Chat).order_by(Chat.created_at.desc(), Chat.id.desc()))
+async def list_chats(
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> list[Chat]:
+    q = select(Chat).order_by(Chat.created_at.desc(), Chat.id.desc())
+    if current_user.role != "admin":
+        q = q.where(Chat.owner_user_id == current_user.id)
+    result = await db.execute(q)
     return list(result.scalars().all())
 
 
-@router.post("", response_model=ChatRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_workspace_writer)])
-async def create_chat(payload: ChatCreate, db: AsyncSession = Depends(get_db)) -> Chat:
-    chat = Chat(**payload.model_dump())
+@router.post("", response_model=ChatRead, status_code=status.HTTP_201_CREATED)
+async def create_chat(
+    payload: ChatCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_workspace_writer),
+) -> Chat:
+    chat = Chat(**payload.model_dump(), owner_user_id=current_user.id)
     db.add(chat)
     await db.commit()
     await db.refresh(chat)
