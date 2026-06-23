@@ -343,6 +343,7 @@ export default function HomePage() {
   const [openDocumentMenu, setOpenDocumentMenu] = useState<"download" | "reply" | null>(null);
   const [isCostOpen, setIsCostOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const activeChatIdRef = useRef<number | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploadForm, setUploadForm] = useState<UploadForm>({
     category: "",
@@ -494,6 +495,10 @@ export default function HomePage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    activeChatIdRef.current = chatId;
+  }, [chatId]);
 
   async function loadCurrentUser() {
     try {
@@ -1064,8 +1069,9 @@ export default function HomePage() {
     setIsInvoking(true);
     setApiStatus("");
 
+    let nextChatId: number | null = null;
     try {
-      const nextChatId = await ensureChat(`${selectedSection ? `${selectedSection} · ` : ""}${content.slice(0, 60)}`);
+      nextChatId = await ensureChat(`${selectedSection ? `${selectedSection} · ` : ""}${content.slice(0, 60)}`);
       await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1082,16 +1088,20 @@ export default function HomePage() {
         throw new Error(error.detail ?? "Ошибка OpenRouter");
       }
       const lawyerMessage = await invokeResponse.json();
-      setMessages((current) => [...current, lawyerMessage]);
-      await refreshChatStatus(nextChatId);
+      if (activeChatIdRef.current === nextChatId) {
+        setMessages((current) => [...current, lawyerMessage]);
+        await refreshChatStatus(nextChatId);
+      }
     } catch (error) {
-      setMessages((current) => [
-        ...current,
-        {
-          author_type: "system",
-          content: error instanceof Error ? error.message : "Не удалось вызвать выбранного юриста.",
-        },
-      ]);
+      if (nextChatId === null || activeChatIdRef.current === nextChatId) {
+        setMessages((current) => [
+          ...current,
+          {
+            author_type: "system",
+            content: error instanceof Error ? error.message : "Не удалось вызвать выбранного юриста.",
+          },
+        ]);
+      }
     } finally {
       setIsInvoking(false);
     }
