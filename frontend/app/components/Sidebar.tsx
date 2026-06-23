@@ -2,86 +2,44 @@
 
 import { useMemo, useState } from "react";
 
-type WorkspaceSection = {
-  id: string;
+type ChatListItem = {
+  id: number;
   title: string;
-  chats: string[];
+  section?: string | null;
+  status?: string;
+  approval_status?: string;
 };
-
-const workspaceSections: WorkspaceSection[] = [
-  {
-    id: "contracts",
-    title: "Договоры",
-    chats: [
-      "Проверка договора поставки N258",
-      "Импортный контракт Китай",
-      "Протокол разногласий UzCable",
-      "Условия оплаты по дилеру",
-      "Договор аренды склада",
-    ],
-  },
-  {
-    id: "claims",
-    title: "Долги / претензии",
-    chats: [
-      "Долг клиента Navoiy Kabel",
-      "Претензия по просрочке оплаты",
-      "Сверка задолженности июнь",
-      "Письмо о реструктуризации",
-    ],
-  },
-  {
-    id: "hr",
-    title: "HR / кадры",
-    chats: [
-      "Приказ о дисциплине",
-      "Трудовой договор мастера",
-      "График отпусков производство",
-      "Увольнение по соглашению",
-    ],
-  },
-  {
-    id: "court",
-    title: "Судебные вопросы",
-    chats: ["Досудебная позиция", "Иск по поставке", "Ответ на претензию юриста"],
-  },
-  {
-    id: "tax",
-    title: "ГНИ",
-    chats: [
-      "Ответ налоговой по запросу",
-      "Пояснение по НДС",
-      "Камеральная проверка",
-      "Письмо о корректировке",
-    ],
-  },
-  {
-    id: "government",
-    title: "Прочие Гос",
-    chats: [
-      "Письмо в таможенный орган",
-      "Экология: официальный ответ",
-      "Санитарный запрос",
-      "Лицензия и сертификаты",
-    ],
-  },
-  {
-    id: "other",
-    title: "Прочие",
-    chats: ["Служебная записка директору", "Шаблон письма партнеру", "Общий юридический вопрос"],
-  },
-];
 
 type SidebarProps = {
   currentUser: { email: string; full_name: string; role: string };
   canWriteWorkspace: boolean;
   onLogout: () => void;
   onOpenSettings?: () => void;
+  sections: readonly string[];
+  chatList: ChatListItem[];
+  chatListLoading: boolean;
+  chatListError: string | null;
+  activeChatId: number | null;
+  selectedSection: string | null;
+  onNewChat: (section?: string | null) => void;
+  onSelectChat: (chatId: number) => void;
 };
 
-export default function Sidebar({ currentUser, canWriteWorkspace, onLogout, onOpenSettings }: SidebarProps) {
-  const [expandedSection, setExpandedSection] = useState("");
-  const [activeChat, setActiveChat] = useState("Проверка договора поставки N258");
+export default function Sidebar({
+  currentUser,
+  canWriteWorkspace,
+  onLogout,
+  onOpenSettings,
+  sections,
+  chatList,
+  chatListLoading,
+  chatListError,
+  activeChatId,
+  selectedSection,
+  onNewChat,
+  onSelectChat,
+}: SidebarProps) {
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -92,14 +50,25 @@ export default function Sidebar({ currentUser, canWriteWorkspace, onLogout, onOp
     .slice(0, 2)
     .toUpperCase();
 
-  const activeSection = useMemo(
-    () => workspaceSections.find((section) => section.id === expandedSection) ?? workspaceSections[0],
-    [expandedSection],
-  );
+  const sectionEntries = useMemo(() => {
+    const byTitle = new Map<string, ChatListItem[]>(sections.map((t) => [t, []]));
+    const others: ChatListItem[] = [];
+    for (const chat of chatList) {
+      const key = (chat.section ?? "").trim();
+      if (byTitle.has(key)) {
+        byTitle.get(key)!.push(chat);
+      } else {
+        others.push(chat);
+      }
+    }
+    const result = sections.map((title) => ({ title, chats: byTitle.get(title)! }));
+    if (others.length > 0) result.push({ title: "Прочие", chats: others });
+    return result;
+  }, [chatList, sections]);
 
-  function startSectionChat(section: WorkspaceSection) {
-    setExpandedSection(section.id);
-    setActiveChat(`Новый чат · ${section.title}`);
+  function handleCompose(sectionTitle: string) {
+    setExpandedSection(sectionTitle);
+    onNewChat(sectionTitle);
   }
 
   return (
@@ -116,68 +85,81 @@ export default function Sidebar({ currentUser, canWriteWorkspace, onLogout, onOp
       </div>
 
       <div className="workspace-sections" aria-label="Разделы проекта">
-        {workspaceSections.map((section) => {
-          const isExpanded = section.id === expandedSection;
-          const query = searchBySection[section.id] ?? "";
-          const visibleChats = section.chats
-            .filter((chat) => chat.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, isExpanded ? section.chats.length : 1);
+        {chatListError ? <p className="section-chat empty-hint">{chatListError}</p> : null}
+        {sectionEntries.map(({ title: sectionTitle, chats: allChats }) => {
+          const isExpanded = sectionTitle === expandedSection;
+          const query = searchBySection[sectionTitle] ?? "";
+          const visibleChats = allChats
+            .filter((chat) => chat.title.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, isExpanded ? allChats.length : 1);
+          const showNewChatPlaceholder = activeChatId === null && selectedSection === sectionTitle;
 
           return (
-            <section className={isExpanded ? "workspace-section expanded" : "workspace-section"} key={section.id}>
+            <section
+              className={isExpanded ? "workspace-section expanded" : "workspace-section"}
+              key={sectionTitle}
+            >
               <div className="section-title-row">
                 <button
                   className="section-title"
-                  onClick={() => setExpandedSection(isExpanded ? "" : section.id)}
+                  onClick={() => setExpandedSection(isExpanded ? null : sectionTitle)}
                   type="button"
                 >
                   <span className="section-chevron">{isExpanded ? "v" : ">"}</span>
-                  <span>{section.title}</span>
+                  <span>{sectionTitle}</span>
                 </button>
                 {canWriteWorkspace ? (
                   <button
                     className="compose-button"
-                    onClick={() => startSectionChat(section)}
-                    title={`Новый чат: ${section.title}`}
+                    onClick={() => handleCompose(sectionTitle)}
+                    title={`Новый чат: ${sectionTitle}`}
                     type="button"
-                    aria-label={`Новый чат в разделе ${section.title}`}
+                    aria-label={`Новый чат в разделе ${sectionTitle}`}
                   >
                     <span className="compose-glyph">✎</span>
                   </button>
                 ) : null}
               </div>
 
-              {isExpanded && section.chats.length > 3 ? (
+              {isExpanded && allChats.length > 3 ? (
                 <input
                   className="section-search"
-                  aria-label={`Поиск в разделе ${section.title}`}
+                  aria-label={`Поиск в разделе ${sectionTitle}`}
                   placeholder="Поиск в разделе"
                   value={query}
                   onChange={(event) =>
-                    setSearchBySection((current) => ({ ...current, [section.id]: event.target.value }))
+                    setSearchBySection((current) => ({
+                      ...current,
+                      [sectionTitle]: event.target.value,
+                    }))
                   }
                 />
               ) : null}
 
               <div className="section-chat-list">
-                {activeChat === `Новый чат · ${section.title}` ? (
-                  <button className="section-chat active" type="button">
+                {showNewChatPlaceholder ? (
+                  <button
+                    className="section-chat active"
+                    type="button"
+                    onClick={() => onNewChat(sectionTitle)}
+                  >
                     Новый чат
                   </button>
                 ) : null}
-                {visibleChats.map((chat) => (
-                  <button
-                    className={chat === activeChat ? "section-chat active" : "section-chat"}
-                    key={chat}
-                    onClick={() => {
-                      setExpandedSection(section.id);
-                      setActiveChat(chat);
-                    }}
-                    type="button"
-                  >
-                    {chat}
-                  </button>
-                ))}
+                {chatListLoading && isExpanded ? (
+                  <span className="section-chat empty-hint">Загрузка…</span>
+                ) : (
+                  visibleChats.map((chat) => (
+                    <button
+                      className={chat.id === activeChatId ? "section-chat active" : "section-chat"}
+                      key={chat.id}
+                      onClick={() => onSelectChat(chat.id)}
+                      type="button"
+                    >
+                      {chat.title}
+                    </button>
+                  ))
+                )}
               </div>
             </section>
           );

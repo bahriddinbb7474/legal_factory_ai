@@ -243,6 +243,14 @@ type CompanyProfileForm = {
   notes: string;
 };
 
+type ChatListItem = {
+  id: number;
+  title: string;
+  section?: string | null;
+  status?: string;
+  approval_status?: string;
+};
+
 const fallbackAgents: Agent[] = [
   {
     id: 1,
@@ -420,6 +428,9 @@ export default function HomePage() {
   const [settingsSection, setSettingsSection] = useState("");
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [chatList, setChatList] = useState<ChatListItem[]>([]);
+  const [chatListLoading, setChatListLoading] = useState(false);
+  const [chatListError, setChatListError] = useState<string | null>(null);
 
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
@@ -489,6 +500,7 @@ export default function HomePage() {
       if (response.ok) {
         const user = (await response.json()) as AuthUser;
         setCurrentUser(user);
+        void loadChatList();
         if (user.role === "admin") void loadSettingsData();
         else { void loadCompanyProfile(); void loadDocumentTemplates(); }
       }
@@ -505,13 +517,14 @@ export default function HomePage() {
     if (!response?.ok) { setLoginError(response ? "Неверный email или пароль." : "Backend недоступен."); return; }
     const user = (await response.json()) as AuthUser;
     setCurrentUser(user); setLoginPassword("");
+    void loadChatList();
     if (user.role === "admin") void loadSettingsData();
     else { void loadCompanyProfile(); void loadDocumentTemplates(); }
   }
 
   async function logout() {
     await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST" }).catch(() => undefined);
-    setCurrentUser(null); setIsSettingsOpen(false);
+    setCurrentUser(null); setIsSettingsOpen(false); setChatList([]);
   }
 
   async function loadSettingsData() {
@@ -864,6 +877,35 @@ export default function HomePage() {
     }
   }
 
+  async function loadChatList() {
+    setChatListLoading(true);
+    setChatListError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chats`);
+      if (response.ok) {
+        setChatList(await response.json());
+      } else if (response.status !== 401) {
+        setChatListError("Не удалось загрузить список чатов.");
+      }
+    } catch {
+      setChatListError("История чатов недоступна.");
+    } finally {
+      setChatListLoading(false);
+    }
+  }
+
+  function handleNewChat(section?: string | null) {
+    setChatId(null);
+    setMessages([]);
+    setChatTitle("");
+    setChatApprovalStatus("draft");
+    setActiveVerdictMessageId(null);
+    setUploadedDocuments([]);
+    setGeneratedDocument(null);
+    setIsDocumentOpen(false);
+    if (section !== undefined) setSelectedSection(section ?? null);
+  }
+
   function filterAuditDetails(details: Record<string, unknown>): Record<string, unknown> {
     const SENSITIVE = new Set(["password", "password_hash", "token", "cookie", "session", "secret", "new_password"]);
     return Object.fromEntries(Object.entries(details).filter(([k]) => !SENSITIVE.has(k)));
@@ -933,7 +975,7 @@ export default function HomePage() {
     const response = await fetch(`${API_BASE_URL}/api/chats`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title ?? "Новый чат" }),
+      body: JSON.stringify({ title: title ?? "Новый чат", section: selectedSection }),
     });
     if (!response.ok) {
       throw new Error("Не удалось создать чат в backend.");
@@ -943,6 +985,7 @@ export default function HomePage() {
     setChatTitle(chat.title);
     setChatApprovalStatus(chat.approval_status ?? "draft");
     setActiveVerdictMessageId(chat.active_verdict_message_id ?? null);
+    void loadChatList();
     return chat.id;
   }
 
@@ -1374,6 +1417,14 @@ export default function HomePage() {
         canWriteWorkspace={canWriteWorkspace}
         onLogout={logout}
         onOpenSettings={isAdmin ? () => setIsSettingsOpen(true) : undefined}
+        sections={WORKSPACE_SECTIONS}
+        chatList={chatList}
+        chatListLoading={chatListLoading}
+        chatListError={chatListError}
+        activeChatId={chatId}
+        selectedSection={selectedSection}
+        onNewChat={handleNewChat}
+        onSelectChat={() => { /* Stage A-3: load chat messages */ }}
       />
 
       <section className={messages.length === 0 ? "chat-area chat-area-empty" : "chat-area"}>
