@@ -1,8 +1,8 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, and Demo-1 new-chat UI are complete.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, and **Stage A real chat/sidebar/history** are complete.
 See `CURRENT_STATE.md` for the full status snapshot.
-Next priority: real sidebar chat list and working chat flow.
+Next priority: OpenRouter and model settings (Phase B).
 
 ## Completed
 
@@ -118,31 +118,36 @@ is hidden from non-admin users including viewer. Self-registration is forbidden.
 - Dead UI buttons removed. Corrupted Cyrillic fixed.
 - Fake document panel data and raw model/provider display are intentionally deferred.
 
-Latest pushed commit: `df9916a — fix: compact section selector and widen composer`
+Latest pushed commit: `b716807 — fix: upgrade default lawyer prompts safely`
 
 ---
 
-## Phase A — Real Working Chat
+## Stage A — Real Working Chat (complete)
 
 Goal: replace all fake/static sidebar and chat data with real backend data.
 No fake chats or sidebar entries in the main user flow.
 
-Scope:
+### What was delivered
 
-- Load real chat list from `GET /api/chats` into the sidebar, grouped by section prefix in title.
+- Sidebar loads real chat list from `GET /api/chats`, grouped by section prefix in title.
 - "New chat" button creates a real backend chat on first message send.
-- Selected section + first question generate the title (already wired; confirm end-to-end).
-- Chat appears under the matching section group in the sidebar after creation.
-- Clicking a sidebar chat loads real messages via `GET /api/chats/{id}/messages`.
-- Reloading the page and reopening a chat restores full message history.
-- Remove all remaining fake/static sidebar entries from the main user flow.
+- Selected section + first question generate the title on first send.
+- Chat appears under matching section group in sidebar after creation.
+- Clicking sidebar chat loads real messages via `GET /api/chats/{id}/messages`.
+- Reloading page and reopening chat restores full message history.
+- All fake/static sidebar entries removed from main user flow.
+- Author type visible (user/lawyer) with timestamps.
+- Multiple chats can have pending AI answers simultaneously.
+- AI lawyers receive full chat history before answering (universal system prompt + chat_context).
+- Chat-specific history preserved in context, not system_prompt.
+- Default lawyer prompts safely upgraded; custom admin prompts preserved.
+- Stale AI response cannot append to wrong chat; tracking per-chat pending responses.
 
-Acceptance: open the app, send a question, see the chat appear in the sidebar under the correct
-section, reload, reopen, see the same messages.
+Acceptance: ✓ Open app, send question, see chat in sidebar under correct section, reload, reopen, see same messages with history.
 
 ---
 
-## Phase B — OpenRouter and Model Settings
+## Phase B — OpenRouter and Model Settings (next)
 
 Goal: complete minimal working OpenRouter integration with admin model settings and clean
 user-facing model UX. Must be done before RAG quality verification so test answers use real models.

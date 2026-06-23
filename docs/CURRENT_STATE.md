@@ -1,7 +1,8 @@
 # Current State
 
-Last updated after Stage A backend preparation (chat ownership and per-chat access control).
-Local branch master: commits `2503106` and `db19391`. Pytest: **134/134 passed**. Not pushed.
+Last updated after Stage A real chat/sidebar/history completion.
+Pushed commits: `b716807` (fix: upgrade default lawyer prompts safely) ← HEAD.
+Backend tests: **161/161 passed**. Frontend build: ✓ successful. Not pushing further.
 
 ## Completed stages
 
@@ -37,17 +38,20 @@ Local branch master: commits `2503106` and `db19391`. Pytest: **134/134 passed**
   Selected section + first question generate the chat title on first send. Lawyer selector chips
   remain below the input in both empty and active chat states. No "Черновик" shown in empty-state
   topbar. Dead UI buttons removed. Corrupted Cyrillic strings fixed.
-- **Stage A backend**: Chat ownership and per-chat access control. `Chat.section` column added.
-  `ChatCreate` no longer accepts `owner_user_id`; backend sets owner from authenticated user.
-  `GET /api/chats`: admin sees all chats; non-admin sees only their own. Per-chat access:
-  admin can read/write/invoke all chats; owner can read/write/invoke own chats; non-owner
-  non-admin cannot access other users' chats; viewer can read only own chats, cannot create/write/invoke.
+- **Stage A real chat/sidebar/history** (complete): Real chat backend and frontend with AI history integration.
+  - **Backend**: Chat ownership and per-chat access control. `Chat.section` column added.
+    `ChatCreate` no longer accepts `owner_user_id`; backend sets owner from authenticated user.
+    `GET /api/chats`: admin sees all chats; non-admin sees only their own. Per-chat access:
+    admin can read/write/invoke all chats; owner can read/write/invoke own chats; non-owner
+    non-admin cannot access other users' chats; viewer can read only own chats, cannot create/write/invoke.
+  - **Frontend**: Sidebar loads real chats from `GET /api/chats` grouped by section; click loads messages;
+    reload-safe; who-wrote-what visible by `author_type`; multiple pending AI answers supported.
+  - **AI history**: Lawyers receive chat history before answering; history includes sender labels and timestamps;
+    each lawyer has universal system prompt; chat-specific history in `chat_context` not `system_prompt`;
+    default prompts safely upgraded, custom admin prompts preserved; stale AI response cannot append to wrong chat.
 
 ## What is intentionally NOT done yet
 
-- **Stage A frontend**: real sidebar chat list UI not yet wired. Backend `GET /api/chats` and
-  per-chat access control are ready; frontend still shows fake/static chat history. Frontend
-  integration is the next immediate step.
 - **Fake document panel data**: still present in the document/right panel. Must be replaced
   during the real document generation and templates stage — not before.
 - **Model/provider display**: raw `model_id` strings (e.g. `inclusionai/ling-2.6-flash`) and
@@ -86,19 +90,16 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 ## Next major direction
 
-Six phases remain before the founder presentation:
+Five phases remain before the founder presentation:
 
-1. **Stage A frontend** (next) — real sidebar chat list from backend; click opens messages;
-   reload-safe; no fake sidebar data in main user flow. Backend is ready. Frontend must wire
-   `GET /api/chats` and per-chat access control.
-2. **OpenRouter and model settings** — API key via `.env`; admin model settings; user-facing
+1. **OpenRouter and model settings** (next) — API key via `.env`; admin model settings; user-facing
    modes (`Экономно`, `Быстро`, `Качественно`); hide raw `model_id` from normal UI.
    Must be done before RAG quality verification.
-3. **Company details and document templates** — real requisites; approved templates; remove fake
+2. **Company details and document templates** — real requisites; approved templates; remove fake
    document panel data; generate real documents; export Word/PDF.
-4. **Legal base and RAG verification** — audit sources; add missing laws/PKM/codes; run 20–30
+3. **Legal base and RAG verification** — audit sources; add missing laws/PKM/codes; run 20–30
    control questions; ensure source cards and uncertainty warnings work.
-5. **Real factory scenarios** — debt claim, supply contract, procurement risk, HR, finance/legal
+4. **Real factory scenarios** — debt claim, supply contract, procurement risk, HR, finance/legal
    document; each must test chat + RAG + sources + document generation + saved history + UI.
-6. **Founder presentation polish** — no fake data in visible demo paths; no raw errors; no
+5. **Founder presentation polish** — no fake data in visible demo paths; no raw errors; no
    technical model IDs in normal UI; clean page, chat, sources, generated document.
