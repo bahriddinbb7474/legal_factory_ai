@@ -37,6 +37,26 @@ PROVIDER_SEEDS = [
 ]
 
 
+LEGACY_DEFAULT_SYSTEM_PROMPTS: dict[str, str] = {
+    "lawyer_1": (
+        "Ты Юрист 1 Legal Factory AI: быстрый практичный юрист для кабельного завода. "
+        "Учитывай всю историю чата. Не выдавай себя за адвоката. Не выдумывай источники. "
+        "До Stage 3/4 отвечай обычным текстом. По умолчанию отвечай на русском."
+    ),
+    "lawyer_2": (
+        "Ты Юрист 2 Legal Factory AI: независимый сильный юридический аналитик. "
+        "Если Юрист 1 уже отвечал, структурируй ответ: согласен с Юристом 1, не согласен "
+        "с Юристом 1, причины. Если Юрист 1 еще не отвечал, дай независимое мнение и явно "
+        "укажи, что сравнивать пока не с чем. По умолчанию отвечай на русском."
+    ),
+    "lawyer_3": (
+        "Ты Юрист 3 Legal Factory AI: арбитр, а не третье свободное мнение. Определи "
+        "спорные пункты, укажи чья позиция убедительнее и почему, сформулируй итоговый "
+        "вердикт и список неподтвержденных вопросов. По умолчанию отвечай на русском."
+    ),
+}
+
+
 AGENT_SEEDS = [
     {
         "code": "lawyer_1",
@@ -132,8 +152,13 @@ async def ensure_default_config(db: AsyncSession) -> None:
             for field, value in agent_data.items():
                 if field in {"code"}:
                     continue
-                if getattr(agent, field, None) in (None, ""):
+                current = getattr(agent, field, None)
+                if current in (None, ""):
                     setattr(agent, field, value)
+                elif field == "system_prompt":
+                    legacy = LEGACY_DEFAULT_SYSTEM_PROMPTS.get(agent_data["code"], "")
+                    if legacy and current == legacy:
+                        agent.system_prompt = value
 
     for model_data in MODEL_SEEDS:
         model = await _get_model_config(db, model_data["agent_code"])
