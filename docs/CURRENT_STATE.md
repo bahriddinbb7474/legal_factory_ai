@@ -1,7 +1,7 @@
 # Current State
 
-Last updated after Demo-1 new-chat UI cleanup.
-Master commit on origin/master: `df9916a — fix: compact section selector and widen composer`
+Last updated after Stage A backend preparation (chat ownership and per-chat access control).
+Local branch master: commits `2503106` and `db19391`. Pytest: **134/134 passed**. Not pushed.
 
 ## Completed stages
 
@@ -37,13 +37,19 @@ Master commit on origin/master: `df9916a — fix: compact section selector and w
   Selected section + first question generate the chat title on first send. Lawyer selector chips
   remain below the input in both empty and active chat states. No "Черновик" shown in empty-state
   topbar. Dead UI buttons removed. Corrupted Cyrillic strings fixed.
+- **Stage A backend**: Chat ownership and per-chat access control. `Chat.section` column added.
+  `ChatCreate` no longer accepts `owner_user_id`; backend sets owner from authenticated user.
+  `GET /api/chats`: admin sees all chats; non-admin sees only their own. Per-chat access:
+  admin can read/write/invoke all chats; owner can read/write/invoke own chats; non-owner
+  non-admin cannot access other users' chats; viewer can read only own chats, cannot create/write/invoke.
 
 ## What is intentionally NOT done yet
 
+- **Stage A frontend**: real sidebar chat list UI not yet wired. Backend `GET /api/chats` and
+  per-chat access control are ready; frontend still shows fake/static chat history. Frontend
+  integration is the next immediate step.
 - **Fake document panel data**: still present in the document/right panel. Must be replaced
   during the real document generation and templates stage — not before.
-- **Real sidebar chat list**: sidebar still shows fake/static chat history. Real `GET /api/chats`
-  integration is the first item in the next phase.
 - **Model/provider display**: raw `model_id` strings (e.g. `inclusionai/ling-2.6-flash`) and
   `$0.000000` cost display still visible in message toolbar. Cleanup deferred to the
   OpenRouter/model settings stage.
@@ -82,8 +88,9 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 Six phases remain before the founder presentation:
 
-1. **Real working chat** — real sidebar chat list from backend; create chat; click opens messages;
-   reload-safe; no fake sidebar data in main user flow.
+1. **Stage A frontend** (next) — real sidebar chat list from backend; click opens messages;
+   reload-safe; no fake sidebar data in main user flow. Backend is ready. Frontend must wire
+   `GET /api/chats` and per-chat access control.
 2. **OpenRouter and model settings** — API key via `.env`; admin model settings; user-facing
    modes (`Экономно`, `Быстро`, `Качественно`); hide raw `model_id` from normal UI.
    Must be done before RAG quality verification.
