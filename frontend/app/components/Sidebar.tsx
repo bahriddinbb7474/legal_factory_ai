@@ -23,6 +23,7 @@ type SidebarProps = {
   selectedSection: string | null;
   onNewChat: (section?: string | null) => void;
   onSelectChat: (chatId: number) => void;
+  pendingInvokeByChatId: Record<number, boolean>;
 };
 
 export default function Sidebar({
@@ -38,6 +39,7 @@ export default function Sidebar({
   selectedSection,
   onNewChat,
   onSelectChat,
+  pendingInvokeByChatId,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
@@ -157,6 +159,7 @@ export default function Sidebar({
                       type="button"
                     >
                       {chat.title}
+                      {pendingInvokeByChatId[chat.id] ? <span className="chat-pending-dot" aria-label="юрист отвечает"> ●</span> : null}
                     </button>
                   ))
                 )}

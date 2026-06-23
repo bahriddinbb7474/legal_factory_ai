@@ -322,7 +322,7 @@ export default function HomePage() {
   const [approvalComment, setApprovalComment] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isInvoking, setIsInvoking] = useState(false);
+  const [pendingInvokeByChatId, setPendingInvokeByChatId] = useState<Record<number, boolean>>({});
   const [chatLoading, setChatLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -437,6 +437,7 @@ export default function HomePage() {
   const selectedAgent = agents.find((agent) => agent.code === selectedLawyer) ?? agents[0];
   const selectedTemplate = documentTemplates.find((template) => template.template_key === selectedTemplateKey) ?? documentTemplates[0] ?? null;
   const isAdmin = currentUser?.role === "admin";
+  const currentChatIsInvoking = chatId !== null && pendingInvokeByChatId[chatId] === true;
   const canWriteWorkspace = currentUser !== null && currentUser.role !== "viewer";
   const canUseApprovalControls = currentUser?.role === "director" || currentUser?.role === "chief_accountant";
   const totalCost = messages.reduce((sum, message) => sum + Number(message.cost_usd ?? 0), 0);
@@ -922,7 +923,6 @@ export default function HomePage() {
     setUploadedDocuments([]);
     setGeneratedDocument(null);
     setIsDocumentOpen(false);
-    setIsInvoking(false);
     setApiStatus("");
     setChatId(selectedId);
     try {
@@ -1059,19 +1059,19 @@ export default function HomePage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const content = inputValue.trim();
-    if (!content || isInvoking) {
+    if (!content || currentChatIsInvoking) {
       return;
     }
 
     const userMessage: ChatMessage = { author_type: "user", content };
     setInputValue("");
     setMessages((current) => [...current, userMessage]);
-    setIsInvoking(true);
     setApiStatus("");
 
     let nextChatId: number | null = null;
     try {
       nextChatId = await ensureChat(`${selectedSection ? `${selectedSection} · ` : ""}${content.slice(0, 60)}`);
+      setPendingInvokeByChatId((current) => ({ ...current, [nextChatId!]: true }));
       await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1087,9 +1087,11 @@ export default function HomePage() {
         const error = await invokeResponse.json().catch(() => ({ detail: "Ошибка OpenRouter" }));
         throw new Error(error.detail ?? "Ошибка OpenRouter");
       }
-      const lawyerMessage = await invokeResponse.json();
       if (activeChatIdRef.current === nextChatId) {
-        setMessages((current) => [...current, lawyerMessage]);
+        const msgsResponse = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`);
+        if (msgsResponse.ok) {
+          setMessages((await msgsResponse.json()) as ChatMessage[]);
+        }
         await refreshChatStatus(nextChatId);
       }
     } catch (error) {
@@ -1103,7 +1105,13 @@ export default function HomePage() {
         ]);
       }
     } finally {
-      setIsInvoking(false);
+      if (nextChatId !== null) {
+        setPendingInvokeByChatId((current) => {
+          const next = { ...current };
+          delete next[nextChatId!];
+          return next;
+        });
+      }
     }
   }
 
@@ -1474,6 +1482,7 @@ export default function HomePage() {
         selectedSection={selectedSection}
         onNewChat={handleNewChat}
         onSelectChat={handleSelectChat}
+        pendingInvokeByChatId={pendingInvokeByChatId}
       />
 
       <section className={messages.length === 0 ? "chat-area chat-area-empty" : "chat-area"}>
@@ -1655,13 +1664,13 @@ export default function HomePage() {
               placeholder="Спросите Legal Factory AI"
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
-              disabled={isInvoking}
+              disabled={currentChatIsInvoking}
             />
             <button
               type="submit"
               className="voice-button"
               aria-label="Отправить выбранному юристу"
-              disabled={isInvoking}
+              disabled={currentChatIsInvoking}
             >
               <span className="send-arrow" aria-hidden="true" />
             </button>
@@ -1673,10 +1682,10 @@ export default function HomePage() {
                 key={agent.code}
                 onClick={() => setSelectedLawyer(agent.code)}
                 type="button"
-                disabled={isInvoking}
+                disabled={currentChatIsInvoking}
               >
                 {agent.display_name} · {agent.model_name}
-                {isInvoking && agent.code === selectedLawyer ? " · отвечает..." : ""}
+                {currentChatIsInvoking && agent.code === selectedLawyer ? " · отвечает..." : ""}
               </button>
             ))}
           </div>
