@@ -80,6 +80,32 @@ def test_invoke_calls_only_selected_lawyer_and_saves_metadata(client) -> None:
     assert costs[0]["provider_code"] == "cloudflare"
 
 
+def test_invoke_context_includes_chat_metadata(client) -> None:
+    fake_gateway = FakeGateway(calls=[])
+    app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
+
+    chat_id = client.post("/api/chats", json={"title": "Договор поставки", "section": "Контракты"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь договор"})
+    client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
+
+    context = fake_gateway.calls[0][1]
+    assert "Раздел: Контракты" in context
+    assert "Название: Договор поставки" in context
+
+
+def test_invoke_context_includes_current_question_and_continuation_footer(client) -> None:
+    fake_gateway = FakeGateway(calls=[])
+    app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
+
+    chat_id = client.post("/api/chats", json={"title": "Тест"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Текущий вопрос"})
+    client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
+
+    context = fake_gateway.calls[0][1]
+    assert "Текущий вопрос пользователя:" in context
+    assert "Используй историю чата" in context
+
+
 def test_invoke_rejects_disallowed_provider(client) -> None:
     fake_gateway = FakeGateway(calls=[])
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway

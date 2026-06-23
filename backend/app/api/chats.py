@@ -315,7 +315,7 @@ async def invoke_agent(
     document_context = await _build_document_context(documents)
     legal_chunks = await legal_retriever.retrieve(db, _last_user_message(messages), top_k=5)
     legal_context = build_trusted_legal_context(legal_chunks)
-    chat_context = build_chat_context(messages, document_context=document_context, legal_context=legal_context)
+    chat_context = build_chat_context(messages, chat=chat, document_context=document_context, legal_context=legal_context)
     try:
         structured_result = await invoke_structured_with_repair(agent, chat_context, gateway, db, current_user.id)
     except MissingOpenRouterKeyError as exc:
