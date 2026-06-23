@@ -65,16 +65,21 @@ async def create_chat(
 
 
 @router.get("/{chat_id}", response_model=ChatRead)
-async def get_chat(chat_id: int, db: AsyncSession = Depends(get_db)) -> Chat:
-    chat = await db.get(Chat, chat_id)
-    if chat is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
-    return chat
+async def get_chat(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> Chat:
+    return await _get_chat_for_user_or_404(chat_id, current_user, db)
 
 
 @router.get("/{chat_id}/messages", response_model=list[MessageRead])
-async def list_messages(chat_id: int, db: AsyncSession = Depends(get_db)) -> list[Message]:
-    await _get_chat_or_404(chat_id, db)
+async def list_messages(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> list[Message]:
+    await _get_chat_for_user_or_404(chat_id, current_user, db)
     result = await db.execute(
         select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at, Message.id)
     )
@@ -88,7 +93,7 @@ async def create_message(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Message:
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     message = Message(chat_id=chat_id, **payload.model_dump())
     db.add(message)
     if message.author_type == "user":
@@ -107,7 +112,7 @@ async def mark_message_as_verdict(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Message:
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     message = await _get_chat_message_or_404(chat_id, message_id, db)
     if message.role != "assistant" or not message.author_type.startswith("agent"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only lawyer messages can be marked as verdict.")
@@ -138,7 +143,7 @@ async def clear_chat_verdict(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     previous_id = chat.active_verdict_message_id
     if previous_id is not None:
         previous = await db.get(Message, previous_id)
@@ -159,8 +164,12 @@ async def clear_chat_verdict(
 
 
 @router.get("/{chat_id}/verdict", response_model=MessageRead)
-async def get_chat_verdict(chat_id: int, db: AsyncSession = Depends(get_db)) -> Message:
-    chat = await _get_chat_or_404(chat_id, db)
+async def get_chat_verdict(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> Message:
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     if chat.active_verdict_message_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active verdict found")
     return await _get_chat_message_or_404(chat_id, chat.active_verdict_message_id, db)
@@ -175,7 +184,7 @@ async def generate_document_from_verdict(
     gateway: OpenRouterGateway = Depends(get_llm_gateway),
 ) -> GeneratedDocument:
     await ensure_default_config(db)
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     if chat.active_verdict_message_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -267,7 +276,7 @@ async def invoke_agent(
     gateway: OpenRouterGateway = Depends(get_llm_gateway),
 ) -> Message:
     await ensure_default_config(db)
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     await budget_service.check_before_call(db, current_user)
 
     agent = await _get_agent_or_404(payload.agent_code, db)
@@ -445,8 +454,12 @@ async def invoke_agent(
 
 
 @router.get("/{chat_id}/costs", response_model=list[CostRecordRead])
-async def list_costs(chat_id: int, db: AsyncSession = Depends(get_db)) -> list[CostRecord]:
-    await _get_chat_or_404(chat_id, db)
+async def list_costs(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> list[CostRecord]:
+    await _get_chat_for_user_or_404(chat_id, current_user, db)
     result = await db.execute(
         select(CostRecord).where(CostRecord.chat_id == chat_id).order_by(CostRecord.created_at, CostRecord.id)
     )
@@ -460,7 +473,7 @@ async def request_approval(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     await _record_approval_event(db, chat, "request", current_user, "needs_review", comment)
     await db.commit()
     await db.refresh(chat)
@@ -475,7 +488,7 @@ async def approve_chat(
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
     _assert_can_approve(current_user)
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     await _record_approval_event(db, chat, "approve", current_user, "approved", comment)
     await db.commit()
     await db.refresh(chat)
@@ -490,7 +503,7 @@ async def reject_chat(
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Chat:
     _assert_can_approve(current_user)
-    chat = await _get_chat_or_404(chat_id, db)
+    chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
     await _record_approval_event(db, chat, "reject", current_user, "rejected", comment)
     await db.commit()
     await db.refresh(chat)
@@ -498,17 +511,21 @@ async def reject_chat(
 
 
 @router.get("/{chat_id}/approvals", response_model=list[ApprovalRead])
-async def list_approvals(chat_id: int, db: AsyncSession = Depends(get_db)) -> list[Approval]:
-    await _get_chat_or_404(chat_id, db)
+async def list_approvals(
+    chat_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> list[Approval]:
+    await _get_chat_for_user_or_404(chat_id, current_user, db)
     result = await db.execute(
         select(Approval).where(Approval.chat_id == chat_id).order_by(Approval.performed_at, Approval.id)
     )
     return list(result.scalars().all())
 
 
-async def _get_chat_or_404(chat_id: int, db: AsyncSession) -> Chat:
+async def _get_chat_for_user_or_404(chat_id: int, current_user: CurrentUser, db: AsyncSession) -> Chat:
     chat = await db.get(Chat, chat_id)
-    if chat is None:
+    if chat is None or (current_user.role != "admin" and chat.owner_user_id != current_user.id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     return chat
 

@@ -44,8 +44,8 @@ def test_viewer_can_use_representative_read_endpoints(client: TestClient) -> Non
     _login_as_created_user(client, VIEWER)
 
     assert client.get("/api/chats").status_code == 200
-    assert client.get(f"/api/chats/{chat_id}").status_code == 200
-    assert client.get(f"/api/chats/{chat_id}/messages").status_code == 200
+    assert client.get(f"/api/chats/{chat_id}").status_code == 404
+    assert client.get(f"/api/chats/{chat_id}/messages").status_code == 404
     assert client.get("/api/agents").status_code == 200
     assert client.get("/api/document-templates").status_code == 200
     assert client.get("/api/documents").status_code == 200
@@ -94,7 +94,7 @@ def test_viewer_workspace_mutations_are_forbidden_without_db_changes(client: Tes
     )
     assert upload.status_code == 403
     assert client.get("/api/chats").json() == []
-    assert client.get(f"/api/chats/{chat_id}/messages").json() == []
+    assert client.get(f"/api/chats/{chat_id}/messages").status_code == 404
 
 
 def test_non_viewer_workspace_writer_can_still_mutate(client: TestClient) -> None:

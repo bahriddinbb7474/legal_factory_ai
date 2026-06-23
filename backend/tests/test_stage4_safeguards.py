@@ -185,7 +185,7 @@ def test_approval_journal_and_backend_role_check(client) -> None:
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=5, role="sales")
     assert client.post(f"/api/chats/{chat_id}/approve").status_code == 403
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=6, role="director")
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=1, role="director")
     assert client.post(f"/api/chats/{chat_id}/request-approval").json()["approval_status"] == "needs_review"
     assert client.post(f"/api/chats/{chat_id}/approve").json()["approval_status"] == "approved"
     approvals = client.get(f"/api/chats/{chat_id}/approvals").json()
@@ -200,7 +200,7 @@ def test_monthly_budget_blocks_non_admin_when_enabled(client, monkeypatch) -> No
     chat_id, first_response, _ = invoke_with_response(client, "lawyer_1", legal_payload())
     assert first_response.status_code == 200
 
-    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=7, role="sales")
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=1, role="sales")
     client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Еще вопрос"})
     gateway = SequenceGateway([json.dumps(legal_payload(), ensure_ascii=False)])
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
