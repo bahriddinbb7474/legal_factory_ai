@@ -1691,7 +1691,7 @@ export default function HomePage() {
                 type="button"
                 disabled={currentChatIsInvoking}
               >
-                {agent.display_name} · {agent.model_name}
+                {agent.display_name} · {cleanModelDisplayName(agentSelectedModels[agent.code]?.name ?? agent.model_name)}
                 {currentChatIsInvoking && agent.code === selectedLawyer ? " · отвечает..." : ""}
               </button>
             ))}
@@ -2194,11 +2194,9 @@ export default function HomePage() {
                       {agents.map((agent) => {
                         const cached = agentSelectedModels[agent.code];
                         const matchedModel = models.find((m) => m.model_id === agent.model_name);
-                        const displayName = cached
-                          ? cached.name
-                          : matchedModel
-                          ? matchedModel.name
-                          : readableModelName(agent.model_name);
+                        const displayName = cleanModelDisplayName(
+                          cached?.name ?? matchedModel?.name ?? agent.model_name
+                        );
                         const isFree = cached
                           ? cached.is_free
                           : matchedModel
@@ -2470,7 +2468,7 @@ export default function HomePage() {
                 <article className="model-row" key={`${model.model_id}-${model.provider}`}>
                   <div className="model-row-main">
                     <div className="model-row-line1">
-                      <strong>{model.name}</strong>
+                      <strong>{cleanModelDisplayName(model.name)}</strong>
                       {model.is_free ? <span className="badge-free">free</span> : null}
                     </div>
                     <div className="model-row-line2">
@@ -2497,9 +2495,22 @@ function fmtPrice(price: string): string {
   return `$${n.toFixed(2)}`;
 }
 
-function readableModelName(modelId: string): string {
-  const slug = modelId.includes("/") ? modelId.split("/").slice(1).join(" ") : modelId;
-  return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function cleanModelDisplayName(nameOrId: string): string {
+  if (!nameOrId) return "";
+  let s = nameOrId;
+  // Strip "Provider: " prefix (e.g. "Google: Lyria 3" -> "Lyria 3", "IBM: Granite" -> "Granite")
+  const ci = s.indexOf(": ");
+  if (ci > 0 && ci <= 20) s = s.slice(ci + 2).trim();
+  // Derive readable name from model_id slug when "/" is present
+  if (s.includes("/")) {
+    s = s.split("/").slice(1).join(" ");
+    return s.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  // Title-case slug-style strings (no spaces, all lowercase like "gpt-oss-20b" after prefix strip)
+  if (!s.includes(" ") && s === s.toLowerCase()) {
+    return s.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return s;
 }
 
 function StructuredAnswerSections({ message }: { message: ChatMessage }) {
