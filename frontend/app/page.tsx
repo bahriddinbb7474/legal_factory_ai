@@ -333,6 +333,7 @@ export default function HomePage() {
   const [onlyFree, setOnlyFree] = useState(false);
   const [modelSort, setModelSort] = useState("name");
   const [agentSelectedModels, setAgentSelectedModels] = useState<Record<string, { name: string; is_free: boolean }>>({});
+  const [lawyerInfoOpen, setLawyerInfoOpen] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState("");
   const [isDocumentOpen, setIsDocumentOpen] = useState(false);
   const [isDocumentEditing, setIsDocumentEditing] = useState(false);
@@ -1121,6 +1122,14 @@ export default function HomePage() {
     }
   }
 
+  async function loadModelsIfEmpty() {
+    if (models.length > 0) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/openrouter/models`);
+      if (response.ok) setModels(await response.json());
+    } catch { /* silently fail */ }
+  }
+
   async function openModelModal(agent: Agent) {
     setSelectedAgentForSettings(agent);
     setSettingsError("");
@@ -1683,18 +1692,34 @@ export default function HomePage() {
             </button>
           </form>
           <div className="agent-row" aria-label="Выбор юриста">
-            {agents.map((agent) => (
-              <button
-                className={agent.code === selectedLawyer ? "agent-chip active" : "agent-chip"}
-                key={agent.code}
-                onClick={() => setSelectedLawyer(agent.code)}
-                type="button"
-                disabled={currentChatIsInvoking}
-              >
-                {agent.display_name} · {cleanModelDisplayName(agentSelectedModels[agent.code]?.name ?? agent.model_name)}
-                {currentChatIsInvoking && agent.code === selectedLawyer ? " · отвечает..." : ""}
-              </button>
-            ))}
+            {agents.map((agent) => {
+              const resolvedModelName =
+                agentSelectedModels[agent.code]?.name ??
+                models.find((m) => m.model_id === agent.model_name)?.name;
+              return (
+                <div key={agent.code} className="lawyer-chip-wrapper">
+                  <button
+                    className={agent.code === selectedLawyer ? "agent-chip active" : "agent-chip"}
+                    onClick={() => setSelectedLawyer(agent.code)}
+                    type="button"
+                    disabled={currentChatIsInvoking}
+                  >
+                    {agent.display_name}
+                    {currentChatIsInvoking && agent.code === selectedLawyer ? " · отвечает..." : ""}
+                    <span
+                      className="lawyer-info-toggle"
+                      onClick={(e) => { e.stopPropagation(); setLawyerInfoOpen(lawyerInfoOpen === agent.code ? null : agent.code); }}
+                      aria-label="Информация о модели"
+                    >▾</span>
+                  </button>
+                  {lawyerInfoOpen === agent.code && (
+                    <div className="lawyer-info-popup">
+                      {resolvedModelName ? `Модель: ${resolvedModelName}` : "Модель загружается…"}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           </> : <p className="disclaimer">Режим просмотра: изменение рабочего пространства недоступно.</p>}
           <p className="disclaimer">{apiStatus || "Legal Factory AI может ошибаться. Важные выводы проверяются ответственным специалистом."}</p>
@@ -2068,7 +2093,7 @@ export default function HomePage() {
                   <strong>Профиль компании</strong>
                   <span>Реквизиты и ресурсы</span>
                 </button>
-                <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("agents")}>
+                <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("agents"); void loadModelsIfEmpty(); }}>
                   <strong>Модели юристов</strong>
                   <span>AI-юристы и модели</span>
                 </button>
@@ -2194,9 +2219,7 @@ export default function HomePage() {
                       {agents.map((agent) => {
                         const cached = agentSelectedModels[agent.code];
                         const matchedModel = models.find((m) => m.model_id === agent.model_name);
-                        const displayName = cleanModelDisplayName(
-                          cached?.name ?? matchedModel?.name ?? agent.model_name
-                        );
+                        const displayName = cached?.name ?? matchedModel?.name ?? agent.model_name;
                         const isFree = cached
                           ? cached.is_free
                           : matchedModel
@@ -2468,7 +2491,7 @@ export default function HomePage() {
                 <article className="model-row" key={`${model.model_id}-${model.provider}`}>
                   <div className="model-row-main">
                     <div className="model-row-line1">
-                      <strong>{cleanModelDisplayName(model.name)}</strong>
+                      <strong>{model.name}</strong>
                       {model.is_free ? <span className="badge-free">free</span> : null}
                     </div>
                     <div className="model-row-line2">
@@ -2495,23 +2518,6 @@ function fmtPrice(price: string): string {
   return `$${n.toFixed(2)}`;
 }
 
-function cleanModelDisplayName(nameOrId: string): string {
-  if (!nameOrId) return "";
-  let s = nameOrId;
-  // Strip "Provider: " prefix (e.g. "Google: Lyria 3" -> "Lyria 3", "IBM: Granite" -> "Granite")
-  const ci = s.indexOf(": ");
-  if (ci > 0 && ci <= 20) s = s.slice(ci + 2).trim();
-  // Derive readable name from model_id slug when "/" is present
-  if (s.includes("/")) {
-    s = s.split("/").slice(1).join(" ");
-    return s.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-  // Title-case slug-style strings (no spaces, all lowercase like "gpt-oss-20b" after prefix strip)
-  if (!s.includes(" ") && s === s.toLowerCase()) {
-    return s.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-  return s;
-}
 
 function StructuredAnswerSections({ message }: { message: ChatMessage }) {
   const payload = message.structured_payload;
