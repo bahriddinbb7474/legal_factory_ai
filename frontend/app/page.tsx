@@ -2193,13 +2193,24 @@ export default function HomePage() {
                     <div className="settings-list">
                       {agents.map((agent) => {
                         const cached = agentSelectedModels[agent.code];
+                        const matchedModel = models.find((m) => m.model_id === agent.model_name);
+                        const displayName = cached
+                          ? cached.name
+                          : matchedModel
+                          ? matchedModel.name
+                          : readableModelName(agent.model_name);
+                        const isFree = cached
+                          ? cached.is_free
+                          : matchedModel
+                          ? matchedModel.is_free
+                          : Number(agent.input_price_per_1m) === 0 && Number(agent.output_price_per_1m) === 0;
                         return (
                           <article className="settings-row" key={agent.code}>
                             <div>
                               <strong>{agent.display_name}</strong>
                               <span>
-                                {cached ? cached.name : agent.model_name}
-                                {cached && cached.is_free ? <span className="agent-chip active" style={{ marginLeft: "6px", fontSize: "0.7em", padding: "1px 5px" }}>free</span> : null}
+                                {displayName}
+                                {isFree ? <span className="badge-free">free</span> : null}
                               </span>
                             </div>
                             <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
@@ -2460,10 +2471,10 @@ export default function HomePage() {
                   <div className="model-row-main">
                     <div className="model-row-line1">
                       <strong>{model.name}</strong>
-                      {model.is_free ? <span className="agent-chip active" style={{ marginLeft: "6px", fontSize: "0.7em", padding: "1px 5px" }}>free</span> : null}
+                      {model.is_free ? <span className="badge-free">free</span> : null}
                     </div>
                     <div className="model-row-line2">
-                      {model.model_id} · {model.provider} · in {fmtPrice(model.input_price)}/M · out {fmtPrice(model.output_price)}/M · {Math.round(model.context_length / 1000)}K ctx · text
+                      {model.model_id} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
                     </div>
                   </div>
                   <button className="compact-button" onClick={() => saveModelChoice(model)} disabled={!model.is_available} type="button">
@@ -2484,6 +2495,11 @@ function fmtPrice(price: string): string {
   if (n === 0) return "$0";
   if (n < 0.01) return `$${n.toFixed(4)}`;
   return `$${n.toFixed(2)}`;
+}
+
+function readableModelName(modelId: string): string {
+  const slug = modelId.includes("/") ? modelId.split("/").slice(1).join(" ") : modelId;
+  return slug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function StructuredAnswerSections({ message }: { message: ChatMessage }) {

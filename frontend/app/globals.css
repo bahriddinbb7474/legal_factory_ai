@@ -1363,6 +1363,24 @@ button {
   white-space: nowrap;
 }
 
+.badge-free {
+  background: #e6f6f0;
+  border: 1px solid #a8dcc9;
+  border-radius: 999px;
+  color: #10a37f;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  margin-left: 5px;
+  padding: 2px 6px;
+  vertical-align: middle;
+}
+
+.settings-row .badge-free {
+  display: inline-block;
+}
+
 button:disabled,
 input:disabled {
   opacity: 0.55;
