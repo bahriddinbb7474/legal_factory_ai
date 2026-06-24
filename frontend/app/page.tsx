@@ -467,9 +467,8 @@ export default function HomePage() {
   }, [messages]);
 
   const filteredModels = useMemo(() => {
-    const result = models
-      .filter((model) => !modelSearch || model.name.toLowerCase().includes(modelSearch.toLowerCase()) || model.model_id.toLowerCase().includes(modelSearch.toLowerCase()))
-      .filter((model) => !providerFilter || model.provider === providerFilter)
+    const result = catalog
+      .filter((model) => !catalogSearch || model.model_id.toLowerCase().includes(catalogSearch.toLowerCase()) || model.name.toLowerCase().includes(catalogSearch.toLowerCase()))
       .filter((model) => !onlyFree || model.is_free);
     if (modelSort === "price_asc") {
       result.sort((a, b) => (Number(a.input_price) + Number(a.output_price)) - (Number(b.input_price) + Number(b.output_price)));
@@ -478,10 +477,10 @@ export default function HomePage() {
     } else if (modelSort === "ctx_desc") {
       result.sort((a, b) => b.context_length - a.context_length);
     } else {
-      result.sort((a, b) => a.name.localeCompare(b.name));
+      result.sort((a, b) => a.model_id.localeCompare(b.model_id));
     }
     return result;
-  }, [modelSearch, modelSort, models, onlyFree, providerFilter]);
+  }, [catalog, catalogSearch, modelSort, onlyFree]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2257,21 +2256,13 @@ export default function HomePage() {
                     <h2>Модели юристов</h2>
                     <div className="settings-list">
                       {agents.map((agent) => {
-                        const cached = agentSelectedModels[agent.code];
-                        const matchedModel = models.find((m) => m.model_id === agent.model_name);
-                        const displayName = cached?.name ?? matchedModel?.name ?? agent.model_name;
-                        const isFree = cached
-                          ? cached.is_free
-                          : matchedModel
-                          ? matchedModel.is_free
-                          : Number(agent.input_price_per_1m) === 0 && Number(agent.output_price_per_1m) === 0;
+                        const isFree = Number(agent.input_price_per_1m) === 0 && Number(agent.output_price_per_1m) === 0;
                         return (
                           <article className="settings-row" key={agent.code}>
                             <div>
                               <strong>{agent.display_name}</strong>
                               <span>
-                                {displayName}
-                                {isFree ? <span className="badge-free">free</span> : null}
+                                {agent.model_name}{isFree ? " / free" : ""} / in {fmtPrice(agent.input_price_per_1m)}/M / out {fmtPrice(agent.output_price_per_1m)}/M
                               </span>
                             </div>
                             <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
@@ -2290,10 +2281,17 @@ export default function HomePage() {
                     </p>
                     <div className="model-filters">
                       <input
-                        placeholder="Поиск модели"
+                        placeholder="Поиск по model_id"
                         value={catalogSearch}
                         onChange={(e) => setCatalogSearch(e.target.value)}
                       />
+                      <label><input type="checkbox" checked={onlyFree} onChange={(e) => setOnlyFree(e.target.checked)} /> Бесплатные</label>
+                      <select value={modelSort} onChange={(e) => setModelSort(e.target.value)}>
+                        <option value="name">По model_id</option>
+                        <option value="price_asc">Дешевле сначала</option>
+                        <option value="price_desc">Дороже сначала</option>
+                        <option value="ctx_desc">Больше контекст</option>
+                      </select>
                       <span style={{ fontSize: "0.85rem", color: "var(--muted)", alignSelf: "center" }}>
                         {approvedModelIds.size} выбрано из {catalog.length}
                       </span>
@@ -2302,41 +2300,64 @@ export default function HomePage() {
                       <p className="settings-hint">Загрузка каталога...</p>
                     ) : (
                       <div className="model-list">
-                        {catalog
-                          .filter((m) => !catalogSearch || m.name.toLowerCase().includes(catalogSearch.toLowerCase()) || m.model_id.toLowerCase().includes(catalogSearch.toLowerCase()))
-                          .map((model) => {
-                            const checked = approvedModelIds.has(model.model_id);
-                            return (
-                              <article className="model-row" key={model.model_id}>
-                                <div className="model-row-main">
-                                  <div className="model-row-line1">
-                                    <strong>{model.name}</strong>
-                                    {model.is_free ? <span className="badge-free">free</span> : null}
-                                  </div>
-                                  <div className="model-row-line2">
-                                    {model.model_id} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx
-                                  </div>
+                        {filteredModels.map((model) => {
+                          const checked = approvedModelIds.has(model.model_id);
+                          return (
+                            <article className="model-row" key={model.model_id}>
+                              <div style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {model.model_id}{model.is_free ? " / free" : ""} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
+                              </div>
+                              <button
+                                className={checked ? "agent-chip active" : "compact-button"}
+                                type="button"
+                                onClick={() =>
+                                  setApprovedModelIds((prev) => {
+                                    const next = new Set(prev);
+                                    if (checked) next.delete(model.model_id);
+                                    else next.add(model.model_id);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {checked ? "Выбрано" : "Добавить"}
+                              </button>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid var(--line)" }}>
+                      <strong style={{ display: "block", marginBottom: "8px", fontSize: "13px" }}>
+                        Выбранные модели для системы
+                      </strong>
+                      {approvedModelIds.size === 0 ? (
+                        <p className="settings-hint">Пока модели не выбраны.</p>
+                      ) : (
+                        <div className="model-list" style={{ marginBottom: "12px" }}>
+                          {catalog
+                            .filter((m) => approvedModelIds.has(m.model_id))
+                            .map((model) => (
+                              <article className="model-row" key={`sel-${model.model_id}`}>
+                                <div style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {model.model_id}{model.is_free ? " / free" : ""} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
                                 </div>
                                 <button
-                                  className={checked ? "agent-chip active" : "compact-button"}
+                                  className="compact-button"
                                   type="button"
                                   onClick={() =>
                                     setApprovedModelIds((prev) => {
                                       const next = new Set(prev);
-                                      if (checked) next.delete(model.model_id);
-                                      else next.add(model.model_id);
+                                      next.delete(model.model_id);
                                       return next;
                                     })
                                   }
                                 >
-                                  {checked ? "Убрать" : "Добавить"}
+                                  Убрать
                                 </button>
                               </article>
-                            );
-                          })}
-                      </div>
-                    )}
-                    <div className="settings-add-row">
+                            ))}
+                        </div>
+                      )}
                       <button
                         className="agent-chip active"
                         type="button"
@@ -2567,47 +2588,28 @@ export default function HomePage() {
             <header className="settings-header">
               <div>
                 <strong>Выбор модели: {selectedAgentForSettings.display_name}</strong>
-                <span>OpenRouter models</span>
+                <span>Одобренные модели</span>
               </div>
               <button className="document-icon-button" onClick={() => setSelectedAgentForSettings(null)} type="button" aria-label="Закрыть выбор модели">
                 ×
               </button>
             </header>
-            <div className="model-filters">
-              <input placeholder="Поиск модели" value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} />
-              <select value={providerFilter} onChange={(event) => setProviderFilter(event.target.value)}>
-                <option value="">Все провайдеры</option>
-                {[...new Set(models.map((model) => model.provider))].map((provider) => (
-                  <option key={provider} value={provider}>{provider}</option>
-                ))}
-              </select>
-              <label><input type="checkbox" checked={onlyFree} onChange={(event) => setOnlyFree(event.target.checked)} /> Бесплатные</label>
-              <select value={modelSort} onChange={(event) => setModelSort(event.target.value)}>
-                <option value="name">По названию</option>
-                <option value="price_asc">Дешевле сначала</option>
-                <option value="price_desc">Дороже сначала</option>
-                <option value="ctx_desc">Больше контекст</option>
-              </select>
-              <button className="compact-button" onClick={() => openModelModal(selectedAgentForSettings)} type="button">Обновить</button>
-            </div>
             {settingsError ? <p className="settings-error">{settingsError}</p> : null}
             <div className="model-list">
-              {filteredModels.map((model) => (
-                <article className="model-row" key={`${model.model_id}-${model.provider}`}>
-                  <div className="model-row-main">
-                    <div className="model-row-line1">
-                      <strong>{model.name}</strong>
-                      {model.is_free ? <span className="badge-free">free</span> : null}
+              {models.length === 0 ? (
+                <p className="settings-hint">Сначала выберите модели в разделе «Провайдеры».</p>
+              ) : (
+                models.map((model) => (
+                  <article className="model-row" key={model.model_id}>
+                    <div style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {model.model_id}{model.is_free ? " / free" : ""} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
                     </div>
-                    <div className="model-row-line2">
-                      {model.model_id} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
-                    </div>
-                  </div>
-                  <button className="compact-button" onClick={() => saveModelChoice(model)} disabled={!model.is_available} type="button">
-                    Сохранить
-                  </button>
-                </article>
-              ))}
+                    <button className="compact-button" onClick={() => saveModelChoice(model)} disabled={!model.is_available} type="button">
+                      Сохранить
+                    </button>
+                  </article>
+                ))
+              )}
             </div>
           </section>
         </div>
