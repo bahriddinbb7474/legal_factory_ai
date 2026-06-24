@@ -13,7 +13,28 @@ class OpenRouterModelService:
     def __init__(self) -> None:
         self._cached_models: list[OpenRouterModelRead] | None = None
         self._cache_deadline = 0.0
+        self._cached_catalog: list[OpenRouterModelRead] | None = None
+        self._catalog_deadline = 0.0
         self._max_endpoint_models = 48
+
+    async def list_catalog(self, refresh: bool = False) -> list[OpenRouterModelRead]:
+        """Full text-only model catalog from OpenRouter — no endpoint expansion."""
+        if not refresh and self._cached_catalog is not None and monotonic() < self._catalog_deadline:
+            return self._cached_catalog
+
+        async with httpx.AsyncClient(timeout=settings.openrouter_timeout_seconds) as client:
+            response = await client.get(f"{settings.openrouter_base_url}/models")
+            response.raise_for_status()
+            payload = response.json()
+            base_items = payload.get("data", [])
+
+        models = sorted(
+            [normalize_openrouter_model(item) for item in base_items if _is_text_only_model(item)],
+            key=lambda m: (m.name.lower(),),
+        )
+        self._cached_catalog = models
+        self._catalog_deadline = monotonic() + 300
+        return models
 
     async def list_models(self, refresh: bool = False) -> list[OpenRouterModelRead]:
         if not refresh and self._cached_models is not None and monotonic() < self._cache_deadline:
@@ -135,7 +156,14 @@ def _endpoint_url(item: dict[str, Any], model_id: str) -> str:
 def _is_text_output_model(item: dict[str, Any]) -> bool:
     architecture = item.get("architecture") or {}
     output_modalities = architecture.get("output_modalities") or []
-    return "text" in output_modalities
+    return "text" in output_modalities and "audio" not in output_modalities
+
+
+def _is_text_only_model(item: dict[str, Any]) -> bool:
+    """Strict: output must contain text and must not be audio/image generation."""
+    architecture = item.get("architecture") or {}
+    output_modalities = architecture.get("output_modalities") or []
+    return "text" in output_modalities and "audio" not in output_modalities
 
 
 def _total_price(item: dict[str, Any]) -> Decimal:

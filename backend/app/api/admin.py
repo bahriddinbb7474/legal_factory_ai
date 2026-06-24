@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import Agent, AuditLog, AuthSession, ProviderConfig, User
+from app.db.base import Agent, AppSetting, AuditLog, AuthSession, ProviderConfig, User
 from app.db.session import get_db
 from app.schemas.agents import AgentRead, AgentUpdate
 from app.schemas.audit import AuditLogRead
-from app.schemas.openrouter import OpenRouterModelRead
+from app.schemas.openrouter import ApprovedModelsPayload, OpenRouterModelRead
 from app.schemas.providers import ProviderRead, ProviderUpdate
 from app.schemas.users import UserCreate, UserPasswordReset, UserRead, UserRole, UserUpdate
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
@@ -14,6 +14,8 @@ from app.services.audit import write_audit_log
 from app.services.auth import hash_password
 from app.services.current_user import CurrentUser, get_current_user, require_role
 from app.services.openrouter_models import openrouter_model_service
+
+_APPROVED_MODELS_KEY = "approved_openrouter_model_ids"
 
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_role("admin"))])
@@ -48,13 +50,15 @@ async def update_admin_agent(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=LAWYER_PROVIDER_ERROR) from exc
 
     if "model_name" in update_data or "provider_code" in update_data:
-        await _ensure_model_provider_config(agent.model_name, agent.provider_code, db)
-        await _validate_openrouter_model_choice(agent.model_name, agent.provider_code)
+        if agent.provider_code:
+            await _ensure_model_provider_config(agent.model_name, agent.provider_code, db)
+            await _validate_openrouter_model_from_catalog(agent.model_name)
 
-    provider = await _get_provider_or_404(agent.provider_code, db)
-    if not provider.is_enabled or not provider.is_allowlisted:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider is not allowlisted")
+    if agent.provider_code:
+        provider = await _get_provider_or_404(agent.provider_code, db)
+        if not provider.is_enabled or not provider.is_allowlisted:
+            await db.rollback()
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider is not allowlisted")
 
     await db.commit()
     await db.refresh(agent)
@@ -85,12 +89,63 @@ async def update_admin_provider(
 
 @router.get("/openrouter/models", response_model=list[OpenRouterModelRead])
 async def list_openrouter_models(db: AsyncSession = Depends(get_db)) -> list[OpenRouterModelRead]:
+    """Returns only admin-approved models — used by the lawyer model picker."""
+    approved_ids = await _get_approved_model_ids(db)
+    if not approved_ids:
+        return []
     try:
-        models = await openrouter_model_service.list_models()
+        catalog = await openrouter_model_service.list_catalog()
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter model list unavailable") from exc
-    await _ensure_model_providers(models, db)
+    models = [m for m in catalog if m.model_id in approved_ids]
     return models
+
+
+@router.get("/openrouter/catalog", response_model=list[OpenRouterModelRead])
+async def list_openrouter_catalog() -> list[OpenRouterModelRead]:
+    """Full text-only model catalog from OpenRouter — for browsing and approving models."""
+    try:
+        return await openrouter_model_service.list_catalog()
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter catalog unavailable") from exc
+
+
+@router.get("/openrouter/approved-models", response_model=list[OpenRouterModelRead])
+async def list_approved_models(db: AsyncSession = Depends(get_db)) -> list[OpenRouterModelRead]:
+    """Returns approved model objects resolved from the catalog."""
+    approved_ids = await _get_approved_model_ids(db)
+    if not approved_ids:
+        return []
+    try:
+        catalog = await openrouter_model_service.list_catalog()
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter catalog unavailable") from exc
+    id_set = set(approved_ids)
+    return [m for m in catalog if m.model_id in id_set]
+
+
+@router.put("/openrouter/approved-models", response_model=list[OpenRouterModelRead])
+async def save_approved_models(
+    payload: ApprovedModelsPayload,
+    db: AsyncSession = Depends(get_db),
+) -> list[OpenRouterModelRead]:
+    """Saves admin-approved model IDs. Returns the resolved model objects."""
+    setting = await db.get(AppSetting, _APPROVED_MODELS_KEY)
+    if setting is None:
+        setting = AppSetting(key=_APPROVED_MODELS_KEY, value_json={"ids": payload.model_ids})
+        db.add(setting)
+    else:
+        setting.value_json = {"ids": payload.model_ids}
+    await db.commit()
+
+    if not payload.model_ids:
+        return []
+    try:
+        catalog = await openrouter_model_service.list_catalog()
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter catalog unavailable") from exc
+    id_set = set(payload.model_ids)
+    return [m for m in catalog if m.model_id in id_set]
 
 
 @router.get("/audit-logs", response_model=list[AuditLogRead])
@@ -114,11 +169,12 @@ async def list_audit_logs(
 @router.post("/openrouter/models/refresh", response_model=list[OpenRouterModelRead])
 async def refresh_openrouter_models(db: AsyncSession = Depends(get_db)) -> list[OpenRouterModelRead]:
     try:
-        models = await openrouter_model_service.list_models(refresh=True)
+        await openrouter_model_service.list_catalog(refresh=True)
+        approved_ids = await _get_approved_model_ids(db)
+        catalog = await openrouter_model_service.list_catalog()
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="OpenRouter model list unavailable") from exc
-    await _ensure_model_providers(models, db)
-    return models
+    return [m for m in catalog if m.model_id in set(approved_ids)]
 
 
 @router.get("/users", response_model=list[UserRead])
@@ -278,6 +334,13 @@ async def _get_provider_or_404(provider_code: str, db: AsyncSession) -> Provider
     return provider
 
 
+async def _get_approved_model_ids(db: AsyncSession) -> list[str]:
+    setting = await db.get(AppSetting, _APPROVED_MODELS_KEY)
+    if setting is None or not setting.value_json:
+        return []
+    return setting.value_json.get("ids", [])
+
+
 async def _ensure_model_providers(models: list[OpenRouterModelRead], db: AsyncSession) -> None:
     changed = False
     provider_codes = sorted({model.provider for model in models if model.provider})
@@ -326,3 +389,10 @@ async def _validate_openrouter_model_choice(model_name: str, provider_code: str)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OpenRouter model/provider pair is unavailable")
     if not model.is_available:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OpenRouter model is unavailable")
+
+
+async def _validate_openrouter_model_from_catalog(model_name: str) -> None:
+    catalog = await openrouter_model_service.list_catalog()
+    model = next((m for m in catalog if m.model_id == model_name), None)
+    if model is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Model not found in OpenRouter catalog")

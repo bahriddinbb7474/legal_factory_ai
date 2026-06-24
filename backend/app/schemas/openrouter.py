@@ -16,5 +16,9 @@ class OpenRouterModelRead(BaseModel):
     is_available: bool
 
 
+class ApprovedModelsPayload(BaseModel):
+    model_ids: list[str]
+
+
 class InvokeAgentRequest(BaseModel):
     agent_code: str

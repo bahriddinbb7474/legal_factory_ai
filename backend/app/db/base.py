@@ -368,3 +368,10 @@ class LegalChunk(Base, TimestampMixin):
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     legal_source: Mapped["LegalSource"] = relationship(back_populates="chunks")
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    value_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

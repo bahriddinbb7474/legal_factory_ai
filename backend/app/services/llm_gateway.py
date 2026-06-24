@@ -36,22 +36,20 @@ class OpenRouterGateway:
         if settings.openrouter_app_referer:
             headers["HTTP-Referer"] = settings.openrouter_app_referer
 
-        payload = {
+        payload: dict = {
             "model": agent.model_name,
             "messages": [
                 {"role": "system", "content": agent.system_prompt},
                 {"role": "user", "content": chat_context},
             ],
-            "provider": {
-                "only": [agent.provider_code],
-                "require_parameters": True,
-            },
             "max_tokens": settings.openrouter_max_output_tokens,
         }
         if response_format:
             payload["response_format"] = response_format
-        if agent.supports_zdr:
-            payload["provider"]["zdr"] = True
+        if agent.provider_code:
+            payload["provider"] = {"only": [agent.provider_code], "require_parameters": True}
+            if agent.supports_zdr:
+                payload["provider"]["zdr"] = True
 
         try:
             async with httpx.AsyncClient(timeout=settings.openrouter_timeout_seconds) as client:

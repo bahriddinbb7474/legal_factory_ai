@@ -334,6 +334,10 @@ export default function HomePage() {
   const [modelSort, setModelSort] = useState("name");
   const [agentSelectedModels, setAgentSelectedModels] = useState<Record<string, { name: string; is_free: boolean }>>({});
   const [lawyerInfoOpen, setLawyerInfoOpen] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<OpenRouterModel[]>([]);
+  const [approvedModelIds, setApprovedModelIds] = useState<Set<string>>(new Set());
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogSaving, setCatalogSaving] = useState(false);
   const [settingsError, setSettingsError] = useState("");
   const [isDocumentOpen, setIsDocumentOpen] = useState(false);
   const [isDocumentEditing, setIsDocumentEditing] = useState(false);
@@ -476,7 +480,7 @@ export default function HomePage() {
     } else {
       result.sort((a, b) => a.name.localeCompare(b.name));
     }
-    return result.slice(0, 20);
+    return result;
   }, [modelSearch, modelSort, models, onlyFree, providerFilter]);
 
   useEffect(() => {
@@ -1130,6 +1134,37 @@ export default function HomePage() {
     } catch { /* silently fail */ }
   }
 
+  async function loadCatalog() {
+    try {
+      const [catalogResponse, approvedResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/admin/openrouter/catalog`),
+        fetch(`${API_BASE_URL}/api/admin/openrouter/approved-models`),
+      ]);
+      if (catalogResponse.ok) setCatalog(await catalogResponse.json());
+      if (approvedResponse.ok) {
+        const approved = (await approvedResponse.json()) as OpenRouterModel[];
+        setApprovedModelIds(new Set(approved.map((m) => m.model_id)));
+      }
+    } catch { /* silently fail */ }
+  }
+
+  async function saveApprovedModels() {
+    setCatalogSaving(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/openrouter/approved-models`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model_ids: [...approvedModelIds] }),
+      });
+      if (response.ok) {
+        const modelsResponse = await fetch(`${API_BASE_URL}/api/admin/openrouter/models`);
+        if (modelsResponse.ok) setModels(await modelsResponse.json());
+      }
+    } finally {
+      setCatalogSaving(false);
+    }
+  }
+
   async function openModelModal(agent: Agent) {
     setSelectedAgentForSettings(agent);
     setSettingsError("");
@@ -1158,7 +1193,7 @@ export default function HomePage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        provider_code: model.provider,
+        provider_code: "",
         model_name: model.model_id,
         input_price_per_1m: Number(model.input_price) * 1_000_000,
         output_price_per_1m: Number(model.output_price) * 1_000_000,
@@ -2068,6 +2103,7 @@ export default function HomePage() {
                   {settingsSection === "users" ? "Пользователи" :
                    settingsSection === "company" ? "Профиль компании" :
                    settingsSection === "agents" ? "Модели юристов" :
+                   settingsSection === "catalog" ? "Провайдеры" :
                    settingsSection === "legal" ? "Юридическая база" :
                    settingsSection === "audit" ? "Журнал действий" :
                    "Настройки"}
@@ -2096,6 +2132,10 @@ export default function HomePage() {
                 <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("agents"); void loadModelsIfEmpty(); }}>
                   <strong>Модели юристов</strong>
                   <span>AI-юристы и модели</span>
+                </button>
+                <button className="settings-section-btn" type="button" onClick={() => { setSettingsSection("catalog"); void loadCatalog(); }}>
+                  <strong>Провайдеры</strong>
+                  <span>Каталог моделей OpenRouter</span>
                 </button>
                 <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("legal")}>
                   <strong>Юридическая база</strong>
@@ -2240,6 +2280,71 @@ export default function HomePage() {
                           </article>
                         );
                       })}
+                    </div>
+                  </section>
+                )}
+                {settingsSection === "catalog" && (
+                  <section>
+                    <p className="settings-hint">
+                      Выберите модели из каталога OpenRouter. Только одобренные модели будут доступны в пикере «Модели юристов».
+                    </p>
+                    <div className="model-filters">
+                      <input
+                        placeholder="Поиск модели"
+                        value={catalogSearch}
+                        onChange={(e) => setCatalogSearch(e.target.value)}
+                      />
+                      <span style={{ fontSize: "0.85rem", color: "var(--muted)", alignSelf: "center" }}>
+                        {approvedModelIds.size} выбрано из {catalog.length}
+                      </span>
+                    </div>
+                    {catalog.length === 0 ? (
+                      <p className="settings-hint">Загрузка каталога...</p>
+                    ) : (
+                      <div className="model-list">
+                        {catalog
+                          .filter((m) => !catalogSearch || m.name.toLowerCase().includes(catalogSearch.toLowerCase()) || m.model_id.toLowerCase().includes(catalogSearch.toLowerCase()))
+                          .map((model) => {
+                            const checked = approvedModelIds.has(model.model_id);
+                            return (
+                              <article className="model-row" key={model.model_id}>
+                                <div className="model-row-main">
+                                  <div className="model-row-line1">
+                                    <strong>{model.name}</strong>
+                                    {model.is_free ? <span className="badge-free">free</span> : null}
+                                  </div>
+                                  <div className="model-row-line2">
+                                    {model.model_id} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx
+                                  </div>
+                                </div>
+                                <button
+                                  className={checked ? "agent-chip active" : "compact-button"}
+                                  type="button"
+                                  onClick={() =>
+                                    setApprovedModelIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (checked) next.delete(model.model_id);
+                                      else next.add(model.model_id);
+                                      return next;
+                                    })
+                                  }
+                                >
+                                  {checked ? "Убрать" : "Добавить"}
+                                </button>
+                              </article>
+                            );
+                          })}
+                      </div>
+                    )}
+                    <div className="settings-add-row">
+                      <button
+                        className="agent-chip active"
+                        type="button"
+                        onClick={() => void saveApprovedModels()}
+                        disabled={catalogSaving}
+                      >
+                        {catalogSaving ? "Сохранение..." : "Сохранить выбор"}
+                      </button>
                     </div>
                   </section>
                 )}
