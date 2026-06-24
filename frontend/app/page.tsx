@@ -331,8 +331,8 @@ export default function HomePage() {
   const [modelSearch, setModelSearch] = useState("");
   const [providerFilter, setProviderFilter] = useState("");
   const [onlyFree, setOnlyFree] = useState(false);
-  const [onlyCheap, setOnlyCheap] = useState(false);
-  const [onlyAllowlisted, setOnlyAllowlisted] = useState(true);
+  const [modelSort, setModelSort] = useState("name");
+  const [agentSelectedModels, setAgentSelectedModels] = useState<Record<string, { name: string; is_free: boolean }>>({});
   const [settingsError, setSettingsError] = useState("");
   const [isDocumentOpen, setIsDocumentOpen] = useState(false);
   const [isDocumentEditing, setIsDocumentEditing] = useState(false);
@@ -462,15 +462,21 @@ export default function HomePage() {
   }, [messages]);
 
   const filteredModels = useMemo(() => {
-    const allowlistedProviders = new Set(providers.filter((provider) => provider.is_allowlisted).map((provider) => provider.provider_code));
-    return models
-      .filter((model) => model.name.toLowerCase().includes(modelSearch.toLowerCase()) || model.model_id.toLowerCase().includes(modelSearch.toLowerCase()))
+    const result = models
+      .filter((model) => !modelSearch || model.name.toLowerCase().includes(modelSearch.toLowerCase()) || model.model_id.toLowerCase().includes(modelSearch.toLowerCase()))
       .filter((model) => !providerFilter || model.provider === providerFilter)
-      .filter((model) => !onlyFree || model.is_free)
-      .filter((model) => !onlyCheap || Number(model.input_price) <= 0.000001)
-      .filter((model) => !onlyAllowlisted || allowlistedProviders.has(model.provider))
-      .slice(0, 20);
-  }, [modelSearch, models, onlyAllowlisted, onlyCheap, onlyFree, providerFilter, providers]);
+      .filter((model) => !onlyFree || model.is_free);
+    if (modelSort === "price_asc") {
+      result.sort((a, b) => (Number(a.input_price) + Number(a.output_price)) - (Number(b.input_price) + Number(b.output_price)));
+    } else if (modelSort === "price_desc") {
+      result.sort((a, b) => (Number(b.input_price) + Number(b.output_price)) - (Number(a.input_price) + Number(a.output_price)));
+    } else if (modelSort === "ctx_desc") {
+      result.sort((a, b) => b.context_length - a.context_length);
+    } else {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return result.slice(0, 20);
+  }, [modelSearch, modelSort, models, onlyFree, providerFilter]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1157,6 +1163,7 @@ export default function HomePage() {
     }
     const updatedAgent = await response.json();
     setAgents((current) => current.map((agent) => (agent.code === updatedAgent.code ? updatedAgent : agent)));
+    setAgentSelectedModels((cache) => ({ ...cache, [selectedAgentForSettings.code]: { name: model.name, is_free: model.is_free } }));
     setSelectedAgentForSettings(null);
   }
 
@@ -2035,7 +2042,6 @@ export default function HomePage() {
                 <strong>
                   {settingsSection === "users" ? "Пользователи" :
                    settingsSection === "company" ? "Профиль компании" :
-                   settingsSection === "providers" ? "Провайдеры" :
                    settingsSection === "agents" ? "Модели юристов" :
                    settingsSection === "legal" ? "Юридическая база" :
                    settingsSection === "audit" ? "Журнал действий" :
@@ -2061,10 +2067,6 @@ export default function HomePage() {
                 <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("company")}>
                   <strong>Профиль компании</strong>
                   <span>Реквизиты и ресурсы</span>
-                </button>
-                <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("providers")}>
-                  <strong>Провайдеры</strong>
-                  <span>OpenRouter провайдеры</span>
                 </button>
                 <button className="settings-section-btn" type="button" onClick={() => setSettingsSection("agents")}>
                   <strong>Модели юристов</strong>
@@ -2189,31 +2191,23 @@ export default function HomePage() {
                   <section>
                     <h2>Модели юристов</h2>
                     <div className="settings-list">
-                      {agents.map((agent) => (
-                        <article className="settings-row" key={agent.code}>
-                          <div>
-                            <strong>{agent.display_name}</strong>
-                            <span>{agent.provider_code} · {agent.model_name}</span>
-                          </div>
-                          <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
-                            Изменить
-                          </button>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
-                {settingsSection === "providers" && (
-                  <section>
-                    <div className="provider-grid">
-                      {providers.map((provider) => (
-                        <article className="provider-card" key={provider.provider_code}>
-                          <strong>{provider.display_name}</strong>
-                          <span>{provider.is_allowlisted ? "разрешен" : "запрещен"}</span>
-                          <span>{provider.supports_zdr ? "ZDR" : "без ZDR"}</span>
-                          <span>{provider.is_trusted_for_sensitive ? "доверен" : "не доверен для чувствительных документов"}</span>
-                        </article>
-                      ))}
+                      {agents.map((agent) => {
+                        const cached = agentSelectedModels[agent.code];
+                        return (
+                          <article className="settings-row" key={agent.code}>
+                            <div>
+                              <strong>{agent.display_name}</strong>
+                              <span>
+                                {cached ? cached.name : agent.model_name}
+                                {cached && cached.is_free ? <span className="agent-chip active" style={{ marginLeft: "6px", fontSize: "0.7em", padding: "1px 5px" }}>free</span> : null}
+                              </span>
+                            </div>
+                            <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
+                              Изменить
+                            </button>
+                          </article>
+                        );
+                      })}
                     </div>
                   </section>
                 )}
@@ -2451,24 +2445,26 @@ export default function HomePage() {
                 ))}
               </select>
               <label><input type="checkbox" checked={onlyFree} onChange={(event) => setOnlyFree(event.target.checked)} /> Бесплатные</label>
-              <label><input type="checkbox" checked={onlyCheap} onChange={(event) => setOnlyCheap(event.target.checked)} /> Дешёвые</label>
-              <label><input type="checkbox" checked={onlyAllowlisted} onChange={(event) => setOnlyAllowlisted(event.target.checked)} /> Только разрешенные</label>
-              <button className="compact-button" onClick={() => openModelModal(selectedAgentForSettings)} type="button">Обновить список</button>
+              <select value={modelSort} onChange={(event) => setModelSort(event.target.value)}>
+                <option value="name">По названию</option>
+                <option value="price_asc">Дешевле сначала</option>
+                <option value="price_desc">Дороже сначала</option>
+                <option value="ctx_desc">Больше контекст</option>
+              </select>
+              <button className="compact-button" onClick={() => openModelModal(selectedAgentForSettings)} type="button">Обновить</button>
             </div>
             {settingsError ? <p className="settings-error">{settingsError}</p> : null}
             <div className="model-list">
               {filteredModels.map((model) => (
                 <article className="model-row" key={`${model.model_id}-${model.provider}`}>
-                  <div>
-                    <strong>{model.name}</strong>
-                    <span>{model.model_id} · {model.provider}</span>
-                    <span>${model.input_price}/input · ${model.output_price}/output · {model.context_length} ctx</span>
-                  </div>
-                  <div className="model-tags">
-                    {model.is_free ? <span>Бесплатная</span> : null}
-                    {model.supports_zdr ? <span>ZDR</span> : null}
-                    {model.supports_vision ? <span>Vision</span> : null}
-                    <span>{model.is_available ? "доступна" : "недоступна"}</span>
+                  <div className="model-row-main">
+                    <div className="model-row-line1">
+                      <strong>{model.name}</strong>
+                      {model.is_free ? <span className="agent-chip active" style={{ marginLeft: "6px", fontSize: "0.7em", padding: "1px 5px" }}>free</span> : null}
+                    </div>
+                    <div className="model-row-line2">
+                      {model.model_id} · {model.provider} · in {fmtPrice(model.input_price)}/M · out {fmtPrice(model.output_price)}/M · {Math.round(model.context_length / 1000)}K ctx · text
+                    </div>
                   </div>
                   <button className="compact-button" onClick={() => saveModelChoice(model)} disabled={!model.is_available} type="button">
                     Сохранить
@@ -2481,6 +2477,13 @@ export default function HomePage() {
       ) : null}
     </main>
   );
+}
+
+function fmtPrice(price: string): string {
+  const n = Number(price) * 1_000_000;
+  if (n === 0) return "$0";
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(2)}`;
 }
 
 function StructuredAnswerSections({ message }: { message: ChatMessage }) {

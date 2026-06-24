@@ -1333,23 +1333,34 @@ button {
 }
 
 .model-row {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.model-tags {
+.model-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.model-row-line1 {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  justify-content: flex-end;
+  gap: 6px;
 }
 
-.model-tags span {
-  background: var(--soft);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: #333;
-  margin: 0;
-  padding: 4px 8px;
+.model-row-line1 strong,
+.model-row-line1 span {
+  display: inline;
+}
+
+.model-row-line2 {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 button:disabled,
