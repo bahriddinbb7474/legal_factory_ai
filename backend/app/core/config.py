@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_timeout_seconds: float = 30.0
-    openrouter_max_output_tokens: int = 1200
+    openrouter_max_output_tokens: int = 4096
     openrouter_app_referer: str = ""
     openrouter_app_title: str = "Legal Factory AI"
     document_vision_model: str = ""

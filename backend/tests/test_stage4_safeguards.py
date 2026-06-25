@@ -85,13 +85,17 @@ def test_valid_structured_json_is_saved(client) -> None:
     assert payload["confidence"] == "medium"
 
 
-def test_unknown_field_and_invalid_json_are_rejected(client) -> None:
+def test_unknown_field_and_invalid_json_use_fallback(client) -> None:
+    # JSON with unknown extra field → Pydantic rejects → fallback with raw text, not a 502
     bad_payload = legal_payload(extra_field="forbidden")
     _, response, _ = invoke_with_response(client, "lawyer_1", [bad_payload, bad_payload])
-    assert response.status_code == 502
+    assert response.status_code == 200
+    assert response.json()["author_type"] == "agent1"
 
+    # Plain non-JSON text → fallback with raw content visible
     _, invalid_response, _ = invoke_with_response(client, "lawyer_1", ["not-json", "still-not-json"])
-    assert invalid_response.status_code == 502
+    assert invalid_response.status_code == 200
+    assert invalid_response.json()["author_type"] == "agent1"
 
 
 def test_json_repair_attempt_is_used_once(client) -> None:
@@ -154,9 +158,11 @@ def test_law_unconfirmed_never_allows_green_or_high_confidence(client) -> None:
 
 
 def test_lawyer_2_requires_agreement_and_lawyer_3_forces_red_for_unresolved_without_source(client) -> None:
+    # lawyer_2 without agreement → validation fails both attempts → fallback, not a 502
     no_agreement = legal_payload(agreement=None)
     _, missing_agreement, _ = invoke_with_response(client, "lawyer_2", [no_agreement, no_agreement])
-    assert missing_agreement.status_code == 502
+    assert missing_agreement.status_code == 200
+    assert missing_agreement.json()["author_type"] == "agent2"
 
     arbiter_payload = legal_payload(
         agreement={"agreed_points": [], "disagreed_points": [], "unresolved_points": ["Спорный пункт"]},

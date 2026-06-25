@@ -5,6 +5,7 @@ from app.api.chats import get_llm_gateway
 from app.main import app
 from app.services.llm_gateway import LLMResponse
 from app.services.openrouter_models import normalize_openrouter_endpoint, normalize_openrouter_model
+from app.services.structured_response import validate_legal_response
 
 
 @dataclass
@@ -169,3 +170,105 @@ def test_openrouter_endpoint_normalization_uses_endpoint_provider_tag() -> None:
     assert model.model_id == "google/gemma-4-26b-a4b-it"
     assert model.provider == "dekallm/bf16"
     assert model.is_available is True
+
+
+# --- Fallback behavior when LLM returns invalid JSON ---
+
+@dataclass
+class FakeGatewayRawText:
+    """Returns plain text (not JSON) on every call."""
+    calls: list[str]
+
+    async def invoke(self, agent, chat_context: str, response_format: dict | None = None) -> LLMResponse:
+        self.calls.append(agent.code)
+        return LLMResponse(
+            content="Закон нарушен. Необходима проверка договора и оплата задолженности.",
+            model_id=agent.model_name,
+            provider_code=agent.provider_code,
+            input_tokens=50,
+            output_tokens=30,
+        )
+
+
+def test_invoke_saves_fallback_when_json_invalid(client) -> None:
+    fake_gateway = FakeGatewayRawText(calls=[])
+    app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
+
+    chat_id = client.post("/api/chats", json={"title": "Тест"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Что делать с долгом?"})
+
+    response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
+
+    assert response.status_code == 200
+    msg = response.json()
+    assert msg["author_type"] == "agent1"
+    assert "Закон нарушен" in msg["content"]
+    assert msg["model_id"] is not None
+    assert msg["input_tokens"] > 0
+
+
+def test_invoke_fallback_is_not_system_message(client) -> None:
+    fake_gateway = FakeGatewayRawText(calls=[])
+    app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
+
+    chat_id = client.post("/api/chats", json={"title": "Тест"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Вопрос"})
+    response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_2"})
+
+    assert response.status_code == 200
+    assert response.json()["author_type"] == "agent2"
+
+
+def test_invoke_fallback_message_appears_in_chat_messages(client) -> None:
+    fake_gateway = FakeGatewayRawText(calls=[])
+    app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
+
+    chat_id = client.post("/api/chats", json={"title": "Тест контекст"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Вопрос"})
+    client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
+
+    messages = client.get(f"/api/chats/{chat_id}/messages").json()
+    agent_messages = [m for m in messages if m["author_type"] == "agent1"]
+    assert len(agent_messages) == 1
+    assert agent_messages[0]["content"]
+
+
+# --- Parser robustness ---
+
+def test_validate_legal_response_parses_fenced_json_block() -> None:
+    valid_payload = {
+        "answer_mode": "final_verdict",
+        "visible_answer": None,
+        "summary": "Тест фенсд",
+        "risk": "green",
+        "findings": [],
+        "sources": [],
+        "meaning_for_factory": "Нет рисков",
+        "actions": [],
+        "confidence": "high",
+        "approval_required": "none",
+        "agreement": None,
+    }
+    fenced = f"```json\n{json.dumps(valid_payload, ensure_ascii=False)}\n```"
+    result = validate_legal_response(fenced, "lawyer_1")
+    assert result.summary == "Тест фенсд"
+    assert result.answer_mode == "final_verdict"
+
+
+def test_validate_legal_response_parses_json_with_surrounding_text() -> None:
+    valid_payload = {
+        "answer_mode": "final_verdict",
+        "visible_answer": None,
+        "summary": "Тест окружение",
+        "risk": "yellow",
+        "findings": [],
+        "sources": [],
+        "meaning_for_factory": "Проверить",
+        "actions": [],
+        "confidence": "medium",
+        "approval_required": "none",
+        "agreement": None,
+    }
+    content = f"Вот мой анализ:\n{json.dumps(valid_payload, ensure_ascii=False)}\nНадеюсь это помогло."
+    result = validate_legal_response(content, "lawyer_1")
+    assert result.summary == "Тест окружение"

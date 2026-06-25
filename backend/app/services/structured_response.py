@@ -22,6 +22,7 @@ class StructuredResponseResult:
     input_tokens: int
     output_tokens: int
     repair_attempted: bool = False
+    is_fallback: bool = False
 
 
 def structured_system_prompt(base_prompt: str) -> str:
@@ -102,9 +103,11 @@ async def invoke_structured_with_repair(
         user_id=user_id,
         details={"agent_code": agent.code},
     )
+    total_input = first.input_tokens + second.input_tokens
+    total_output = first.output_tokens + second.output_tokens
     try:
         payload = validate_legal_response(second.content, agent.code)
-    except StructuredResponseError as exc:
+    except StructuredResponseError:
         await write_audit_log(
             db,
             action="structured_response.validation_failed",
@@ -113,20 +116,57 @@ async def invoke_structured_with_repair(
             user_id=user_id,
             details={"agent_code": agent.code, "after_repair": True},
         )
-        raise
+        raw_text = (first.content or second.content).strip()
+        if not raw_text:
+            raise
+        await write_audit_log(
+            db,
+            action="structured_response.fallback_used",
+            entity_type="agent",
+            entity_id=agent.id,
+            user_id=user_id,
+            details={"agent_code": agent.code, "raw_length": len(raw_text)},
+        )
+        return _build_fallback_result(raw_text, total_input, total_output)
     return StructuredResponseResult(
         payload=payload,
         raw_response=second.content,
-        input_tokens=first.input_tokens + second.input_tokens,
-        output_tokens=first.output_tokens + second.output_tokens,
+        input_tokens=total_input,
+        output_tokens=total_output,
         repair_attempted=True,
+    )
+
+
+def _build_fallback_result(raw_text: str, input_tokens: int, output_tokens: int) -> StructuredResponseResult:
+    payload = LegalStructuredResponse(
+        answer_mode="preliminary_opinion",
+        visible_answer=raw_text[:4000],
+        summary="Ответ получен, формат не прошел валидацию",
+        risk="yellow",
+        confidence="low",
+        meaning_for_factory="Требуется ручная проверка юриста",
+        approval_required="external_lawyer",
+    )
+    return StructuredResponseResult(
+        payload=payload,
+        raw_response=raw_text,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        repair_attempted=True,
+        is_fallback=True,
     )
 
 
 def _extract_json_object(content: str) -> str:
     stripped = content.strip()
+    # 1. Bare JSON object
     if stripped.startswith("{") and stripped.endswith("}"):
         return stripped
+    # 2. JSON inside fenced code block (```json or ```)
+    fence_match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", stripped, re.DOTALL)
+    if fence_match:
+        return fence_match.group(1)
+    # 3. JSON object embedded in surrounding text
     match = re.search(r"\{.*\}", stripped, flags=re.DOTALL)
     if not match:
         raise json.JSONDecodeError("No JSON object found", content, 0)

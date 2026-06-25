@@ -328,7 +328,7 @@ async def invoke_agent(
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Модель вернула невалидный JSON. Ответ не сохранен как юридический вывод.",
+            detail="Юрист не вернул ответ. Попробуйте ещё раз или выберите другую модель.",
         ) from exc
 
     original_risk = structured_result.payload.risk

@@ -1603,37 +1603,6 @@ export default function HomePage() {
                 <h1>{message.author_type === "system" ? "Статус" : answerModeLabel(message.structured_payload?.answer_mode)}</h1>
                 <p>{message.content}</p>
                 {message.structured_payload && isFinalVerdict(message.structured_payload.answer_mode) ? <StructuredAnswerSections message={message} /> : null}
-                {message.author_type.startsWith("agent") ? (
-                  <>
-                    <div className="legal-grid">
-                      <div>
-                        <span>Модель</span>
-                        <strong>{message.model_id ?? "не указана"}</strong>
-                      </div>
-                      <div>
-                        <span>Провайдер</span>
-                        <strong>{message.provider_code ?? "не указан"}</strong>
-                      </div>
-                      <div>
-                        <span>Расход</span>
-                        <strong>${Number(message.cost_usd ?? 0).toFixed(6)}</strong>
-                      </div>
-                    </div>
-                    {canWriteWorkspace ? (
-                    <button className="document-card document-card-button" onClick={() => openGeneratedDocument(message, messageKey)} type="button">
-                      <div className="doc-icon">DOCX</div>
-                      <div>
-                        <strong>{generatedDocument?.title ?? "Письмо клиенту о задолженности"}</strong>
-                        <span>{isActiveVerdict ? "Документ создаётся строго из активного вердикта" : "Сначала будет выбран активный вердикт"}</span>
-                      </div>
-                      <span className="compact-button">{generatedDocument ? "Открыть справа" : "Создать справа"}</span>
-                    </button>
-                    ) : null}
-                    {canWriteWorkspace ? <div className="message-actions">
-                      <button type="button" onClick={() => openGeneratedDocument(message, messageKey)}>Сгенерировать документ</button>
-                    </div> : null}
-                  </>
-                ) : null}
               </article>
             );
           })}
