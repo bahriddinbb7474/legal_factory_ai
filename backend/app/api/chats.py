@@ -288,12 +288,14 @@ async def invoke_agent(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=LAWYER_PROVIDER_ERROR) from exc
 
-    provider = await _get_provider_or_404(agent.provider_code, db)
-    if not provider.is_enabled or not provider.is_allowlisted:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider is not allowlisted")
+    provider = None
+    if agent.provider_code:
+        provider = await _get_provider_or_404(agent.provider_code, db)
+        if not provider.is_enabled or not provider.is_allowlisted:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider is not allowlisted")
 
     documents = await _list_accessible_chat_documents(chat_id, current_user, db)
-    if any(document.sensitivity == "sensitive" for document in documents) and not provider.is_trusted_for_sensitive:
+    if any(document.sensitivity == "sensitive" for document in documents) and (not provider or not provider.is_trusted_for_sensitive):
         await write_audit_log(
             db,
             action="document.sensitive_provider_denied",

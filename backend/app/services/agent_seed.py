@@ -153,7 +153,11 @@ async def ensure_default_config(db: AsyncSession) -> None:
                 if field in {"code"}:
                     continue
                 current = getattr(agent, field, None)
-                if current in (None, ""):
+                # provider_code="" is intentional (auto-route); only seed if truly None
+                if field == "provider_code":
+                    if current is None:
+                        setattr(agent, field, value)
+                elif current in (None, ""):
                     setattr(agent, field, value)
                 elif field == "system_prompt":
                     legacy = LEGACY_DEFAULT_SYSTEM_PROMPTS.get(agent_data["code"], "")
@@ -172,7 +176,10 @@ async def ensure_default_config(db: AsyncSession) -> None:
 async def validate_distinct_lawyer_providers(db: AsyncSession) -> None:
     lawyer_1 = await _get_agent(db, "lawyer_1")
     lawyer_2 = await _get_agent(db, "lawyer_2")
-    if lawyer_1 and lawyer_2 and lawyer_1.provider_code == lawyer_2.provider_code:
+    if (lawyer_1 and lawyer_2
+            and lawyer_1.provider_code
+            and lawyer_2.provider_code
+            and lawyer_1.provider_code == lawyer_2.provider_code):
         raise ValueError(LAWYER_PROVIDER_ERROR)
 
 
