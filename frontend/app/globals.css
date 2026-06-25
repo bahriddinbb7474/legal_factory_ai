@@ -1362,7 +1362,9 @@ button {
 }
 
 .model-row {
+  gap: 10px;
   grid-template-columns: minmax(0, 1fr) auto;
+  padding: 8px 12px;
 }
 
 .model-row-main {

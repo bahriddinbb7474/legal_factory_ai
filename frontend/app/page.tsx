@@ -2097,17 +2097,30 @@ export default function HomePage() {
         <div className="modal-backdrop">
           <section className="settings-modal">
             <header className="settings-header">
-              <div>
-                <strong>
-                  {settingsSection === "users" ? "Пользователи" :
-                   settingsSection === "company" ? "Профиль компании" :
-                   settingsSection === "agents" ? "Модели юристов" :
-                   settingsSection === "catalog" ? "Провайдеры" :
-                   settingsSection === "legal" ? "Юридическая база" :
-                   settingsSection === "audit" ? "Журнал действий" :
-                   "Настройки"}
-                </strong>
-                <span>Административная панель</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                {settingsSection ? (
+                  <button
+                    className="document-icon-button"
+                    type="button"
+                    onClick={() => { setSettingsSection(""); setIsCreateUserOpen(false); setEditingUserId(null); setResetPasswordForId(null); setUserStatus(""); }}
+                    aria-label="Назад"
+                    style={{ fontSize: "18px" }}
+                  >
+                    ←
+                  </button>
+                ) : null}
+                <div>
+                  <strong>
+                    {settingsSection === "users" ? "Пользователи" :
+                     settingsSection === "company" ? "Профиль компании" :
+                     settingsSection === "agents" ? "Модели юристов" :
+                     settingsSection === "catalog" ? "Провайдеры" :
+                     settingsSection === "legal" ? "Юридическая база" :
+                     settingsSection === "audit" ? "Журнал действий" :
+                     "Настройки"}
+                  </strong>
+                  <span>Административная панель</span>
+                </div>
               </div>
               <button
                 className="document-icon-button"
@@ -2147,13 +2160,6 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="settings-body">
-                <button
-                  className="settings-back"
-                  type="button"
-                  onClick={() => { setSettingsSection(""); setIsCreateUserOpen(false); setEditingUserId(null); setResetPasswordForId(null); setUserStatus(""); }}
-                >
-                  ← Назад
-                </button>
                 {settingsSection === "users" && (
                   <section>
                     <div className="settings-list">
@@ -2262,7 +2268,7 @@ export default function HomePage() {
                             <div>
                               <strong>{agent.display_name}</strong>
                               <span>
-                                {agent.model_name}{isFree ? " / free" : ""} / in {fmtPrice(agent.input_price_per_1m)}/M / out {fmtPrice(agent.output_price_per_1m)}/M
+                                {agent.model_name}{isFree ? " / free" : ""} / in {fmtPricePer1M(agent.input_price_per_1m)}/M / out {fmtPricePer1M(agent.output_price_per_1m)}/M
                               </span>
                             </div>
                             <button className="compact-button" onClick={() => openModelModal(agent)} type="button">
@@ -2287,7 +2293,7 @@ export default function HomePage() {
                       />
                       <label><input type="checkbox" checked={onlyFree} onChange={(e) => setOnlyFree(e.target.checked)} /> Бесплатные</label>
                       <select value={modelSort} onChange={(e) => setModelSort(e.target.value)}>
-                        <option value="name">По model_id</option>
+                        <option value="name">По алфавиту</option>
                         <option value="price_asc">Дешевле сначала</option>
                         <option value="price_desc">Дороже сначала</option>
                         <option value="ctx_desc">Больше контекст</option>
@@ -2304,7 +2310,7 @@ export default function HomePage() {
                           const checked = approvedModelIds.has(model.model_id);
                           return (
                             <article className="model-row" key={model.model_id}>
-                              <div style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <div style={{ fontSize: "13px", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {model.model_id}{model.is_free ? " / free" : ""} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
                               </div>
                               <button
@@ -2338,7 +2344,7 @@ export default function HomePage() {
                             .filter((m) => approvedModelIds.has(m.model_id))
                             .map((model) => (
                               <article className="model-row" key={`sel-${model.model_id}`}>
-                                <div style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <div style={{ fontSize: "13px", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {model.model_id}{model.is_free ? " / free" : ""} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
                                 </div>
                                 <button
@@ -2601,7 +2607,7 @@ export default function HomePage() {
               ) : (
                 models.map((model) => (
                   <article className="model-row" key={model.model_id}>
-                    <div style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {model.model_id}{model.is_free ? " / free" : ""} / in {fmtPrice(model.input_price)}/M / out {fmtPrice(model.output_price)}/M / {Math.round(model.context_length / 1000)}K ctx / text
                     </div>
                     <button className="compact-button" onClick={() => saveModelChoice(model)} disabled={!model.is_available} type="button">
@@ -2620,6 +2626,13 @@ export default function HomePage() {
 
 function fmtPrice(price: string): string {
   const n = Number(price) * 1_000_000;
+  if (n === 0) return "$0";
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(2)}`;
+}
+
+function fmtPricePer1M(price: string): string {
+  const n = Number(price);
   if (n === 0) return "$0";
   if (n < 0.01) return `$${n.toFixed(4)}`;
   return `$${n.toFixed(2)}`;
