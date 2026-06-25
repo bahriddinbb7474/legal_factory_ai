@@ -43,6 +43,7 @@ button {
   background: var(--bg);
   display: grid;
   grid-template-columns: 272px minmax(640px, 1fr);
+  grid-template-rows: 1fr;
   height: 100vh;
   overflow: hidden;
 }
@@ -398,6 +399,7 @@ button {
   display: grid;
   grid-template-columns: minmax(24px, 0.8fr) minmax(min(100%, 850px), 1000px) minmax(24px, 1.2fr);
   grid-template-rows: 56px 1fr auto;
+  min-height: 0;
   min-width: 0;
 }
 
@@ -1612,6 +1614,7 @@ input:disabled {
   border-left: 1px solid var(--line);
   display: grid;
   grid-template-rows: 56px 1fr;
+  min-height: 0;
   min-width: 0;
 }
 
