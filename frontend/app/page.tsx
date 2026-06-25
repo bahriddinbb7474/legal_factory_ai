@@ -349,6 +349,7 @@ export default function HomePage() {
   const [isCostOpen, setIsCostOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeChatIdRef = useRef<number | null>(null);
+  const conversationRef = useRef<HTMLDivElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploadForm, setUploadForm] = useState<UploadForm>({
     category: "",
@@ -510,6 +511,11 @@ export default function HomePage() {
   useEffect(() => {
     activeChatIdRef.current = chatId;
   }, [chatId]);
+
+  useEffect(() => {
+    const el = conversationRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   async function loadCurrentUser() {
     try {
@@ -1568,7 +1574,7 @@ export default function HomePage() {
           </div> : null}
         </header>
 
-        <div className="conversation">
+        <div className="conversation" ref={conversationRef}>
           {chatLoading ? (
             <article className="message system-message">
               <p>Загрузка истории чата…</p>
