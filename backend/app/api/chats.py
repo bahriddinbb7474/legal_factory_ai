@@ -405,7 +405,7 @@ async def invoke_agent(
         chat_id=chat_id,
         role="assistant",
         author_type=author_type_for_agent(agent.code),
-        content=payload.summary,
+        content=payload.visible_answer or payload.summary,
         agent_id=agent.id,
         model_id=agent.model_name,
         provider_code=agent.provider_code,

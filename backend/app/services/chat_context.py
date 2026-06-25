@@ -18,6 +18,67 @@ AUTHOR_LABELS = {
 HISTORY_LIMIT = 30
 
 
+def build_rich_lawyer_block(message) -> str:
+    """Return a compact readable block from an agent message's structured_payload for cross-lawyer context."""
+    payload = getattr(message, "structured_payload", None)
+    if not payload or not isinstance(payload, dict):
+        return message.content
+
+    lines: list[str] = []
+
+    if summary := payload.get("summary"):
+        lines.append(summary)
+
+    meta: list[str] = []
+    if risk := payload.get("risk"):
+        meta.append(f"риск={risk}")
+    if conf := payload.get("confidence"):
+        meta.append(f"уверенность={conf}")
+    if meta:
+        lines.append("[" + " | ".join(meta) + "]")
+
+    findings = payload.get("findings", [])
+    if findings:
+        items = "; ".join(
+            f"{f.get('title', '')}: {f.get('description', '')}"
+            for f in findings
+            if isinstance(f, dict) and f.get("title")
+        )
+        if items:
+            lines.append(f"Выводы: {items}")
+
+    if meaning := payload.get("meaning_for_factory"):
+        lines.append(f"Для завода: {meaning}")
+
+    actions = [a for a in payload.get("actions", []) if a and str(a).strip()]
+    if actions:
+        lines.append(f"Действия: {'; '.join(actions)}")
+
+    sources = payload.get("sources", [])
+    if sources:
+        src_parts = [
+            f"{s.get('title', '')} ({s.get('verification_status', 'pending')})"
+            for s in sources
+            if isinstance(s, dict) and s.get("title")
+        ]
+        if src_parts:
+            lines.append(f"Источники: {'; '.join(src_parts)}")
+
+    agreement = payload.get("agreement")
+    if isinstance(agreement, dict):
+        agreed = agreement.get("agreed_points", [])
+        disagreed = agreement.get("disagreed_points", [])
+        unresolved = agreement.get("unresolved_points", [])
+        if agreed:
+            lines.append(f"Согласен: {'; '.join(agreed)}")
+        if disagreed:
+            lines.append(f"Не согласен: {'; '.join(disagreed)}")
+        if unresolved:
+            lines.append(f"Нерешено: {'; '.join(unresolved)}")
+
+    return "\n".join(lines) if lines else message.content
+
+
 def build_chat_history_context(messages: list[Message], limit: int = HISTORY_LIMIT) -> str:
     """Format the last `limit` non-empty messages as sender-labelled, optionally timestamped lines."""
     relevant = [m for m in messages if m.content.strip()][-limit:]
@@ -29,7 +90,12 @@ def build_chat_history_context(messages: list[Message], limit: int = HISTORY_LIM
         created_at = getattr(message, "created_at", None)
         if isinstance(created_at, datetime):
             ts = f"[{created_at.strftime('%Y-%m-%d %H:%M')}] "
-        lines.append(f"{ts}{author}{model_suffix}: {message.content}")
+        structured_payload = getattr(message, "structured_payload", None)
+        if message.author_type.startswith("agent") and structured_payload:
+            content = build_rich_lawyer_block(message)
+        else:
+            content = message.content
+        lines.append(f"{ts}{author}{model_suffix}: {content}")
     return "\n".join(lines)
 
 

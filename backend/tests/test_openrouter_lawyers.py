@@ -19,6 +19,8 @@ class FakeGateway:
         return LLMResponse(
             content=json.dumps(
                 {
+                    "answer_mode": "final_verdict",
+                    "visible_answer": None,
                     "summary": f"Ответ {agent.display_name}",
                     "risk": "yellow",
                     "findings": [{"title": "Вывод", "description": "Нужна проверка источника"}],

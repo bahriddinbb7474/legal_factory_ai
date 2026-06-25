@@ -9,6 +9,13 @@ ApprovalRequirement = Literal["none", "chief_accountant", "director", "external_
 SourceType = Literal["uploaded_document", "law", "law_unconfirmed"]
 VerificationStatus = Literal["pending", "confirmed", "unconfirmed"]
 SourceCheckStatus = Literal["not_checked", "confirmed", "partially_confirmed", "unconfirmed"]
+AnswerMode = Literal[
+    "clarification_needed",
+    "preliminary_opinion",
+    "source_search_needed",
+    "ready_for_verdict",
+    "final_verdict",
+]
 
 
 class LegalFinding(BaseModel):
@@ -44,6 +51,8 @@ class LegalAgreement(BaseModel):
 
 
 class LegalStructuredResponse(BaseModel):
+    answer_mode: AnswerMode = "final_verdict"
+    visible_answer: str | None = None
     summary: str = Field(min_length=1)
     risk: RiskLevel
     findings: list[LegalFinding] = Field(default_factory=list)
@@ -64,14 +73,32 @@ class LegalStructuredResponse(BaseModel):
 
 STRUCTURED_LEGAL_RESPONSE_INSTRUCTION = """
 Верни только валидный JSON без Markdown и без пояснений вне JSON.
+
+Сначала выбери answer_mode:
+- clarification_needed — нужны уточнения от пользователя перед анализом
+- preliminary_opinion — можно дать предварительное мнение, но данных ещё не хватает для полного вывода
+- source_search_needed — для окончательного вывода нужен источник, которого сейчас нет
+- ready_for_verdict — полный анализ готов, но вердикт ожидается от другого юриста
+- final_verdict — полный окончательный юридический вывод (использовать по умолчанию)
+
+Для режимов clarification_needed, preliminary_opinion, source_search_needed, ready_for_verdict:
+- поле visible_answer — обязательно, содержит ответ в виде обычного экспертного текста без таблиц
+- findings, sources, actions, meaning_for_factory могут быть краткими или пустыми
+
+Для режима final_verdict:
+- visible_answer оставь null
+- все поля должны быть заполнены максимально полно
+
 Схема:
 {
+  "answer_mode": "clarification_needed | preliminary_opinion | source_search_needed | ready_for_verdict | final_verdict",
+  "visible_answer": "текст ответа для не-финального режима или null",
   "summary": "краткий вывод",
   "risk": "green | yellow | red",
   "findings": [{"title": "название", "description": "описание"}],
   "sources": [{
     "source_type": "uploaded_document | law | law_unconfirmed",
-    "document_id": 1,
+    "document_id": null,
     "legal_source_id": null,
     "title": "название источника",
     "document_type": null,

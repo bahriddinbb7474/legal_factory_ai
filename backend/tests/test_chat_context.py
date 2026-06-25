@@ -6,11 +6,24 @@ from app.services.chat_context import (
     HISTORY_LIMIT,
     build_chat_context,
     build_chat_history_context,
+    build_rich_lawyer_block,
 )
 
 
-def _msg(author_type: str, content: str, model_id: str | None = None, created_at: datetime | None = None) -> SimpleNamespace:
-    return SimpleNamespace(author_type=author_type, content=content, model_id=model_id, created_at=created_at)
+def _msg(
+    author_type: str,
+    content: str,
+    model_id: str | None = None,
+    created_at: datetime | None = None,
+    structured_payload: dict | None = None,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        author_type=author_type,
+        content=content,
+        model_id=model_id,
+        created_at=created_at,
+        structured_payload=structured_payload,
+    )
 
 
 def _chat(title: str, section: str | None = None) -> SimpleNamespace:
@@ -163,3 +176,108 @@ def test_context_no_document_section_when_empty() -> None:
 def test_context_no_legal_section_when_empty() -> None:
     result = build_chat_context([_msg("user", "Вопрос")], legal_context="")
     assert "правовые источники" not in result
+
+
+# --- build_rich_lawyer_block ---
+
+def test_rich_block_falls_back_to_content_when_no_payload() -> None:
+    msg = _msg("agent1", "Ответ без структуры")
+    assert build_rich_lawyer_block(msg) == "Ответ без структуры"
+
+
+def test_rich_block_includes_summary_and_metadata() -> None:
+    payload = {
+        "summary": "Риск нарушения сроков оплаты",
+        "risk": "yellow",
+        "confidence": "medium",
+        "findings": [],
+        "meaning_for_factory": "Нужен контроль дебиторки",
+        "actions": [],
+        "sources": [],
+        "agreement": None,
+    }
+    result = build_rich_lawyer_block(_msg("agent1", "краткий", structured_payload=payload))
+    assert "Риск нарушения сроков оплаты" in result
+    assert "риск=yellow" in result
+    assert "уверенность=medium" in result
+    assert "Нужен контроль дебиторки" in result
+
+
+def test_rich_block_includes_findings_and_actions() -> None:
+    payload = {
+        "summary": "Выявлены нарушения",
+        "risk": "red",
+        "confidence": "high",
+        "findings": [{"title": "Задержка", "description": "Просрочка 30 дней"}],
+        "meaning_for_factory": "Требуется реакция",
+        "actions": ["Выставить претензию", "Уведомить директора"],
+        "sources": [],
+        "agreement": None,
+    }
+    result = build_rich_lawyer_block(_msg("agent1", "краткий", structured_payload=payload))
+    assert "Задержка: Просрочка 30 дней" in result
+    assert "Выставить претензию" in result
+    assert "Уведомить директора" in result
+
+
+def test_rich_block_includes_sources() -> None:
+    payload = {
+        "summary": "Проверка источника",
+        "risk": "yellow",
+        "confidence": "low",
+        "findings": [],
+        "meaning_for_factory": "Нужна проверка",
+        "actions": [],
+        "sources": [{"title": "Закон о поставках", "verification_status": "pending"}],
+        "agreement": None,
+    }
+    result = build_rich_lawyer_block(_msg("agent1", "краткий", structured_payload=payload))
+    assert "Закон о поставках (pending)" in result
+
+
+def test_rich_block_includes_agreement_fields() -> None:
+    payload = {
+        "summary": "Мнение Юриста 2",
+        "risk": "green",
+        "confidence": "high",
+        "findings": [],
+        "meaning_for_factory": "Всё в порядке",
+        "actions": [],
+        "sources": [],
+        "agreement": {
+            "agreed_points": ["Срок оплаты"],
+            "disagreed_points": ["Размер штрафа"],
+            "unresolved_points": ["Условие форс-мажора"],
+        },
+    }
+    result = build_rich_lawyer_block(_msg("agent2", "краткий", structured_payload=payload))
+    assert "Согласен: Срок оплаты" in result
+    assert "Не согласен: Размер штрафа" in result
+    assert "Нерешено: Условие форс-мажора" in result
+
+
+def test_history_uses_rich_block_for_agent_with_payload() -> None:
+    payload = {
+        "summary": "Предварительный вывод о рисках",
+        "risk": "yellow",
+        "confidence": "medium",
+        "findings": [{"title": "Риск", "description": "Описание риска"}],
+        "meaning_for_factory": "Важно для завода",
+        "actions": ["Проверить"],
+        "sources": [],
+        "agreement": None,
+    }
+    messages = [
+        _msg("user", "Вопрос пользователя"),
+        _msg("agent1", "краткий вывод", structured_payload=payload),
+    ]
+    result = build_chat_history_context(messages)
+    assert "Предварительный вывод о рисках" in result
+    assert "риск=yellow" in result
+    assert "Риск: Описание риска" in result
+
+
+def test_history_uses_content_for_agent_without_payload() -> None:
+    messages = [_msg("agent1", "Ответ юриста без структуры")]
+    result = build_chat_history_context(messages)
+    assert "Юрист 1: Ответ юриста без структуры" in result

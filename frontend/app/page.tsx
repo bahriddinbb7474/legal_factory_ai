@@ -64,6 +64,8 @@ type ChatMessage = {
 };
 
 type LegalStructuredPayload = {
+  answer_mode?: "clarification_needed" | "preliminary_opinion" | "source_search_needed" | "ready_for_verdict" | "final_verdict" | null;
+  visible_answer?: string | null;
   summary: string;
   risk: "green" | "yellow" | "red";
   findings: { title: string; description: string }[];
@@ -1598,9 +1600,9 @@ export default function HomePage() {
                     </button>
                   ) : null}
                 </div>
-                <h1>{message.author_type === "system" ? "Статус" : "Краткий вывод"}</h1>
+                <h1>{message.author_type === "system" ? "Статус" : answerModeLabel(message.structured_payload?.answer_mode)}</h1>
                 <p>{message.content}</p>
-                {message.structured_payload ? <StructuredAnswerSections message={message} /> : null}
+                {message.structured_payload && isFinalVerdict(message.structured_payload.answer_mode) ? <StructuredAnswerSections message={message} /> : null}
                 {message.author_type.startsWith("agent") ? (
                   <>
                     <div className="legal-grid">
@@ -2706,6 +2708,19 @@ function StructuredAnswerSections({ message }: { message: ChatMessage }) {
       ) : null}
     </div>
   );
+}
+
+function isFinalVerdict(mode?: string | null): boolean {
+  return !mode || mode === "final_verdict";
+}
+
+function answerModeLabel(mode?: string | null): string {
+  if (!mode || mode === "final_verdict") return "Юридический вывод";
+  if (mode === "clarification_needed") return "Уточняющий вопрос";
+  if (mode === "preliminary_opinion") return "Предварительное мнение";
+  if (mode === "source_search_needed") return "Требуется источник";
+  if (mode === "ready_for_verdict") return "Анализ завершён";
+  return "Ответ юриста";
 }
 
 function riskLabel(risk: "green" | "yellow" | "red"): string {
