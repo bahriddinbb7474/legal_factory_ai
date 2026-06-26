@@ -199,6 +199,40 @@ def test_approval_journal_and_backend_role_check(client) -> None:
     assert approvals[-1]["new_status"] == "approved"
 
 
+def test_fallback_extracts_visible_answer_from_json_like_text(client) -> None:
+    # JSON that fails Pydantic (extra field) but has visible_answer → shown, not raw JSON
+    payload_with_visible = legal_payload(
+        answer_mode="preliminary_opinion",
+        visible_answer="Договор нарушает статью 432 ГК РФ.",
+        extra_field="forbidden",
+    )
+    _, response, _ = invoke_with_response(client, "lawyer_1", [payload_with_visible, payload_with_visible])
+    assert response.status_code == 200
+    body = response.json()
+    assert body["content"] == "Договор нарушает статью 432 ГК РФ."
+    assert not body["content"].startswith("{")
+
+
+def test_fallback_extracts_summary_when_no_visible_answer(client) -> None:
+    # JSON fails validation, no visible_answer → summary used, not raw JSON
+    payload_no_visible = legal_payload(
+        answer_mode="preliminary_opinion",
+        extra_field="forbidden",
+    )
+    _, response, _ = invoke_with_response(client, "lawyer_1", [payload_no_visible, payload_no_visible])
+    assert response.status_code == 200
+    body = response.json()
+    assert not body["content"].startswith("{")
+    assert "Краткий вывод" in body["content"]
+
+
+def test_fallback_plain_prose_shown_as_is(client) -> None:
+    # Plain text (not JSON) → returned as content unchanged
+    _, response, _ = invoke_with_response(client, "lawyer_1", ["Закон не нарушен.", "Закон не нарушен."])
+    assert response.status_code == 200
+    assert response.json()["content"] == "Закон не нарушен."
+
+
 def test_monthly_budget_blocks_non_admin_when_enabled(client, monkeypatch) -> None:
     monkeypatch.setattr(settings, "monthly_budget_usd", 0.000001)
     monkeypatch.setattr(settings, "block_expensive_calls", True)

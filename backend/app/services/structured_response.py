@@ -137,11 +137,87 @@ async def invoke_structured_with_repair(
     )
 
 
+def _extract_clean_answer(raw_text: str) -> str:
+    """Extract a human-readable answer from raw model output that may be JSON-like.
+
+    Returns empty string when text looks like a JSON object but no clean answer can be found,
+    so the caller can substitute a safe generic message instead of exposing raw JSON.
+    """
+    stripped = raw_text.strip()
+
+    # 1. Valid JSON — extract visible_answer or summary directly
+    try:
+        json_obj = json.loads(stripped)
+        if isinstance(json_obj, dict):
+            visible = json_obj.get("visible_answer")
+            if visible and isinstance(visible, str) and visible.strip():
+                return visible.strip()
+            summary = json_obj.get("summary")
+            if summary and isinstance(summary, str) and summary.strip():
+                return summary.strip()
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # 2. JSON embedded in surrounding prose
+    try:
+        embedded = _extract_json_object(stripped)
+        json_obj = json.loads(embedded)
+        if isinstance(json_obj, dict):
+            visible = json_obj.get("visible_answer")
+            if visible and isinstance(visible, str) and visible.strip():
+                return visible.strip()
+            summary = json_obj.get("summary")
+            if summary and isinstance(summary, str) and summary.strip():
+                return summary.strip()
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # 3. "visible_answer": "..." double-quoted value
+    m = re.search(r'"visible_answer"\s*:\s*"((?:[^"\\]|\\.)*)"', stripped, re.DOTALL)
+    if m:
+        try:
+            value: str = json.loads(f'"{m.group(1)}"')
+        except (json.JSONDecodeError, ValueError):
+            value = m.group(1)
+        if value.strip():
+            return value.strip()
+
+    # 4. 'visible_answer': '...' single-quoted value
+    m = re.search(r"'visible_answer'\s*:\s*'((?:[^'\\]|\\.)*)'", stripped, re.DOTALL)
+    if m and m.group(1).strip():
+        return m.group(1).strip()
+
+    # 5. "summary": "..." double-quoted fallback
+    m = re.search(r'"summary"\s*:\s*"((?:[^"\\]|\\.)*)"', stripped, re.DOTALL)
+    if m:
+        try:
+            value = json.loads(f'"{m.group(1)}"')
+        except (json.JSONDecodeError, ValueError):
+            value = m.group(1)
+        if value.strip():
+            return value.strip()
+
+    # 6. 'summary': '...' single-quoted fallback
+    m = re.search(r"'summary'\s*:\s*'((?:[^'\\]|\\.)*)'", stripped, re.DOTALL)
+    if m and m.group(1).strip():
+        return m.group(1).strip()
+
+    # 7. Looks like a JSON object — don't expose raw JSON to the user
+    if stripped.startswith("{") and "}" in stripped:
+        return ""
+
+    # 8. Prose — return as-is
+    return stripped
+
+
 def _build_fallback_result(raw_text: str, input_tokens: int, output_tokens: int) -> StructuredResponseResult:
+    clean_text = _extract_clean_answer(raw_text)
+    visible: str | None = clean_text if clean_text else None
+    summary = clean_text if clean_text else "Ответ получен, но структура повреждена. Повторите запрос."
     payload = LegalStructuredResponse(
         answer_mode="preliminary_opinion",
-        visible_answer=raw_text[:4000],
-        summary="Ответ получен, формат не прошел валидацию",
+        visible_answer=visible,
+        summary=summary,
         risk="yellow",
         confidence="low",
         meaning_for_factory="Требуется ручная проверка юриста",

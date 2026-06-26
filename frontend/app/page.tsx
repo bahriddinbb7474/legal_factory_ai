@@ -1601,7 +1601,7 @@ export default function HomePage() {
                   ) : null}
                 </div>
                 <h1>{message.author_type === "system" ? "Статус" : answerModeLabel(message.structured_payload?.answer_mode)}</h1>
-                <p>{message.content}</p>
+                <p>{safeContent(message)}</p>
                 {message.structured_payload && isFinalVerdict(message.structured_payload.answer_mode) ? <StructuredAnswerSections message={message} /> : null}
               </article>
             );
@@ -2677,6 +2677,15 @@ function StructuredAnswerSections({ message }: { message: ChatMessage }) {
       ) : null}
     </div>
   );
+}
+
+function safeContent(message: ChatMessage): string {
+  const content = message.content ?? "";
+  if (content.trimStart().startsWith("{")) {
+    if (message.structured_payload?.visible_answer) return message.structured_payload.visible_answer;
+    return "Ответ получен, но структура ответа повреждена. Повторите запрос или попросите юриста ответить обычным текстом.";
+  }
+  return content;
 }
 
 function isFinalVerdict(mode?: string | null): boolean {
