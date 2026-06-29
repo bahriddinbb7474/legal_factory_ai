@@ -1,7 +1,8 @@
 import json
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+import pytest
 from sqlalchemy import select
 
 from app.api.chats import get_llm_gateway
@@ -16,9 +17,19 @@ from app.services.structured_response import validate_legal_response
 @dataclass
 class FakeGateway:
     calls: list[tuple[str, str]]
+    response_formats: list[dict | None] = field(default_factory=list)
 
     async def invoke(self, agent, chat_context: str, response_format: dict | None = None) -> LLMResponse:
         self.calls.append((agent.code, chat_context))
+        self.response_formats.append(response_format)
+        if response_format is None:
+            return LLMResponse(
+                content=f"Обычный ответ {agent.display_name}",
+                model_id=agent.model_name,
+                provider_code=agent.provider_code,
+                input_tokens=100,
+                output_tokens=50,
+            )
         agreement = None
         if agent.code in {"lawyer_2", "lawyer_3"}:
             agreement = {"agreed_points": ["История учтена"], "disagreed_points": [], "unresolved_points": []}
@@ -98,8 +109,11 @@ def test_invoke_calls_only_selected_lawyer_and_saves_metadata(client) -> None:
     assert "Юрист 1: Ответ юриста 1" in fake_gateway.calls[0][1]
     assert "Пользователь: Последний вопрос" in fake_gateway.calls[0][1]
     assert payload["author_type"] == "agent2"
-    assert payload["structured_payload"]["summary"].startswith("Ответ")
-    assert payload["source_check_status"] == "unconfirmed"
+    assert payload["content"].startswith("Обычный ответ")
+    assert payload["structured_payload"] is None
+    assert payload["source_check_status"] == "not_checked"
+    assert payload["is_verdict"] is False
+    assert fake_gateway.response_formats == [None]
     assert payload["model_id"]
     assert payload["provider_code"] == "cloudflare"
     assert payload["input_tokens"] == 100
@@ -109,6 +123,27 @@ def test_invoke_calls_only_selected_lawyer_and_saves_metadata(client) -> None:
     costs = client.get(f"/api/chats/{chat_id}/costs").json()
     assert costs[0]["model_id"] == payload["model_id"]
     assert costs[0]["provider_code"] == "cloudflare"
+
+
+@pytest.mark.parametrize(
+    ("agent_code", "author_type"),
+    [("lawyer_1", "agent1"), ("lawyer_2", "agent2"), ("lawyer_3", "agent3")],
+)
+def test_pre_verdict_invoke_is_plain_text_for_every_lawyer(client, agent_code: str, author_type: str) -> None:
+    gateway = FakeGateway(calls=[])
+    app.dependency_overrides[get_llm_gateway] = lambda: gateway
+    chat_id = client.post("/api/chats", json={"title": "Pre-verdict"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Дайте предварительное мнение"})
+
+    response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": agent_code})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["author_type"] == author_type
+    assert body["content"].startswith("Обычный ответ")
+    assert body["structured_payload"] is None
+    assert body["is_verdict"] is False
+    assert gateway.response_formats == [None]
 
 
 def test_invoke_context_includes_chat_metadata(client) -> None:
@@ -259,6 +294,30 @@ def test_invoke_fallback_message_appears_in_chat_messages(client) -> None:
     agent_messages = [m for m in messages if m["author_type"] == "agent1"]
     assert len(agent_messages) == 1
     assert agent_messages[0]["content"]
+
+
+@dataclass
+class FakeGatewayUnexpectedJson:
+    async def invoke(self, agent, chat_context: str, response_format: dict | None = None) -> LLMResponse:
+        return LLMResponse(
+            content='{"secret_backend_field": true}',
+            model_id=agent.model_name,
+            provider_code=agent.provider_code,
+            input_tokens=1,
+            output_tokens=1,
+        )
+
+
+def test_normal_mode_does_not_show_raw_json(client) -> None:
+    app.dependency_overrides[get_llm_gateway] = lambda: FakeGatewayUnexpectedJson()
+    chat_id = client.post("/api/chats", json={"title": "Safe text"}).json()["id"]
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Ответьте текстом"})
+
+    response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
+
+    assert response.status_code == 200
+    assert response.json()["content"] == "Ответ получен в неподдерживаемом формате. Попросите юриста ответить обычным текстом."
+    assert "secret_backend_field" not in response.json()["content"]
 
 
 # --- Parser robustness ---

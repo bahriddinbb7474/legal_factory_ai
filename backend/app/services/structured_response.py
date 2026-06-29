@@ -210,6 +210,13 @@ def _extract_clean_answer(raw_text: str) -> str:
     return stripped
 
 
+def safe_normal_response_text(raw_text: str) -> str:
+    clean_text = _extract_clean_answer(raw_text)
+    if clean_text:
+        return clean_text
+    return "Ответ получен в неподдерживаемом формате. Попросите юриста ответить обычным текстом."
+
+
 def _build_fallback_result(raw_text: str, input_tokens: int, output_tokens: int) -> StructuredResponseResult:
     clean_text = _extract_clean_answer(raw_text)
     visible: str | None = clean_text if clean_text else None

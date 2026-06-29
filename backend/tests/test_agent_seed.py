@@ -5,7 +5,7 @@ from decimal import Decimal
 from app.db.base import Agent
 from app.db.session import get_db
 from app.main import app
-from app.services.agent_seed import AGENT_SEEDS, LEGACY_DEFAULT_SYSTEM_PROMPTS
+from app.services.agent_seed import AGENT_SEEDS, LEGACY_DEFAULT_SYSTEM_PROMPTS, PREVIOUS_DEFAULT_SYSTEM_PROMPTS
 
 
 def _new_prompt(code: str) -> str:
@@ -72,6 +72,28 @@ def test_existing_agent_with_legacy_prompt_gets_upgraded(client) -> None:
             f"{code} should be upgraded from legacy to new prompt"
         )
         assert agents[code]["system_prompt"] != LEGACY_DEFAULT_SYSTEM_PROMPTS[code]
+
+
+def test_existing_agent_with_previous_default_prompt_gets_upgraded(client) -> None:
+    for code in ("lawyer_1", "lawyer_2", "lawyer_3"):
+        _insert_agent(system_prompt=PREVIOUS_DEFAULT_SYSTEM_PROMPTS[code], code=code)
+
+    agents = _get_agents_via_api(client)
+
+    for code in ("lawyer_1", "lawyer_2", "lawyer_3"):
+        assert agents[code]["system_prompt"] == _new_prompt(code)
+
+
+def test_new_default_prompts_require_plain_pre_verdict_text(client) -> None:
+    agents = _get_agents_via_api(client)
+
+    for code in ("lawyer_1", "lawyer_2", "lawyer_3"):
+        prompt = agents[code]["system_prompt"]
+        assert "без JSON" in prompt or "Не возвращай JSON" in prompt
+        assert "UNTRUSTED_DOCUMENT" in prompt
+        assert "Республике Узбекистан" in prompt
+
+    assert "Никогда не оформляй вердикт" in agents["lawyer_1"]["system_prompt"]
 
 
 def test_existing_agent_with_custom_prompt_is_preserved(client) -> None:

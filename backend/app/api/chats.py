@@ -28,7 +28,7 @@ from app.services.generated_documents import save_generated_document_text
 from app.services.legal_retriever import build_trusted_legal_context, legal_retriever
 from app.services.llm_gateway import LLMGatewayError, MissingOpenRouterKeyError, OpenRouterGateway, openrouter_gateway
 from app.services.red_flags import red_flag_service
-from app.services.structured_response import StructuredResponseError, invoke_structured_with_repair
+from app.services.structured_response import StructuredResponseError, invoke_structured_with_repair, safe_normal_response_text
 from app.storage.local import local_storage
 
 
@@ -328,6 +328,80 @@ async def invoke_agent(
     legal_chunks = await legal_retriever.retrieve(db, _last_user_message(messages), top_k=5)
     legal_context = build_trusted_legal_context(legal_chunks)
     chat_context = build_chat_context(messages, chat=chat, document_context=document_context, legal_context=legal_context)
+    if payload.mode == "normal":
+        try:
+            response = await gateway.invoke(agent, chat_context)
+        except MissingOpenRouterKeyError as exc:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        except LLMGatewayError as exc:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+        content = safe_normal_response_text(response.content)
+        red_text = "\n".join([_last_user_message(messages), content])
+        red_flags = await red_flag_service.apply_to_chat(db, chat, red_text, current_user.id)
+        red_flag_codes = [match.code for match in red_flags]
+        approval_required = red_flags[0].required_approver if red_flags else None
+        risk = "yellow" if red_flags else None
+        cost_usd = calculate_cost_usd(
+            response.input_tokens,
+            response.output_tokens,
+            Decimal(agent.input_price_per_1m),
+            Decimal(agent.output_price_per_1m),
+        )
+        message = Message(
+            chat_id=chat_id,
+            role="assistant",
+            author_type=author_type_for_agent(agent.code),
+            content=content,
+            agent_id=agent.id,
+            model_id=response.model_id,
+            provider_code=response.provider_code,
+            input_tokens=response.input_tokens,
+            output_tokens=response.output_tokens,
+            cost_usd=cost_usd,
+            structured_payload=None,
+            raw_response=response.content,
+            risk=risk,
+            confidence=None,
+            approval_required=approval_required,
+            source_check_status="not_checked",
+            red_flag_codes=red_flag_codes,
+            is_verdict=False,
+        )
+        db.add(message)
+        await db.flush()
+        for document in documents:
+            db.add(MessageDocument(message_id=message.id, document_id=document.id, usage_type="context"))
+        db.add(
+            CostRecord(
+                chat_id=chat_id,
+                agent_id=agent.id,
+                provider_code=response.provider_code,
+                model_id=response.model_id,
+                input_tokens=response.input_tokens,
+                output_tokens=response.output_tokens,
+                cost_usd=cost_usd,
+            )
+        )
+        for document in documents:
+            await write_audit_log(
+                db,
+                action="document.used_by_agent",
+                entity_type="document",
+                entity_id=document.id,
+                user_id=current_user.id,
+                details={
+                    "chat_id": chat_id,
+                    "agent_code": agent.code,
+                    "provider_code": response.provider_code,
+                    "model_id": response.model_id,
+                    "sensitivity": document.sensitivity,
+                },
+            )
+        await db.commit()
+        await db.refresh(message)
+        return message
+
     try:
         structured_result = await invoke_structured_with_repair(agent, chat_context, gateway, db, current_user.id)
     except MissingOpenRouterKeyError as exc:

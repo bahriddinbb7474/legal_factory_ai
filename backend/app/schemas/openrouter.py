@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -22,3 +23,4 @@ class ApprovedModelsPayload(BaseModel):
 
 class InvokeAgentRequest(BaseModel):
     agent_code: str
+    mode: Literal["normal"] = "normal"
