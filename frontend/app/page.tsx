@@ -61,9 +61,27 @@ type ChatMessage = {
   cost_usd?: string;
   created_at?: string;
   is_verdict?: boolean;
+  document_generation_allowed?: boolean;
 };
 
 type LegalStructuredPayload = {
+  type?: "verdict";
+  lawyer_id?: "lawyer_2" | "lawyer_3";
+  jurisdiction?: "UZ";
+  short_conclusion?: string;
+  facts_established?: string[];
+  facts_missing?: string[];
+  legal_sources?: {
+    source_id: string | null;
+    title: string;
+    number: string | null;
+    date: string | null;
+    article_or_clause: string | null;
+    quote: string | null;
+  }[];
+  analysis?: string[];
+  risks?: string[];
+  recommended_actions?: string[];
   answer_mode?: "clarification_needed" | "preliminary_opinion" | "source_search_needed" | "ready_for_verdict" | "final_verdict" | null;
   visible_answer?: string | null;
   summary: string;
@@ -1099,7 +1117,10 @@ export default function HomePage() {
       const invokeResponse = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/invoke`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_code: selectedLawyer }),
+        body: JSON.stringify({
+          agent_code: selectedLawyer,
+          mode: verdictInvokeMode(selectedLawyer, content),
+        }),
       });
       if (!invokeResponse.ok) {
         const error = await invokeResponse.json().catch(() => ({ detail: "Ошибка OpenRouter" }));
@@ -1395,96 +1416,6 @@ export default function HomePage() {
     setOpenDocumentMenu(null);
   }
 
-  async function markAsVerdict(message: ChatMessage, messageKey: number) {
-    if (!message.id) {
-      setActiveVerdictMessageId(messageKey);
-      setMessages((current) =>
-        current.map((item, index) => ({
-          ...item,
-          is_verdict: (item.id ?? -index) === messageKey,
-        })),
-      );
-      return;
-    }
-    try {
-      const nextChatId = await ensureChat();
-      const response = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages/${message.id}/mark-verdict`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: "Не удалось пометить вердикт." }));
-        throw new Error(error.detail ?? "Не удалось пометить вердикт.");
-      }
-      const updated = await response.json();
-      setActiveVerdictMessageId(updated.id);
-      setMessages((current) =>
-        current.map((item) => ({
-          ...item,
-          is_verdict: item.id === updated.id,
-        })),
-      );
-      await refreshChatStatus(nextChatId);
-    } catch (error) {
-      setApiStatus(error instanceof Error ? error.message : "Не удалось пометить вердикт.");
-    }
-  }
-
-  async function openGeneratedDocument(message: ChatMessage, messageKey: number) {
-    setSelectedDocument(null);
-    setTemplateStatus("");
-    if (activeVerdictMessageId !== messageKey && !message.is_verdict) {
-      await markAsVerdict(message, messageKey);
-    }
-    if (!message.id) {
-      const mockDocument: GeneratedDocument = {
-        id: 0,
-        chat_id: chatId ?? 0,
-        verdict_message_id: 0,
-        created_by_agent_id: null,
-        title: "Письмо клиенту о задолженности",
-        document_type: selectedTemplate?.template_key ?? "claim_letter",
-        template_key: selectedTemplate?.template_key ?? null,
-        content: documentBody,
-        status: "draft",
-      };
-      setGeneratedDocument(mockDocument);
-      setSavedDocumentBody(mockDocument.content);
-      setDocumentBody(mockDocument.content);
-      setIsDocumentOpen(true);
-      return;
-    }
-    try {
-      const nextChatId = await ensureChat();
-      const response = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/documents/generate-from-verdict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agent_code: selectedLawyer,
-          document_type: selectedTemplate?.template_key ?? "claim_letter",
-          template_key: selectedTemplate?.template_key ?? null,
-          title: "Письмо клиенту о задолженности",
-        }),
-      });
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: "Не удалось создать документ по вердикту." }));
-        throw new Error(error.detail ?? "Не удалось создать документ по вердикту.");
-      }
-      const document = await response.json();
-      setGeneratedDocument(document);
-      if (document.template_key) {
-        setSelectedTemplateKey(document.template_key);
-      }
-      setDocumentBody(document.content);
-      setSavedDocumentBody(document.content);
-      setIsDocumentOpen(true);
-      setIsDocumentEditing(false);
-      setOpenDocumentMenu(null);
-    } catch (error) {
-      setApiStatus(error instanceof Error ? error.message : "Не удалось создать документ по вердикту.");
-      setIsDocumentOpen(true);
-    }
-  }
-
   async function sendDocumentToChat() {
     setOpenDocumentMenu(null);
     if (generatedDocument?.id) {
@@ -1583,8 +1514,7 @@ export default function HomePage() {
             </article>
           ) : null}
           {messages.map((message, index) => {
-            const messageKey = message.id ?? -index;
-            const isActiveVerdict = message.is_verdict || activeVerdictMessageId === messageKey;
+            const isVerdict = isPolicyVerdict(message);
             return message.author_type === "user" ? (
               <article className="message user-message" key={`${message.author_type}-${index}`}>
                 <p>{message.content}</p>
@@ -1594,15 +1524,12 @@ export default function HomePage() {
                 <div className="message-toolbar">
                   <span className="assistant-meta">{messageLabel(message)}</span>
                   {message.author_type.startsWith("agent") ? <span className={`risk-badge ${message.risk ?? message.structured_payload?.risk ?? "yellow"}`}>{riskLabel(message.risk ?? message.structured_payload?.risk ?? "yellow")}</span> : null}
-                  {message.author_type.startsWith("agent") && canWriteWorkspace ? (
-                    <button className={isActiveVerdict ? "pill-button verdict-button active-verdict" : "pill-button verdict-button"} onClick={() => markAsVerdict(message, messageKey)} type="button">
-                      {isActiveVerdict ? "Действующий вердикт" : "Пометить как вердикт"}
-                    </button>
-                  ) : null}
+                  {isVerdict ? <span className="pill-button verdict-button active-verdict">Вердикт</span> : null}
                 </div>
-                <h1>{message.author_type === "system" ? "Статус" : answerModeLabel(message.structured_payload?.answer_mode)}</h1>
+                <h1>{message.author_type === "system" ? "Статус" : isVerdict ? "Юридический вердикт" : "Мнение юриста"}</h1>
                 <p>{safeContent(message)}</p>
-                {message.structured_payload && isFinalVerdict(message.structured_payload.answer_mode) ? <StructuredAnswerSections message={message} /> : null}
+                {isVerdict && message.structured_payload?.type === "verdict" ? <VerdictSkeletonSections message={message} /> : null}
+                {isVerdict && message.structured_payload?.type !== "verdict" && isFinalVerdict(message.structured_payload?.answer_mode) ? <StructuredAnswerSections message={message} /> : null}
               </article>
             );
           })}
@@ -2679,8 +2606,28 @@ function StructuredAnswerSections({ message }: { message: ChatMessage }) {
   );
 }
 
+function VerdictSkeletonSections({ message }: { message: ChatMessage }) {
+  const payload = message.structured_payload;
+  if (!payload || payload.type !== "verdict") {
+    return null;
+  }
+  return (
+    <div className="structured-answer">
+      {payload.facts_established?.length ? <section><h2>Установленные факты</h2><ul>{payload.facts_established.map((fact) => <li key={fact}>{fact}</li>)}</ul></section> : null}
+      {payload.facts_missing?.length ? <section><h2>Недостающие факты</h2><ul>{payload.facts_missing.map((fact) => <li key={fact}>{fact}</li>)}</ul></section> : null}
+      {payload.analysis?.length ? <section><h2>Анализ</h2><ul>{payload.analysis.map((item) => <li key={item}>{item}</li>)}</ul></section> : null}
+      {payload.risks?.length ? <section><h2>Риски</h2><ul>{payload.risks.map((risk) => <li key={risk}>{risk}</li>)}</ul></section> : null}
+      {payload.recommended_actions?.length ? <section><h2>Рекомендуемые действия</h2><ul>{payload.recommended_actions.map((action) => <li key={action}>{action}</li>)}</ul></section> : null}
+      <p className="source-warning">Вердикт подготовлен, но источники пока не подтверждены. Документ создать нельзя до проверки источников.</p>
+    </div>
+  );
+}
+
 function safeContent(message: ChatMessage): string {
   const content = message.content ?? "";
+  if (message.structured_payload?.type === "verdict") {
+    return message.structured_payload.short_conclusion || "Вердикт подготовлен и ожидает проверки источников.";
+  }
   if (content.trimStart().startsWith("{")) {
     if (message.structured_payload?.visible_answer) return message.structured_payload.visible_answer;
     return "Ответ получен, но структура ответа повреждена. Повторите запрос или попросите юриста ответить обычным текстом.";
@@ -2692,13 +2639,26 @@ function isFinalVerdict(mode?: string | null): boolean {
   return !mode || mode === "final_verdict";
 }
 
-function answerModeLabel(mode?: string | null): string {
-  if (!mode || mode === "final_verdict") return "Юридический вывод";
-  if (mode === "clarification_needed") return "Уточняющий вопрос";
-  if (mode === "preliminary_opinion") return "Предварительное мнение";
-  if (mode === "source_search_needed") return "Требуется источник";
-  if (mode === "ready_for_verdict") return "Анализ завершён";
-  return "Ответ юриста";
+function isPolicyVerdict(message: ChatMessage): boolean {
+  const payload = message.structured_payload;
+  return message.is_verdict === true && (payload?.type === "verdict" || payload?.answer_mode === "final_verdict");
+}
+
+const VERDICT_REQUEST_PHRASES = [
+  "оформи вердикт",
+  "оформи свой вердикт",
+  "дай финальное заключение",
+  "готовь итог",
+  "сделай юридический вывод",
+  "подготовь финальный вывод",
+] as const;
+
+function verdictInvokeMode(agentCode: Agent["code"], content: string): "normal" | "verdict" {
+  if (agentCode === "lawyer_1") {
+    return "normal";
+  }
+  const normalized = content.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim();
+  return VERDICT_REQUEST_PHRASES.some((phrase) => normalized.includes(phrase)) ? "verdict" : "normal";
 }
 
 function riskLabel(risk: "green" | "yellow" | "red"): string {

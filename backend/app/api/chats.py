@@ -36,6 +36,7 @@ router = APIRouter(prefix="/api/chats", tags=["chats"], dependencies=[Depends(ge
 
 EXPLICIT_VERDICT_PHRASES = (
     "оформи вердикт",
+    "оформи свой вердикт",
     "дай финальное заключение",
     "готовь итог",
     "сделай юридический вывод",

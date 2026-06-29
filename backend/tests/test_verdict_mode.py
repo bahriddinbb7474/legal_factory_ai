@@ -98,6 +98,25 @@ def test_eligible_lawyer_creates_conservative_structured_verdict_with_permission
     assert client.get(f"/api/chats/{chat_id}").json()["active_verdict_message_id"] == body["id"]
 
 
+def test_lawyer_2_accepts_explicit_own_verdict_phrase(client) -> None:
+    gateway = VerdictGateway()
+    app.dependency_overrides[get_llm_gateway] = lambda: gateway
+    chat_id = _chat_with_user_message(client, "ок. оформи свой вердикт тогда!")
+
+    response = client.post(
+        f"/api/chats/{chat_id}/invoke",
+        json={"agent_code": "lawyer_2", "mode": "verdict"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["is_verdict"] is True
+    assert body["structured_payload"]["type"] == "verdict"
+    assert body["source_check_status"] == "unconfirmed"
+    assert body["document_generation_allowed"] is False
+    assert gateway.calls == [("lawyer_2", {"type": "json_object"})]
+
+
 @pytest.mark.parametrize("content", ["понятно", "согласен", "ок", "ну да", "в принципе ясно", "проверь вопрос"])
 def test_missing_or_ambiguous_permission_returns_plain_clarification(client, content: str) -> None:
     gateway = VerdictGateway()
