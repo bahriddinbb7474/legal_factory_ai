@@ -13,4 +13,13 @@ Expected result:
 - Approval workflow for red-risk questions and final documents.
 - Token and dollar cost tracking by chat and agent.
 
-The final version must always prefer sourced legal answers. If a reliable source is missing, the system must block final legal conclusions and direct the user to a lawyer or responsible specialist.
+The final workflow must provide human-readable lawyer answers before verdict and use structured
+payload only for a verified verdict from Lawyer 2 or Lawyer 3. Lawyer 1 cannot issue a verdict.
+Legal sections use lawyer-controlled targeted RAG with a backend safety net. A verdict is bound to
+its concrete source package and context snapshot, and the model cannot control citation,
+approval, or document-generation gate fields.
+
+The final version must always prefer active official Uzbekistan sources for current-law answers.
+If a reliable source is missing, the system must block final legal conclusions and direct the user
+to a lawyer or responsible specialist. Red topics require approval in every section, and uploaded
+untrusted documents must never override instructions or become official law.

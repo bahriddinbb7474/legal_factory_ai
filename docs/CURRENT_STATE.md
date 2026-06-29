@@ -1,8 +1,8 @@
 # Current State
 
-Last updated after Stage A real chat/sidebar/history completion.
-Pushed commits: `b716807` (fix: upgrade default lawyer prompts safely) ← HEAD.
-Backend tests: **161/161 passed**. Frontend build: ✓ successful. Not pushing further.
+Last updated after P1 policy documentation completion on 2026-06-29.
+P1 policy commit: `768484a` (`docs: add prompt rag verdict policy v1`). It has not been pushed.
+Last recorded application verification remains: backend tests **161/161 passed** and frontend build successful. P1 was documentation-only and did not rerun application tests/build.
 
 ## Completed stages
 
@@ -49,6 +49,12 @@ Backend tests: **161/161 passed**. Frontend build: ✓ successful. Not pushing f
   - **AI history**: Lawyers receive chat history before answering; history includes sender labels and timestamps;
     each lawyer has universal system prompt; chat-specific history in `chat_context` not `system_prompt`;
     default prompts safely upgraded, custom admin prompts preserved; stale AI response cannot append to wrong chat.
+- **P0 architecture** (approved): section-based strictness, lawyer-controlled targeted RAG, backend
+  safety net, human-readable pre-verdict answers, structured verdict only, Lawyer 1 verdict ban,
+  verified-verdict document gate, approved-template path, red-topic approval, and
+  `UNTRUSTED_DOCUMENT` injection protection.
+- **P1 policy documentation** (complete): `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
+  `LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and `QUALITY_GATE_V1.md`.
 
 ## What is intentionally NOT done yet
 
@@ -60,6 +66,9 @@ Backend tests: **161/161 passed**. Frontend build: ✓ successful. Not pushing f
 - **Advanced department permissions**: current baseline (admin-created users, viewer read-only,
   audit log) is sufficient before the founder presentation. Department-level visibility, approval
   routing, and export rights are deferred to post-presentation.
+- **P0 behavior is not implemented yet**: current Stage 4/5 structured-answer and active-verdict
+  code is the legacy baseline. P2-P6 must implement the new prompt, section, targeted RAG,
+  verified verdict/document gates, and Quality Gate before Phase B.
 
 ## Active database
 
@@ -90,16 +99,14 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 ## Next major direction
 
-Five phases remain before the founder presentation:
+The approved immediate sequence is:
 
-1. **OpenRouter and model settings** (next) — API key via `.env`; admin model settings; user-facing
-   modes (`Экономно`, `Быстро`, `Качественно`); hide raw `model_id` from normal UI.
-   Must be done before RAG quality verification.
-2. **Company details and document templates** — real requisites; approved templates; remove fake
-   document panel data; generate real documents; export Word/PDF.
-3. **Legal base and RAG verification** — audit sources; add missing laws/PKM/codes; run 20–30
-   control questions; ensure source cards and uncertainty warnings work.
-4. **Real factory scenarios** — debt claim, supply contract, procurement risk, HR, finance/legal
-   document; each must test chat + RAG + sources + document generation + saved history + UI.
-5. **Founder presentation polish** — no fake data in visible demo paths; no raw errors; no
-   technical model IDs in normal UI; clean page, chat, sources, generated document.
+1. **P2 — Prompt implementation**: universal and role prompts, verdict/template modes, missing-source policy, and untrusted-document boundary.
+2. **P3 — Section-based behavior**: legal/template strictness, Lawyer 1 verdict ban, Lawyer 2/3 eligibility.
+3. **P4 — Targeted RAG protocol**: source inventory, internal request, bound source package, multilingual backend fallback.
+4. **P5 — Verdict/document gate**: structured verdict only, explicit permission, backend verification fields, `source_package_id` / `context_snapshot_hash`, approval and document button gates, DB mapping.
+5. **P6 — Quality tests**: implement and pass all 34 checks from `QUALITY_GATE_V1.md`.
+6. **P7 / Phase B — OpenRouter and model settings**: API key via `.env`, admin settings, user-facing modes, and clean model/cost UX.
+
+After P7: company details/templates, legal-base and RAG verification, real factory scenarios,
+founder presentation polish, laptop pilot/mini-launch, and only then separately approved deferred work.

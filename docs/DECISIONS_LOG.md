@@ -74,6 +74,17 @@
 - Demo-1 decided: advanced department-level permissions (section visibility, approval routing,
   export rights) are deferred until after the founder presentation. The current baseline of
   admin-created users, viewer read-only, and basic audit log is sufficient.
+- P0 approved: pre-verdict lawyer answers are natural human-readable text. Structured legal payload is reserved for verdict only.
+- P0 approved: Lawyer 1 provides preliminary analysis and targeted RAG requests but cannot issue a verdict or control verdict/document gates.
+- P0 approved: only Lawyer 2 or Lawyer 3 may issue a verdict, after explicit user permission and required source checks.
+- P0 approved: legal sections require targeted RAG by default; approved template/correspondence work may use a separate path that cannot bypass legal or red-topic controls.
+- P0 approved: RAG receives source inventory first, retrieves a targeted source package, and binds verdict verification to `source_package_id` and `context_snapshot_hash`.
+- P0 approved: `confirmed_in_context`, `source_check_status`, `document_generation_allowed`, and `approval_required` are backend-controlled fields. Model values for them are absent, ignored, or overwritten.
+- P0 approved: red topics force approval in every section. Large-amount thresholds are configurable for at least UZS and USD, with ambiguous financially significant amounts treated as red.
+- P0 approved: RAG and red-topic triggers use configurable Russian and Uzbek Latin/Cyrillic roots or patterns, not exact Russian-only words.
+- P0 approved: `<UNTRUSTED_DOCUMENT ...>` content is analysis data, not instructions or official law.
+- P1 complete: the five versioned policy files under `docs/` are the normative specification for P2-P6.
+- Approved implementation order: P2 prompts → P3 section behavior → P4 targeted RAG → P5 verdict/document gates and DB mapping → P6 Quality Gate → P7/Phase B model settings.
 
 ## Pending Decisions
 

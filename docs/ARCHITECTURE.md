@@ -43,22 +43,58 @@ Initial API surface:
 
 Alembic is configured in `backend/alembic.ini`, with the first migration under `backend/alembic/versions/`.
 
-## Current Strategic Path After Stage 6
+## Post-Stage-6 Product Path
 
-The current core path is no longer Telegram-first. After Stage 6, the product should move through:
+The core path is no longer Telegram-first. The originally approved sequence after Stage 6 was:
 
-1. Stage 7: complete the factory legal base with 15-30 manually verified official sources, primarily from LEX.UZ.
-2. Stage 8: add `CompanyProfile` so official company data can be reused in letters, claims, replies, and generated documents.
-3. Stage 9: add `DocumentTemplate` and template-based generation for approved factory documents.
-4. Stage 10: test a laptop as a temporary local server for 3-4 users in the office LAN.
-5. Stage 11: replace the development current-user stub with local authentication and role-based access.
-6. Stage 12-13: run final factory scenarios and mini-launch.
+1. Stage 7 factory legal base — complete.
+2. Stage 8 `CompanyProfile` — complete.
+3. Stage 9 basic `DocumentTemplate` path — complete; real approved factory templates remain incomplete.
+4. Stage 10 laptop pilot — pending.
+5. Stage 11 local authentication and baseline role-based access — complete through Stage 11-B2.
+6. Stage 12-13 final factory scenarios and mini-launch — pending.
 
-VPS, full production deployment, and Telegram are deferred until this path is stable.
+The immediate approved work is now P2-P6 below, then P7 / Phase B. VPS, full production
+deployment, and Telegram remain deferred until the core path is stable.
 
 ## First Foundation
 
 The first implementation should avoid complex enterprise infrastructure. Redis, Celery, MinIO, Kubernetes, separate vector databases, and complex workflow engines can be added later if the product needs them.
+
+## Approved P0 Policy Architecture
+
+The approved target for the next implementation sequence is:
+
+```text
+section-based strictness
++ lawyer-controlled targeted RAG
++ backend safety net
++ human-readable pre-verdict answers
++ structured verdict only
++ Lawyer 1 cannot issue verdict
++ document button only after verified verdict
++ approved templates for канцелярия
++ red-topic approval everywhere
++ UNTRUSTED_DOCUMENT injection protection
+```
+
+P1 policy documentation is complete. The required order before Phase B is:
+
+1. P2 prompt implementation.
+2. P3 section-based behavior.
+3. P4 targeted RAG request and source-package protocol.
+4. P5 verified verdict/document gates and explicit DB mapping.
+5. P6 implementation of the 34-check Quality Gate.
+6. P7 / Phase B OpenRouter and model settings.
+
+The Stage 4/5 sections below describe the currently implemented legacy baseline. They are not the
+final policy contract. P2-P6 must migrate user-facing answers to natural pre-verdict text, restrict
+structured legal payload to verdict, prohibit Lawyer 1 verdicts, require explicit permission,
+bind verdicts through `source_package_id` and `context_snapshot_hash`, and keep verification,
+approval, and document-generation fields under backend control.
+
+The normative documents are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
+`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and `QUALITY_GATE_V1.md`.
 
 ## Data Flow
 
@@ -66,9 +102,12 @@ The first implementation should avoid complex enterprise infrastructure. Redis, 
 2. User creates or opens a chat.
 3. User asks a question or uploads a document.
 4. Backend stores the chat, message, files, and audit information.
-5. Agent layer selects the needed model and legal response mode.
-6. RAG retrieves relevant sources when available.
-7. The answer is returned with sources, risk level, confidence, cost, and approval requirement.
+5. Agent layer applies the selected section and lawyer role.
+6. The lawyer asks for clarification, requests targeted RAG, or uses an allowed approved-template path.
+7. Backend retrieves a concrete active-official source package when required and applies safety fallbacks.
+8. Before verdict, the user receives human-readable lawyer text.
+9. After explicit permission, Lawyer 2 or Lawyer 3 may produce a structured verdict for backend verification.
+10. Document generation is enabled only by backend-computed source, citation, red-topic, and approval gates.
 
 ## Stage 2 v2 OpenRouter Lawyer Flow
 
@@ -206,16 +245,20 @@ New safety services:
 - `red_flags.py`;
 - `budget.py`.
 
-## Stage 5 v2 Verdict and Generated Documents
+## Stage 5 v2 Verdict and Generated Documents (Legacy Baseline)
 
 Stage 5 introduces an explicit bridge between legal analysis and document drafting.
 
 Core rule:
 
 1. A lawyer answer is not automatically final.
-2. The user marks exactly one lawyer message as the active verdict.
-3. A generated document may be created only from that active verdict.
+2. The current implementation lets the user mark exactly one lawyer message as the active verdict.
+3. The current implementation permits document creation only from that active verdict.
 4. Earlier opinions, rejected drafts, and non-verdict chat messages are not document-generation sources.
+
+P5 must harden this baseline: only an eligible structured verdict from Lawyer 2 or Lawyer 3 after
+explicit permission may be active; relevant sources must be bound and verified; model-provided
+gate fields must be ignored; and document generation must remain blocked until backend checks pass.
 
 Updated entities:
 
@@ -286,14 +329,16 @@ Citation validation:
 - `source_type=law_unconfirmed` is always unconfirmed.
 - Uploaded document citations continue to be verified against extracted uploaded document text.
 
-## Planned Stage 7-11 Architecture
+## Stage 7-11 Architecture Status
 
-Stage 7 extends the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Draft/future sources are preparation-only unless a later approved task adds separate future-context retrieval. Outdated/historical sources, including an approved source later found expired, remain metadata/history records and are excluded from ordinary current-law RAG.
+Stage 7 completed the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Draft/future sources are preparation-only unless a later approved task adds separate future-context retrieval. Outdated/historical sources, including an approved source later found expired, remain metadata/history records and are excluded from ordinary current-law RAG.
 
-Stage 8 will add `CompanyProfile` for full/short company names, legal and actual addresses, TIN, OKED, registration details, bank data, director/chief accountant/legal responsible names, contacts, logo, letterhead, stamp, and signature storage keys. Stamp and signature files are sensitive and require director/admin access plus audit logging.
+Stage 8 added `CompanyProfile` for company details. Stamp/signature upload and rendering remain intentionally unimplemented; these files are sensitive and require a separate approved secure stage with director/admin access and audit logging.
 
-Stage 9 will add `DocumentTemplate` with draft/active/archived statuses, versioning, required fields, company profile fields, preview, and template-based creation of `GeneratedDocument` from an active verdict.
+Stage 9 added the basic `DocumentTemplate` path and one debt/claim template. The approved P0 target requires future real templates to follow the verified-verdict path or the separately approved template/correspondence path.
 
 Stage 10 keeps the laptop pilot as an operational check: backend, frontend, local IP, LAN access, backups, restore, restart script, logs, database size, uploads size, and stability under 3-4 local users. SQLite is acceptable only for tests or minimal local launch; PostgreSQL remains the production target and should be prepared locally if practical.
 
-Stage 11 removes the development current-user stub and introduces login/password users, password changes, disabled users, roles, backend-enforced role-based access, and approval restricted to director/chief_accountant where required.
+Stage 11-A through 11-B2 removed the development current-user stub, added login/password users,
+admin-only user creation, disabled users, backend-enforced role access, viewer read-only behavior,
+and basic auth/user-management audit logging. Advanced approval routing remains deferred.

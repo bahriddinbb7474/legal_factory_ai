@@ -1,8 +1,8 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, and **Stage A real chat/sidebar/history** are complete.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, and **P1 policy documentation** are complete.
 See `CURRENT_STATE.md` for the full status snapshot.
-Next priority: OpenRouter and model settings (Phase B).
+Next priority: P2 prompt implementation, followed by P3-P6. OpenRouter/model settings is P7 / Phase B.
 
 ## Completed
 
@@ -30,7 +30,7 @@ Next priority: OpenRouter and model settings (Phase B).
 - `UNTRUSTED_DOCUMENT` prompt boundary.
 - Role/sensitivity/trusted-provider enforcement.
 
-### Stage 4 — Structured Legal Answers
+### Stage 4 — Structured Legal Answers (implemented legacy baseline)
 
 - Strict JSON schema.
 - Risk and confidence.
@@ -40,7 +40,10 @@ Next priority: OpenRouter and model settings (Phase B).
 - Approval workflow.
 - Monthly budget guard.
 
-### Stage 5 — Verdict and GeneratedDocument
+The approved P0 target supersedes strict JSON for every answer: P2-P6 must keep pre-verdict
+answers human-readable and reserve the structured legal payload for verdict only.
+
+### Stage 5 — Verdict and GeneratedDocument (implemented legacy baseline)
 
 - One active verdict per chat.
 - `GeneratedDocument`.
@@ -50,6 +53,10 @@ Next priority: OpenRouter and model settings (Phase B).
 - PDF fallback.
 - Generated-document approval.
 - Send generated document back to the shared chat without automatic LLM invocation.
+
+P5 must replace simple active-message marking as the safety boundary with verified verdict
+eligibility, explicit permission, Lawyer 2/3 authorship, bound sources, citation checks, and
+backend-computed document-generation gates.
 
 ### Stage 6 — Curated Legal RAG (complete)
 
@@ -118,7 +125,7 @@ is hidden from non-admin users including viewer. Self-registration is forbidden.
 - Dead UI buttons removed. Corrupted Cyrillic fixed.
 - Fake document panel data and raw model/provider display are intentionally deferred.
 
-Latest pushed commit: `b716807 — fix: upgrade default lawyer prompts safely`
+P1 policy commit: `768484a — docs: add prompt rag verdict policy v1` (local, not pushed).
 
 ---
 
@@ -147,7 +154,75 @@ Acceptance: ✓ Open app, send question, see chat in sidebar under correct secti
 
 ---
 
-## Phase B — OpenRouter and Model Settings (next)
+## P0-P6 — Prompt/RAG/Verdict Safety Architecture
+
+### P0 — Architecture (approved)
+
+Approved target:
+
+```text
+section-based strictness
++ lawyer-controlled targeted RAG
++ backend safety net
++ human-readable pre-verdict answers
++ structured verdict only
++ Lawyer 1 cannot issue verdict
++ document button only after verified verdict
++ approved templates for канцелярия
++ red-topic approval everywhere
++ UNTRUSTED_DOCUMENT injection protection
+```
+
+### P1 — Policy Documentation (complete)
+
+- `PROMPT_SYSTEM_V1.md`
+- `RAG_WORKFLOW_V1.md`
+- `LEGAL_RESPONSE_POLICY_V1.md`
+- `VERDICT_AND_DOCUMENT_POLICY_V1.md`
+- `QUALITY_GATE_V1.md`
+
+### P2 — Prompt Implementation (next)
+
+- Universal Uzbekistan legal prompt.
+- Lawyer 1/2/3 role prompts.
+- Human-readable pre-verdict mode and structured-verdict mode.
+- Approved template/correspondence mode.
+- Missing-source behavior and `UNTRUSTED_DOCUMENT` instruction boundary.
+
+### P3 — Section-Based Behavior
+
+- Legal section and template section strictness.
+- RAG required by legal section, with clarification first when needed.
+- Lawyer 1 verdict prohibition.
+- Lawyer 2/3 verdict eligibility after explicit permission.
+- Red-topic approval in every section.
+
+### P4 — Targeted RAG Protocol
+
+- Source inventory instead of all chunks.
+- Internal targeted RAG request.
+- Concrete source package returned to the lawyer.
+- Multilingual Russian and Uzbek Latin/Cyrillic trigger patterns.
+- Backend fallback for missed RAG and unconfirmed-source blocking.
+
+### P5 — Verified Verdict and Document Gate
+
+- Structured payload only for verdict.
+- Model content fields separated from backend-controlled gate fields.
+- `source_package_id` and `context_snapshot_hash` binding.
+- Citation verification only against the bound package.
+- Configurable red-topic and UZS/USD large-amount rules.
+- Document button only after backend verification and approval checks.
+- Explicit mapping to `Message`, `RedFlagRule`, approval workflow, and `GeneratedDocument.status`.
+
+### P6 — Quality Gate
+
+Implement and pass all 34 checks in `QUALITY_GATE_V1.md`, including prompt behavior, RAG safety,
+verdict verification, red topics, template boundaries, injection protection, and multilingual triggers.
+
+---
+
+## P7 / Phase B — OpenRouter and Model Settings
 
 Goal: complete minimal working OpenRouter integration with admin model settings and clean
 user-facing model UX. Must be done before RAG quality verification so test answers use real models.
@@ -201,7 +276,7 @@ Goal: end-to-end test of all main business workflows with real data and real AI 
 Scenarios:
 
 1. Debt / client claim — chat, RAG, claim letter generation, director approval.
-2. Supply contract check — upload contract, structured answer, risk card, sources.
+2. Supply contract check — upload contract, human-readable analysis, verified verdict when requested, risk state, and sources.
 3. Procurement risk question — procurement department user, supplier document upload.
 4. HR question — HR user, labor code source, answer with citations.
 5. Accounting/finance legal document question — accountant user, tax source, document generation.

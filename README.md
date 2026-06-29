@@ -21,7 +21,7 @@ Legal Factory AI is an assistant only. It does not replace a live lawyer, direct
 - Web UI with login, roles, chat history, and document editor.
 - Three AI legal agents through OpenRouter.
 - File upload for PDF, DOCX, XLSX, TXT, and images.
-- Legal response mode with source, document number, revision date, article or clause, quote, risk level, confidence, and approval flag.
+- Human-readable pre-verdict legal analysis, with structured payload reserved for verified verdicts.
 - RAG over uploaded factory documents and official legal sources.
 - Cost tracking by chat, model, and agent.
 - Approval workflow for red-risk answers and final documents.
@@ -47,21 +47,23 @@ Completed:
 1. Stage 1: UI skeleton and project foundation.
 2. Stage 2: OpenRouter and three lawyers in one shared chat, including manual lawyer selection and token/cost tracking.
 3. Stage 3: PDF/DOCX/XLSX/TXT/JPG/JPEG/PNG/WEBP upload, extraction/OCR path, sensitivity, `UNTRUSTED_DOCUMENT`, storage, and provider enforcement.
-4. Stage 4: structured legal JSON, risk, confidence, findings, sources, citation verification, red flags, approval, and monthly budget guard.
-5. Stage 5: active verdict, `GeneratedDocument`, right editor, DOCX export, PDF fallback, generated-document approval, and send-back-to-chat without an automatic LLM call.
+4. Stage 4: legacy structured legal-answer baseline, risk, confidence, sources, citation verification, red flags, approval, and monthly budget guard.
+5. Stage 5: legacy active-verdict baseline, `GeneratedDocument`, right editor, DOCX export, approval, and send-back-to-chat without an automatic LLM call.
 6. Stage 6: curated legal RAG with `LegalSource`, `LegalChunk`, ПП/ПКМ support, `TRUSTED_LEGAL_SOURCE`, `source_type=law` verification, freshness warnings, SQLite lexical fallback, and PostgreSQL + pgvector production target.
 
-Current roadmap:
+Also complete: Stages 7-9, local auth/RBAC through Stage 11-B2, Demo-1 UI, Stage A real chat/history,
+approved P0 prompt/RAG/verdict architecture, and P1 policy documentation.
 
-7. Stage 7: complete the factory legal base with 15-30 manually verified LEX.UZ sources.
-8. Stage 8: add Company Profile / official company data.
-9. Stage 9: add approved document templates.
-10. Stage 10: test and configure laptop local server mode for 3-4 users.
-11. Stage 11: replace the dev current-user stub with local users, passwords, and roles.
-12. Stage 12: run final factory scenarios end to end.
-13. Stage 13: mini-launch at the factory with user/admin instructions, backup, restore, and owners.
-14. Stage 14: Telegram later, as a quick entry point, not a Web UI replacement.
-15. Stage 15: VPS/full server later if the laptop cannot meet operational needs.
+Immediate roadmap:
+
+1. P2: implement universal and role prompts plus verdict/template/source-missing modes.
+2. P3: implement section-based strictness and lawyer verdict eligibility.
+3. P4: implement lawyer-controlled targeted RAG and multilingual backend fallback.
+4. P5: implement verified verdict/document gates, bound source packages, and DB mapping.
+5. P6: pass all 34 checks in `docs/QUALITY_GATE_V1.md`.
+6. P7 / Phase B: finish OpenRouter/model settings UX.
+7. Continue with real templates/data, RAG verification, factory scenarios, presentation polish, laptop pilot, and mini-launch.
+8. Telegram and VPS remain separately approved later work.
 
 ## Legal Warning
 
@@ -69,7 +71,7 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: Stage 6 v2 curated legal RAG sources is complete. The next stage is Stage 7: factory legal base completion.
+Current status: P1 policy documentation is complete. The next approved stage is P2 prompt implementation; P3-P6 follow before P7 / Phase B.
 
 Implemented foundation:
 
@@ -97,7 +99,7 @@ Implemented foundation:
 - sensitive-document provider enforcement;
 - audit logs for upload/open/download/link/use/denial events;
 - upload UI from the chat composer plus right-side extracted-text preview.
-- strict structured JSON response schema for lawyer answers;
+- strict structured JSON response schema for lawyer answers (implemented legacy baseline; P2-P6 will reserve structured payload for verdict only);
 - backend validation and one safe JSON repair attempt;
 - deterministic citation verification against uploaded document text;
 - unconfirmed-source safeguards that prevent green/high-confidence answers;
@@ -201,7 +203,7 @@ npm run build
 Frontend expects the backend at:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
 OpenRouter real calls require:
