@@ -75,14 +75,15 @@ def invoke_with_response(client, agent_code: str, response_payload: dict | str |
     return chat_id, response, gateway
 
 
-def test_valid_structured_json_is_saved(client) -> None:
+def test_normal_mode_does_not_save_structured_json(client) -> None:
     _, response, _ = invoke_with_response(client, "lawyer_1", legal_payload())
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["structured_payload"]["summary"] == "Краткий вывод"
-    assert payload["risk"] == "yellow"
-    assert payload["confidence"] == "medium"
+    assert payload["content"] == "Краткий вывод"
+    assert payload["structured_payload"] is None
+    assert payload["risk"] is None
+    assert payload["confidence"] is None
 
 
 def test_unknown_field_and_invalid_json_use_fallback(client) -> None:
@@ -98,7 +99,7 @@ def test_unknown_field_and_invalid_json_use_fallback(client) -> None:
     assert invalid_response.json()["author_type"] == "agent1"
 
 
-def test_json_repair_attempt_is_used_once(client) -> None:
+def test_normal_mode_does_not_attempt_json_repair(client) -> None:
     chat_id = client.post("/api/chats", json={"title": "Repair"}).json()["id"]
     client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь"})
     gateway = SequenceGateway(["broken", json.dumps(legal_payload(), ensure_ascii=False)])
@@ -107,11 +108,11 @@ def test_json_repair_attempt_is_used_once(client) -> None:
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
     assert response.status_code == 200
-    assert len(gateway.calls) == 2
-    assert response.json()["input_tokens"] == 200
+    assert len(gateway.calls) == 1
+    assert response.json()["input_tokens"] == 100
 
 
-def test_confirmed_and_missing_quotes_set_source_status(client) -> None:
+def test_normal_mode_does_not_claim_citation_verification(client) -> None:
     chat_id = client.post("/api/chats", json={"title": "Quotes"}).json()["id"]
     doc = upload_txt(client, "Поставка кабеля выполняется до 20 июня.", chat_id).json()["document"]
     client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь срок"})
@@ -133,7 +134,8 @@ def test_confirmed_and_missing_quotes_set_source_status(client) -> None:
     )
     _, confirmed_response, _ = invoke_with_response(client, "lawyer_1", payload, chat_id)
     assert confirmed_response.status_code == 200
-    assert confirmed_response.json()["source_check_status"] == "confirmed"
+    assert confirmed_response.json()["source_check_status"] == "not_checked"
+    assert confirmed_response.json()["structured_payload"] is None
 
     chat_id = client.post("/api/chats", json={"title": "Missing quote"}).json()["id"]
     doc = upload_txt(client, "Есть только один пункт.", chat_id).json()["document"]
@@ -142,38 +144,37 @@ def test_confirmed_and_missing_quotes_set_source_status(client) -> None:
     payload["sources"][0]["quote"] = "Такой цитаты нет"
     _, missing_response, _ = invoke_with_response(client, "lawyer_1", payload, chat_id)
     body = missing_response.json()
-    assert body["source_check_status"] == "unconfirmed"
-    assert body["risk"] == "yellow"
-    assert body["confidence"] == "medium"
+    assert body["source_check_status"] == "not_checked"
+    assert body["risk"] is None
+    assert body["confidence"] is None
 
 
-def test_law_unconfirmed_never_allows_green_or_high_confidence(client) -> None:
+def test_normal_mode_ignores_model_risk_confidence_and_approval_fields(client) -> None:
     payload = legal_payload(risk="green", confidence="high")
     _, response, _ = invoke_with_response(client, "lawyer_1", payload)
 
     body = response.json()
-    assert body["source_check_status"] == "unconfirmed"
-    assert body["risk"] == "yellow"
-    assert body["confidence"] == "medium"
+    assert body["source_check_status"] == "not_checked"
+    assert body["risk"] is None
+    assert body["confidence"] is None
+    assert body["approval_required"] is None
 
 
-def test_lawyer_2_requires_agreement_and_lawyer_3_forces_red_for_unresolved_without_source(client) -> None:
-    # lawyer_2 without agreement → validation fails both attempts → fallback, not a 502
+def test_normal_lawyer_2_and_3_do_not_require_structured_agreement(client) -> None:
     no_agreement = legal_payload(agreement=None)
     _, missing_agreement, _ = invoke_with_response(client, "lawyer_2", [no_agreement, no_agreement])
     assert missing_agreement.status_code == 200
     assert missing_agreement.json()["author_type"] == "agent2"
+    assert missing_agreement.json()["structured_payload"] is None
 
     arbiter_payload = legal_payload(
         agreement={"agreed_points": [], "disagreed_points": [], "unresolved_points": ["Спорный пункт"]},
     )
-    chat_id, response, _ = invoke_with_response(client, "lawyer_3", arbiter_payload)
+    _, response, _ = invoke_with_response(client, "lawyer_3", arbiter_payload)
     assert response.status_code == 200
     body = response.json()
-    assert body["risk"] == "red"
-    assert body["approval_required"] == "director"
-    assert "arbiter_forced_red" in body["red_flag_codes"]
-    assert client.get(f"/api/chats/{chat_id}").json()["approval_status"] == "needs_review"
+    assert body["structured_payload"] is None
+    assert body["is_verdict"] is False
 
 
 def test_red_flag_moves_chat_to_needs_review_but_normal_topic_does_not(client) -> None:

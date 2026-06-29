@@ -17,7 +17,6 @@ from app.schemas.openrouter import InvokeAgentRequest
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
 from app.services.budget import budget_service
 from app.services.chat_context import author_type_for_agent, build_chat_context
-from app.services.citation_verifier import citation_verifier
 from app.services.company_profile import get_company_profile_context
 from app.services.costs import calculate_cost_usd
 from app.services.current_user import CurrentUser, get_current_user, require_workspace_writer
@@ -28,11 +27,20 @@ from app.services.generated_documents import save_generated_document_text
 from app.services.legal_retriever import build_trusted_legal_context, legal_retriever
 from app.services.llm_gateway import LLMGatewayError, MissingOpenRouterKeyError, OpenRouterGateway, openrouter_gateway
 from app.services.red_flags import red_flag_service
-from app.services.structured_response import StructuredResponseError, invoke_structured_with_repair, safe_normal_response_text
+from app.services.structured_response import safe_normal_response_text
+from app.services.verdict_response import VerdictResponseError, invoke_verdict_with_repair
 from app.storage.local import local_storage
 
 
 router = APIRouter(prefix="/api/chats", tags=["chats"], dependencies=[Depends(get_current_user)])
+
+EXPLICIT_VERDICT_PHRASES = (
+    "оформи вердикт",
+    "дай финальное заключение",
+    "готовь итог",
+    "сделай юридический вывод",
+    "подготовь финальный вывод",
+)
 
 
 def get_llm_gateway() -> OpenRouterGateway:
@@ -126,6 +134,13 @@ async def mark_message_as_verdict(
     message = await _get_chat_message_or_404(chat_id, message_id, db)
     if message.role != "assistant" or not message.author_type.startswith("agent"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only lawyer messages can be marked as verdict.")
+    if message.agent_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verdict author is not verified.")
+    verdict_agent = await db.get(Agent, message.agent_id)
+    if verdict_agent is None or verdict_agent.code not in {"lawyer_2", "lawyer_3"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lawyer 1 cannot issue verdict.")
+    if not isinstance(message.structured_payload, dict) or message.structured_payload.get("type") != "verdict":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only a structured verdict can be marked active.")
 
     if chat.active_verdict_message_id and chat.active_verdict_message_id != message.id:
         previous = await db.get(Message, chat.active_verdict_message_id)
@@ -201,6 +216,20 @@ async def generate_document_from_verdict(
             detail="Сначала нужно пометить сообщение юриста как вердикт.",
         )
     verdict = await _get_chat_message_or_404(chat_id, chat.active_verdict_message_id, db)
+    verdict_agent = await db.get(Agent, verdict.agent_id) if verdict.agent_id is not None else None
+    if (
+        not verdict.is_verdict
+        or verdict_agent is None
+        or verdict_agent.code not in {"lawyer_2", "lawyer_3"}
+        or not isinstance(verdict.structured_payload, dict)
+        or verdict.structured_payload.get("type") != "verdict"
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Active message is not an eligible verdict.")
+    if verdict.source_check_status != "confirmed" or not verdict.document_generation_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verdict is not verified for document generation.",
+        )
     agent = await _get_agent_or_404(payload.agent_code, db)
     context = _build_active_verdict_document_prompt(verdict, payload.document_type, payload.title)
     try:
@@ -292,6 +321,8 @@ async def invoke_agent(
     agent = await _get_agent_or_404(payload.agent_code, db)
     if not agent.is_enabled:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected lawyer is disabled")
+    if payload.mode == "verdict" and agent.code not in {"lawyer_2", "lawyer_3"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lawyer 1 cannot issue verdict.")
 
     try:
         await validate_distinct_lawyer_providers(db)
@@ -323,6 +354,25 @@ async def invoke_agent(
     messages = await _list_chat_messages(chat_id, db)
     if not any(message.author_type == "user" for message in messages):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No user message found in chat")
+    if payload.mode == "verdict" and not _has_explicit_verdict_permission(_last_user_message(messages)):
+        clarification = Message(
+            chat_id=chat_id,
+            role="assistant",
+            author_type=author_type_for_agent(agent.code),
+            content="Подготовить финальный вердикт?",
+            agent_id=agent.id,
+            model_id=agent.model_name,
+            provider_code=agent.provider_code,
+            structured_payload=None,
+            approval_required=None,
+            source_check_status="not_checked",
+            document_generation_allowed=False,
+            is_verdict=False,
+        )
+        db.add(clarification)
+        await db.commit()
+        await db.refresh(clarification)
+        return clarification
 
     document_context = await _build_document_context(documents)
     legal_chunks = await legal_retriever.retrieve(db, _last_user_message(messages), top_k=5)
@@ -403,85 +453,34 @@ async def invoke_agent(
         return message
 
     try:
-        structured_result = await invoke_structured_with_repair(agent, chat_context, gateway, db, current_user.id)
+        verdict_result = await invoke_verdict_with_repair(agent, chat_context, gateway, db, current_user.id)
     except MissingOpenRouterKeyError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMGatewayError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    except StructuredResponseError as exc:
+    except VerdictResponseError as exc:
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Юрист не вернул ответ. Попробуйте ещё раз или выберите другую модель.",
+            detail="Юрист не вернул корректный структурированный вердикт.",
         ) from exc
 
-    original_risk = structured_result.payload.risk
-    original_confidence = structured_result.payload.confidence
-    verification = await citation_verifier.verify(structured_result.payload, documents, legal_chunks)
-    payload = verification.payload
-    red_text = "\n".join(
+    verdict_payload = verdict_result.payload
+    verdict_text = "\n".join(
         [
-            messages[-1].content if messages else "",
-            payload.summary,
-            payload.meaning_for_factory,
-            " ".join(payload.actions),
-            " ".join(f"{finding.title} {finding.description}" for finding in payload.findings),
+            _last_user_message(messages),
+            verdict_payload.short_conclusion,
+            " ".join(verdict_payload.analysis),
+            " ".join(verdict_payload.risks),
+            " ".join(verdict_payload.recommended_actions),
         ]
     )
-    red_flags = await red_flag_service.apply_to_chat(db, chat, red_text, current_user.id)
+    red_flags = await red_flag_service.apply_to_chat(db, chat, verdict_text, current_user.id)
     red_flag_codes = [match.code for match in red_flags]
-    if red_flags and payload.approval_required == "none":
-        payload.approval_required = red_flags[0].required_approver  # type: ignore[assignment]
-    if red_flags and payload.risk != "red":
-        payload.risk = "yellow"
-
-    if agent.code == "lawyer_3" and payload.agreement and payload.agreement.unresolved_points and verification.source_check_status != "confirmed":
-        payload.risk = "red"
-        payload.approval_required = "director"
-        chat.approval_status = "needs_review"
-        chat.status = "needs_review"
-        if "arbiter_forced_red" not in red_flag_codes:
-            red_flag_codes.append("arbiter_forced_red")
-        await write_audit_log(
-            db,
-            action="arbiter.forced_red",
-            entity_type="chat",
-            entity_id=chat_id,
-            user_id=current_user.id,
-            details={"agent_code": agent.code, "source_check_status": verification.source_check_status},
-        )
-
-    if verification.source_check_status != "confirmed":
-        await write_audit_log(
-            db,
-            action="citation.unconfirmed",
-            entity_type="chat",
-            entity_id=chat_id,
-            user_id=current_user.id,
-            details={"status": verification.source_check_status, "unconfirmed_count": verification.unconfirmed_count},
-        )
-    if payload.risk != original_risk:
-        await write_audit_log(
-            db,
-            action="risk.changed_programmatically",
-            entity_type="chat",
-            entity_id=chat_id,
-            user_id=current_user.id,
-            details={"risk": payload.risk},
-        )
-    if payload.confidence != original_confidence:
-        await write_audit_log(
-            db,
-            action="confidence.changed_programmatically",
-            entity_type="chat",
-            entity_id=chat_id,
-            user_id=current_user.id,
-            details={"confidence": payload.confidence},
-        )
-
+    approval_required = red_flags[0].required_approver if red_flags else None
     cost_usd = calculate_cost_usd(
-        structured_result.input_tokens,
-        structured_result.output_tokens,
+        verdict_result.input_tokens,
+        verdict_result.output_tokens,
         Decimal(agent.input_price_per_1m),
         Decimal(agent.output_price_per_1m),
     )
@@ -489,23 +488,30 @@ async def invoke_agent(
         chat_id=chat_id,
         role="assistant",
         author_type=author_type_for_agent(agent.code),
-        content=payload.visible_answer or payload.summary,
+        content=verdict_payload.short_conclusion,
         agent_id=agent.id,
         model_id=agent.model_name,
         provider_code=agent.provider_code,
-        input_tokens=structured_result.input_tokens,
-        output_tokens=structured_result.output_tokens,
+        input_tokens=verdict_result.input_tokens,
+        output_tokens=verdict_result.output_tokens,
         cost_usd=cost_usd,
-        structured_payload=payload.model_dump(mode="json"),
-        raw_response=structured_result.raw_response,
-        risk=payload.risk,
-        confidence=payload.confidence,
-        approval_required=payload.approval_required,
-        source_check_status=verification.source_check_status,
+        structured_payload=verdict_payload.model_dump(mode="json"),
+        raw_response=verdict_result.raw_response,
+        risk="red" if red_flags else "yellow",
+        confidence=verdict_payload.confidence,
+        approval_required=approval_required,
+        source_check_status="unconfirmed",
+        document_generation_allowed=False,
         red_flag_codes=red_flag_codes,
+        is_verdict=True,
     )
+    if chat.active_verdict_message_id is not None:
+        previous = await db.get(Message, chat.active_verdict_message_id)
+        if previous is not None:
+            previous.is_verdict = False
     db.add(message)
     await db.flush()
+    chat.active_verdict_message_id = message.id
     for document in documents:
         db.add(MessageDocument(message_id=message.id, document_id=document.id, usage_type="context"))
     db.add(
@@ -514,26 +520,19 @@ async def invoke_agent(
             agent_id=agent.id,
             provider_code=agent.provider_code,
             model_id=agent.model_name,
-            input_tokens=structured_result.input_tokens,
-            output_tokens=structured_result.output_tokens,
+            input_tokens=verdict_result.input_tokens,
+            output_tokens=verdict_result.output_tokens,
             cost_usd=cost_usd,
         )
     )
-    for document in documents:
-        await write_audit_log(
-            db,
-            action="document.used_by_agent",
-            entity_type="document",
-            entity_id=document.id,
-            user_id=current_user.id,
-            details={
-                "chat_id": chat_id,
-                "agent_code": agent.code,
-                "provider_code": agent.provider_code,
-                "model_id": agent.model_name,
-                "sensitivity": document.sensitivity,
-            },
-        )
+    await write_audit_log(
+        db,
+        action="verdict.created",
+        entity_type="message",
+        entity_id=message.id,
+        user_id=current_user.id,
+        details={"chat_id": chat.id, "agent_code": agent.code, "source_check_status": "unconfirmed"},
+    )
     await db.commit()
     await db.refresh(message)
     return message
@@ -636,6 +635,11 @@ def _last_user_message(messages: list[Message]) -> str:
         if message.author_type == "user":
             return message.content
     return messages[-1].content if messages else ""
+
+
+def _has_explicit_verdict_permission(text: str) -> bool:
+    normalized = " ".join(text.casefold().split())
+    return any(phrase in normalized for phrase in EXPLICIT_VERDICT_PHRASES)
 
 
 async def _get_agent_or_404(agent_code: str, db: AsyncSession) -> Agent:

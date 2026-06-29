@@ -189,7 +189,7 @@ def test_stage6_law_citation_and_inactive_exclusion_still_work(client) -> None:
     assert "<TRUSTED_LEGAL_SOURCE" in context
     assert "Активный ПКМ" in context
     assert "Архивный акт" not in context
-    assert response.json()["source_check_status"] == "confirmed"
+    assert response.json()["source_check_status"] == "not_checked"
 
 
 def test_draft_future_outdated_and_archived_sources_stay_out_of_current_legal_context(client) -> None:
@@ -257,7 +257,7 @@ def test_draft_future_outdated_and_archived_sources_stay_out_of_current_legal_co
     assert "Future draft Tax Code" not in context
     assert "Outdated Tax Code" not in context
     assert "Archived Tax Code" not in context
-    assert response.json()["source_check_status"] == "confirmed"
+    assert response.json()["source_check_status"] == "not_checked"
 
 
 def test_uploaded_documents_remain_untrusted_not_trusted_legal_sources(client) -> None:

@@ -23,4 +23,4 @@ class ApprovedModelsPayload(BaseModel):
 
 class InvokeAgentRequest(BaseModel):
     agent_code: str
-    mode: Literal["normal"] = "normal"
+    mode: Literal["normal", "verdict"] = "normal"

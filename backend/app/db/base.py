@@ -123,6 +123,7 @@ class Message(Base, TimestampMixin):
     confidence: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     approval_required: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     source_check_status: Mapped[str] = mapped_column(String(32), default="not_checked", nullable=False)
+    document_generation_allowed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     red_flag_codes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     is_verdict: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 

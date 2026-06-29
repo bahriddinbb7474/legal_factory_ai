@@ -28,6 +28,7 @@ class MessageCreate(BaseModel):
     confidence: str | None = None
     approval_required: str | None = None
     source_check_status: SourceCheckStatus = "not_checked"
+    document_generation_allowed: bool = False
     red_flag_codes: list[str] = []
     is_verdict: bool = False
 

@@ -46,6 +46,25 @@ def _create_message(client, chat_id: int, author_type: str, content: str = "Text
         try:
             agent_code = {"agent1": "lawyer_1", "agent2": "lawyer_2", "agent3": "lawyer_3"}[author_type]
             agent = (await db.execute(select(Agent).where(Agent.code == agent_code))).scalar_one()
+            if agent_code in {"lawyer_2", "lawyer_3"}:
+                structured_payload = extra.pop("structured_payload", None)
+                if not isinstance(structured_payload, dict) or structured_payload.get("type") != "verdict":
+                    structured_payload = {
+                        "type": "verdict",
+                        "lawyer_id": agent_code,
+                        "jurisdiction": "UZ",
+                        "short_conclusion": content,
+                        "facts_established": [],
+                        "facts_missing": [],
+                        "legal_sources": [],
+                        "analysis": [],
+                        "risks": [],
+                        "recommended_actions": [],
+                        "confidence": "medium",
+                    }
+                extra.setdefault("structured_payload", structured_payload)
+                extra.setdefault("source_check_status", "confirmed")
+                extra.setdefault("document_generation_allowed", True)
             message = Message(
                 chat_id=chat_id,
                 role="assistant",
@@ -84,11 +103,14 @@ def _generate_document(client, chat_id: int, gateway: DocumentGateway | None = N
 def test_only_lawyer_message_can_be_verdict_and_only_one_is_active(client) -> None:
     chat_id = _create_chat(client)
     user_message = _create_message(client, chat_id, "user", "Вопрос")
-    first = _create_message(client, chat_id, "agent1", "Первый вывод")
-    second = _create_message(client, chat_id, "agent2", "Второй вывод")
+    lawyer_1_message = _create_message(client, chat_id, "agent1", "Предварительный вывод")
+    first = _create_message(client, chat_id, "agent2", "Первый вердикт")
+    second = _create_message(client, chat_id, "agent3", "Второй вердикт")
 
     rejected = client.post(f"/api/chats/{chat_id}/messages/{user_message['id']}/mark-verdict")
     assert rejected.status_code == 400
+    lawyer_1_rejected = client.post(f"/api/chats/{chat_id}/messages/{lawyer_1_message['id']}/mark-verdict")
+    assert lawyer_1_rejected.status_code == 400
 
     assert _mark_verdict(client, chat_id, first["id"])["is_verdict"] is True
     assert client.get(f"/api/chats/{chat_id}/verdict").json()["id"] == first["id"]
@@ -127,7 +149,7 @@ def test_generate_document_requires_active_verdict_and_uses_only_that_context(cl
         "Итоговый вердикт",
         risk="yellow",
         approval_required="none",
-        structured_payload={"summary": "Итоговый вердикт"},
+        structured_payload={"type": "verdict", "short_conclusion": "Итоговый вердикт"},
     )
     _mark_verdict(client, chat_id, verdict["id"])
     document = _generate_document(client, chat_id, gateway)
@@ -150,14 +172,14 @@ def test_red_or_needs_review_verdict_creates_needs_review_document_and_draft_sta
     assert _generate_document(client, red_chat, DocumentGateway())["status"] == "needs_review"
 
     draft_chat = _create_chat(client)
-    draft_verdict = _create_message(client, draft_chat, "agent1", "Зелёный риск", risk="green", approval_required="none")
+    draft_verdict = _create_message(client, draft_chat, "agent2", "Зелёный риск", risk="green", approval_required="none")
     _mark_verdict(client, draft_chat, draft_verdict["id"])
     assert _generate_document(client, draft_chat, DocumentGateway())["status"] == "draft"
 
 
 def test_generated_document_edit_export_send_to_chat_and_audit(client) -> None:
     chat_id = _create_chat(client)
-    verdict = _create_message(client, chat_id, "agent1", "Вердикт", risk="green", approval_required="none")
+    verdict = _create_message(client, chat_id, "agent2", "Вердикт", risk="green", approval_required="none")
     _mark_verdict(client, chat_id, verdict["id"])
     gateway = DocumentGateway()
     document = _generate_document(client, chat_id, gateway)
@@ -207,7 +229,7 @@ def test_generated_document_edit_export_send_to_chat_and_audit(client) -> None:
 
 def test_generated_document_approval_status_and_role_check(client) -> None:
     chat_id = _create_chat(client)
-    verdict = _create_message(client, chat_id, "agent1", "Вердикт", risk="green", approval_required="none")
+    verdict = _create_message(client, chat_id, "agent2", "Вердикт", risk="green", approval_required="none")
     _mark_verdict(client, chat_id, verdict["id"])
     document = _generate_document(client, chat_id, DocumentGateway())
 

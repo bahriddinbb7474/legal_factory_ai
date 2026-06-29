@@ -158,8 +158,8 @@ def test_fallback_chunking_freshness_and_inactive_sources(client) -> None:
     assert "Архивный ПКМ" not in context
     assert "Устаревший ПП" not in context
     body = response.json()
-    assert body["source_check_status"] == "confirmed"
-    assert body["structured_payload"]["sources"][0]["verification_status"] == "confirmed"
+    assert body["source_check_status"] == "not_checked"
+    assert body["structured_payload"] is None
 
 
 def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
@@ -192,9 +192,8 @@ def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
     body = response.json()
     assert response.status_code == 200
-    assert body["source_check_status"] == "unconfirmed"
-    assert body["risk"] == "yellow"
-    assert body["confidence"] == "medium"
+    assert body["source_check_status"] == "not_checked"
+    assert body["structured_payload"] is None
 
     law_unconfirmed = legal_payload(
         {
@@ -208,7 +207,7 @@ def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     chat_id = client.post("/api/chats", json={"title": "Unconfirmed"}).json()["id"]
     client.post(f"/api/chats/{chat_id}/messages", json={"content": "любой вопрос"})
-    assert client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"}).json()["source_check_status"] == "unconfirmed"
+    assert client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"}).json()["source_check_status"] == "not_checked"
 
     upload = client.post(
         "/api/documents/upload",
@@ -230,4 +229,4 @@ def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     client.post(f"/api/chats/{chat_id}/messages", json={"content": "поставка кабеля"})
     uploaded_response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
-    assert uploaded_response.json()["source_check_status"] in {"confirmed", "partially_confirmed"}
+    assert uploaded_response.json()["source_check_status"] == "not_checked"

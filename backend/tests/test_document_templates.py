@@ -39,19 +39,29 @@ def _create_message(client, chat_id: int, content: str) -> dict:
         db_context = app.dependency_overrides[get_db]()
         db = await anext(db_context)
         try:
-            agent = (await db.execute(select(Agent).where(Agent.code == "lawyer_1"))).scalar_one()
+            agent = (await db.execute(select(Agent).where(Agent.code == "lawyer_2"))).scalar_one()
             message = Message(
                 chat_id=chat_id,
                 role="assistant",
-                author_type="agent1",
+                author_type="agent2",
                 content=content,
                 agent_id=agent.id,
                 risk="yellow",
                 approval_required="none",
+                source_check_status="confirmed",
+                document_generation_allowed=True,
                 structured_payload={
-                    "summary": "Нужно взыскание долга",
-                    "risk": "yellow",
-                    "actions": ["направить письмо", "подготовить претензию"],
+                    "type": "verdict",
+                    "lawyer_id": "lawyer_2",
+                    "jurisdiction": "UZ",
+                    "short_conclusion": "Нужно взыскание долга",
+                    "facts_established": [],
+                    "facts_missing": [],
+                    "legal_sources": [],
+                    "analysis": [],
+                    "risks": [],
+                    "recommended_actions": ["направить письмо", "подготовить претензию"],
+                    "confidence": "medium",
                 },
             )
             db.add(message)
