@@ -1,7 +1,13 @@
+import asyncio
 from dataclasses import dataclass, field
 
+from sqlalchemy import select
+
 from app.api.chats import get_llm_gateway
+from app.db.base import Agent, Message
+from app.db.session import get_db
 from app.main import app
+from app.schemas.messages import MessageRead
 from app.services.document_templates import document_template_service
 from app.services.llm_gateway import LLMResponse
 
@@ -27,12 +33,35 @@ def _create_chat(client) -> int:
 
 
 def _create_message(client, chat_id: int, content: str) -> dict:
-    response = client.post(
-        f"/api/chats/{chat_id}/messages",
-        json={"author_type": "agent1", "content": content, "risk": "yellow", "approval_required": "none", "structured_payload": {"summary": "Нужно взыскание долга", "risk": "yellow", "actions": ["направить письмо", "подготовить претензию"]}},
-    )
-    assert response.status_code == 201
-    return response.json()
+    assert client.get("/api/agents").status_code == 200
+
+    async def insert() -> dict:
+        db_context = app.dependency_overrides[get_db]()
+        db = await anext(db_context)
+        try:
+            agent = (await db.execute(select(Agent).where(Agent.code == "lawyer_1"))).scalar_one()
+            message = Message(
+                chat_id=chat_id,
+                role="assistant",
+                author_type="agent1",
+                content=content,
+                agent_id=agent.id,
+                risk="yellow",
+                approval_required="none",
+                structured_payload={
+                    "summary": "Нужно взыскание долга",
+                    "risk": "yellow",
+                    "actions": ["направить письмо", "подготовить претензию"],
+                },
+            )
+            db.add(message)
+            await db.commit()
+            await db.refresh(message)
+            return MessageRead.model_validate(message).model_dump(mode="json")
+        finally:
+            await db_context.aclose()
+
+    return asyncio.run(insert())
 
 
 def _prepare_company_profile(client) -> None:

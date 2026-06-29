@@ -1,7 +1,12 @@
 import json
+import asyncio
 from dataclasses import dataclass
 
+from sqlalchemy import select
+
 from app.api.chats import get_llm_gateway
+from app.db.base import Agent, Message
+from app.db.session import get_db
 from app.main import app
 from app.services.llm_gateway import LLMResponse
 from app.services.openrouter_models import normalize_openrouter_endpoint, normalize_openrouter_model
@@ -52,14 +57,37 @@ class FakeGateway:
         )
 
 
+def _insert_agent_message(chat_id: int, agent_code: str, content: str) -> None:
+    async def insert() -> None:
+        db_context = app.dependency_overrides[get_db]()
+        db = await anext(db_context)
+        try:
+            agent = (await db.execute(select(Agent).where(Agent.code == agent_code))).scalar_one()
+            db.add(
+                Message(
+                    chat_id=chat_id,
+                    role="assistant",
+                    author_type={"lawyer_1": "agent1", "lawyer_2": "agent2", "lawyer_3": "agent3"}[agent_code],
+                    content=content,
+                    agent_id=agent.id,
+                )
+            )
+            await db.commit()
+        finally:
+            await db_context.aclose()
+
+    asyncio.run(insert())
+
+
 def test_invoke_calls_only_selected_lawyer_and_saves_metadata(client) -> None:
     fake_gateway = FakeGateway(calls=[])
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
 
     chat_id = client.post("/api/chats", json={"title": "Общий чат"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Первый вопрос"})
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "agent1", "content": "Ответ юриста 1"})
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Последний вопрос"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Первый вопрос"})
+    assert client.get("/api/agents").status_code == 200
+    _insert_agent_message(chat_id, "lawyer_1", "Ответ юриста 1")
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Последний вопрос"})
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_2"})
 
@@ -88,7 +116,7 @@ def test_invoke_context_includes_chat_metadata(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
 
     chat_id = client.post("/api/chats", json={"title": "Договор поставки", "section": "Контракты"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь договор"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь договор"})
     client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
     context = fake_gateway.calls[0][1]
@@ -101,7 +129,7 @@ def test_invoke_context_includes_current_question_and_continuation_footer(client
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
 
     chat_id = client.post("/api/chats", json={"title": "Тест"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Текущий вопрос"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Текущий вопрос"})
     client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
     context = fake_gateway.calls[0][1]
@@ -114,7 +142,7 @@ def test_invoke_rejects_disallowed_provider(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
     client.patch("/api/admin/providers/cloudflare", json={"is_allowlisted": False})
     chat_id = client.post("/api/chats", json={"title": "Provider test"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Question"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Question"})
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_2"})
 
@@ -195,7 +223,7 @@ def test_invoke_saves_fallback_when_json_invalid(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
 
     chat_id = client.post("/api/chats", json={"title": "Тест"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Что делать с долгом?"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Что делать с долгом?"})
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
@@ -212,7 +240,7 @@ def test_invoke_fallback_is_not_system_message(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
 
     chat_id = client.post("/api/chats", json={"title": "Тест"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Вопрос"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Вопрос"})
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_2"})
 
     assert response.status_code == 200
@@ -224,7 +252,7 @@ def test_invoke_fallback_message_appears_in_chat_messages(client) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
 
     chat_id = client.post("/api/chats", json={"title": "Тест контекст"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Вопрос"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Вопрос"})
     client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
     messages = client.get(f"/api/chats/{chat_id}/messages").json()

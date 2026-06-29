@@ -180,7 +180,7 @@ def test_stage6_law_citation_and_inactive_exclusion_still_work(client) -> None:
     gateway = Stage7Gateway(payload)
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     chat_id = client.post("/api/chats", json={"title": "Stage 7.1"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Что обязан хранить кабельный завод?"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Что обязан хранить кабельный завод?"})
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
@@ -244,7 +244,7 @@ def test_draft_future_outdated_and_archived_sources_stay_out_of_current_legal_co
     chat_id = client.post("/api/chats", json={"title": "Version policy"}).json()["id"]
     client.post(
         f"/api/chats/{chat_id}/messages",
-        json={"author_type": "user", "content": "shared cable tax phrase"},
+        json={"content": "shared cable tax phrase"},
     )
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
@@ -279,7 +279,7 @@ def test_uploaded_documents_remain_untrusted_not_trusted_legal_sources(client) -
         files={"file": ("contract.txt", "Поставка кабеля выполняется в июне.".encode("utf-8"), "text/plain")},
     )
     assert upload.status_code == 201
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь поставку"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь поставку"})
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 

@@ -59,7 +59,7 @@ def test_viewer_workspace_mutations_are_forbidden_without_db_changes(client: Tes
 
     requests = [
         ("POST", "/api/chats", {"title": "Viewer chat"}),
-        ("POST", f"/api/chats/{chat_id}/messages", {"role": "user", "content": "Viewer message"}),
+        ("POST", f"/api/chats/{chat_id}/messages", {"content": "Viewer message"}),
         ("POST", f"/api/chats/{chat_id}/messages/1/mark-verdict", None),
         ("DELETE", f"/api/chats/{chat_id}/verdict", None),
         (
@@ -103,7 +103,7 @@ def test_non_viewer_workspace_writer_can_still_mutate(client: TestClient) -> Non
     assert chat.status_code == 201
     message = client.post(
         f"/api/chats/{chat.json()['id']}/messages",
-        json={"role": "user", "content": "Sales message"},
+        json={"content": "Sales message"},
     )
     assert message.status_code == 201
 

@@ -66,7 +66,7 @@ def upload_txt(client, text: str, chat_id: int | None = None):
 def invoke_with_response(client, agent_code: str, response_payload: dict | str | list[dict | str], chat_id: int | None = None):
     if chat_id is None:
         chat_id = client.post("/api/chats", json={"title": "Stage 4"}).json()["id"]
-        client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь договор"})
+        client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь договор"})
     payloads = response_payload if isinstance(response_payload, list) else [response_payload]
     contents = [payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False) for payload in payloads]
     gateway = SequenceGateway(contents)
@@ -100,7 +100,7 @@ def test_unknown_field_and_invalid_json_use_fallback(client) -> None:
 
 def test_json_repair_attempt_is_used_once(client) -> None:
     chat_id = client.post("/api/chats", json={"title": "Repair"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь"})
     gateway = SequenceGateway(["broken", json.dumps(legal_payload(), ensure_ascii=False)])
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
 
@@ -114,7 +114,7 @@ def test_json_repair_attempt_is_used_once(client) -> None:
 def test_confirmed_and_missing_quotes_set_source_status(client) -> None:
     chat_id = client.post("/api/chats", json={"title": "Quotes"}).json()["id"]
     doc = upload_txt(client, "Поставка кабеля выполняется до 20 июня.", chat_id).json()["document"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь срок"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь срок"})
     payload = legal_payload(
         risk="green",
         confidence="high",
@@ -137,7 +137,7 @@ def test_confirmed_and_missing_quotes_set_source_status(client) -> None:
 
     chat_id = client.post("/api/chats", json={"title": "Missing quote"}).json()["id"]
     doc = upload_txt(client, "Есть только один пункт.", chat_id).json()["document"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь"})
     payload["sources"][0]["document_id"] = doc["id"]
     payload["sources"][0]["quote"] = "Такой цитаты нет"
     _, missing_response, _ = invoke_with_response(client, "lawyer_1", payload, chat_id)
@@ -178,11 +178,11 @@ def test_lawyer_2_requires_agreement_and_lawyer_3_forces_red_for_unresolved_with
 
 def test_red_flag_moves_chat_to_needs_review_but_normal_topic_does_not(client) -> None:
     red_chat = client.post("/api/chats", json={"title": "Red"}).json()["id"]
-    client.post(f"/api/chats/{red_chat}/messages", json={"author_type": "user", "content": "Нужно увольнение сотрудника"})
+    client.post(f"/api/chats/{red_chat}/messages", json={"content": "Нужно увольнение сотрудника"})
     assert client.get(f"/api/chats/{red_chat}").json()["approval_status"] == "needs_review"
 
     normal_chat = client.post("/api/chats", json={"title": "Normal"}).json()["id"]
-    client.post(f"/api/chats/{normal_chat}/messages", json={"author_type": "user", "content": "Проверить обычный договор"})
+    client.post(f"/api/chats/{normal_chat}/messages", json={"content": "Проверить обычный договор"})
     assert client.get(f"/api/chats/{normal_chat}").json()["approval_status"] == "draft"
 
 
@@ -241,7 +241,7 @@ def test_monthly_budget_blocks_non_admin_when_enabled(client, monkeypatch) -> No
     assert first_response.status_code == 200
 
     app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=1, role="sales")
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Еще вопрос"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Еще вопрос"})
     gateway = SequenceGateway([json.dumps(legal_payload(), ensure_ascii=False)])
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     blocked = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})

@@ -1,7 +1,13 @@
+import asyncio
 from dataclasses import dataclass, field
 
+from sqlalchemy import select
+
 from app.api.chats import get_llm_gateway
+from app.db.base import Agent, Message
+from app.db.session import get_db
 from app.main import app
+from app.schemas.messages import MessageRead
 from app.services.current_user import CurrentUser, get_current_user
 from app.services.llm_gateway import LLMResponse
 
@@ -27,11 +33,35 @@ def _create_chat(client, title: str = "Stage 5") -> int:
 
 
 def _create_message(client, chat_id: int, author_type: str, content: str = "Text", **extra) -> dict:
-    payload = {"author_type": author_type, "content": content}
-    payload.update(extra)
-    response = client.post(f"/api/chats/{chat_id}/messages", json=payload)
-    assert response.status_code == 201
-    return response.json()
+    if author_type == "user":
+        response = client.post(f"/api/chats/{chat_id}/messages", json={"content": content})
+        assert response.status_code == 201
+        return response.json()
+
+    assert client.get("/api/agents").status_code == 200
+
+    async def insert() -> dict:
+        db_context = app.dependency_overrides[get_db]()
+        db = await anext(db_context)
+        try:
+            agent_code = {"agent1": "lawyer_1", "agent2": "lawyer_2", "agent3": "lawyer_3"}[author_type]
+            agent = (await db.execute(select(Agent).where(Agent.code == agent_code))).scalar_one()
+            message = Message(
+                chat_id=chat_id,
+                role="assistant",
+                author_type=author_type,
+                content=content,
+                agent_id=agent.id,
+                **extra,
+            )
+            db.add(message)
+            await db.commit()
+            await db.refresh(message)
+            return MessageRead.model_validate(message).model_dump(mode="json")
+        finally:
+            await db_context.aclose()
+
+    return asyncio.run(insert())
 
 
 def _mark_verdict(client, chat_id: int, message_id: int) -> dict:

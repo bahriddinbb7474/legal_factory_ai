@@ -6,6 +6,12 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from app.schemas.legal_response import SourceCheckStatus
 
 
+class UserMessageCreate(BaseModel):
+    content: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class MessageCreate(BaseModel):
     author_type: str | None = None
     role: str | None = None

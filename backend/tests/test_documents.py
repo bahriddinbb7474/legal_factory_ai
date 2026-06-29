@@ -128,7 +128,7 @@ def test_upload_image_with_mock_vision_called_once(client, monkeypatch) -> None:
     app.dependency_overrides[get_llm_gateway] = lambda: fake_gateway
     chat_id = client.post("/api/chats", json={"title": "Image context"}).json()["id"]
     client.post(f"/api/chats/{chat_id}/documents/{payload['document']['id']}")
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Что в письме?"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Что в письме?"})
     invoke = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
     assert invoke.status_code == 200
     assert len(calls) == 1
@@ -181,7 +181,7 @@ def test_sensitive_document_requires_trusted_provider(client) -> None:
         "text/plain",
         {"category": "client_debt", "sensitivity": "sensitive", "chat_id": str(chat_id)},
     ).json()["document"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проверь"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проверь"})
 
     denied = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
     assert denied.status_code == 400
@@ -204,7 +204,7 @@ def test_prompt_injection_is_wrapped_and_message_document_is_recorded(client) ->
         "text/plain",
         {"sensitivity": "internal", "chat_id": str(chat_id)},
     ).json()["document"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Проанализируй"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Проанализируй"})
 
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 

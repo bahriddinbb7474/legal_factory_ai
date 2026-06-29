@@ -12,7 +12,7 @@ from app.schemas.approvals import ApprovalRead
 from app.schemas.chats import ChatCreate, ChatRead
 from app.schemas.costs import CostRecordRead
 from app.schemas.generated_documents import GenerateDocumentFromVerdictRequest, GeneratedDocumentRead
-from app.schemas.messages import MessageCreate, MessageRead
+from app.schemas.messages import MessageRead, UserMessageCreate
 from app.schemas.openrouter import InvokeAgentRequest
 from app.services.agent_seed import LAWYER_PROVIDER_ERROR, ensure_default_config, validate_distinct_lawyer_providers
 from app.services.budget import budget_service
@@ -89,12 +89,22 @@ async def list_messages(
 @router.post("/{chat_id}/messages", response_model=MessageRead, status_code=status.HTTP_201_CREATED)
 async def create_message(
     chat_id: int,
-    payload: MessageCreate,
+    payload: UserMessageCreate,
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_workspace_writer),
 ) -> Message:
     chat = await _get_chat_for_user_or_404(chat_id, current_user, db)
-    message = Message(chat_id=chat_id, **payload.model_dump())
+    message = Message(
+        chat_id=chat_id,
+        role="user",
+        author_type="user",
+        content=payload.content,
+        agent_id=None,
+        structured_payload=None,
+        approval_required=None,
+        source_check_status="not_checked",
+        is_verdict=False,
+    )
     db.add(message)
     if message.author_type == "user":
         matches = await red_flag_service.apply_to_chat(db, chat, message.content, current_user.id)

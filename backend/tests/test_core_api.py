@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+import pytest
 
 
 _SALES_B = {"email": "salesb@test.test", "full_name": "Sales B", "role": "sales", "password": "salesb-password-123"}
@@ -42,7 +43,7 @@ def test_create_and_list_chat_messages(client) -> None:
 
     message_response = client.post(
         f"/api/chats/{chat_id}/messages",
-        json={"role": "user", "content": "Check customer debt risk"},
+        json={"content": "Check customer debt risk"},
     )
     messages_response = client.get(f"/api/chats/{chat_id}/messages")
 
@@ -53,6 +54,32 @@ def test_create_and_list_chat_messages(client) -> None:
     assert len(messages) == 1
     assert messages[0]["author_type"] == "user"
     assert messages[0]["role"] == "user"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("author_type", "agent1"),
+        ("agent_id", 123),
+        ("is_verdict", True),
+        ("structured_payload", {"type": "verdict"}),
+        ("approval_required", "none"),
+        ("source_check_status", "confirmed"),
+        ("document_generation_allowed", True),
+        ("source_package_id", 1),
+        ("context_snapshot_hash", "spoofed"),
+    ],
+)
+def test_public_message_creation_rejects_backend_owned_fields(client, field: str, value: object) -> None:
+    chat_id = client.post("/api/chats", json={"title": "Message security"}).json()["id"]
+
+    response = client.post(
+        f"/api/chats/{chat_id}/messages",
+        json={"content": "User-owned content", field: value},
+    )
+
+    assert response.status_code == 422
+    assert client.get(f"/api/chats/{chat_id}/messages").json() == []
 
 
 def test_list_chat_costs(client) -> None:
@@ -144,14 +171,14 @@ def test_non_owner_cannot_write_message_to_other_chat(client: TestClient) -> Non
 
     response = client.post(
         f"/api/chats/{admin_chat_id}/messages",
-        json={"role": "user", "content": "Unauthorized message"},
+        json={"content": "Unauthorized message"},
     )
     assert response.status_code == 404
 
 
 def test_non_owner_cannot_invoke_other_chat(client: TestClient) -> None:
     admin_chat_id = client.post("/api/chats", json={"title": "Admin invoke target"}).json()["id"]
-    client.post(f"/api/chats/{admin_chat_id}/messages", json={"role": "user", "content": "Seed"})
+    client.post(f"/api/chats/{admin_chat_id}/messages", json={"content": "Seed"})
     _switch_to(client, _SALES_B)
 
     response = client.post(f"/api/chats/{admin_chat_id}/invoke", json={"agent_code": "lawyer_1"})
@@ -180,5 +207,5 @@ def test_viewer_write_to_any_chat_is_403(client: TestClient) -> None:
 
     assert client.post(
         f"/api/chats/{admin_chat_id}/messages",
-        json={"role": "user", "content": "Viewer write attempt"},
+        json={"content": "Viewer write attempt"},
     ).status_code == 403

@@ -147,7 +147,7 @@ def test_fallback_chunking_freshness_and_inactive_sources(client) -> None:
     gateway = RagGateway(payload)
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     chat_id = client.post("/api/chats", json={"title": "RAG"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "Что должен хранить кабельный завод?"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "Что должен хранить кабельный завод?"})
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
     assert response.status_code == 200
@@ -188,7 +188,7 @@ def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
     gateway = RagGateway(wrong_payload)
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     chat_id = client.post("/api/chats", json={"title": "Wrong quote"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "техническую документацию"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "техническую документацию"})
     response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
     body = response.json()
     assert response.status_code == 200
@@ -207,7 +207,7 @@ def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
     gateway = RagGateway(law_unconfirmed)
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
     chat_id = client.post("/api/chats", json={"title": "Unconfirmed"}).json()["id"]
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "любой вопрос"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "любой вопрос"})
     assert client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"}).json()["source_check_status"] == "unconfirmed"
 
     upload = client.post(
@@ -228,6 +228,6 @@ def test_law_citation_rules_and_uploaded_document_still_work(client) -> None:
     )
     gateway = RagGateway(uploaded_payload)
     app.dependency_overrides[get_llm_gateway] = lambda: gateway
-    client.post(f"/api/chats/{chat_id}/messages", json={"author_type": "user", "content": "поставка кабеля"})
+    client.post(f"/api/chats/{chat_id}/messages", json={"content": "поставка кабеля"})
     uploaded_response = client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
     assert uploaded_response.json()["source_check_status"] in {"confirmed", "partially_confirmed"}

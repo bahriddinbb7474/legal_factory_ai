@@ -1093,7 +1093,7 @@ export default function HomePage() {
       await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userMessage),
+        body: JSON.stringify({ content }),
       });
       await refreshChatStatus(nextChatId);
       const invokeResponse = await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/invoke`, {
