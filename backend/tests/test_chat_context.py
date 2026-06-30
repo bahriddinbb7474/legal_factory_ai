@@ -104,8 +104,11 @@ def test_no_model_suffix_when_model_id_none() -> None:
 def test_context_includes_chat_metadata_with_section() -> None:
     chat = _chat("Договор поставки", section="Контракты")
     messages = [_msg("user", "Проверь договор")]
-    result = build_chat_context(messages, chat=chat)
-    assert "Раздел: Контракты" in result
+    result = build_chat_context(messages, chat=chat, agent_code="lawyer_1")
+    assert "Section code: legal_contract_review" in result
+    assert "Section group: legal_questions" in result
+    assert "Section label: Экспертиза контрактов" in result
+    assert "Lawyer 1 must request/check active official sources" in result
     assert "Название: Договор поставки" in result
 
 

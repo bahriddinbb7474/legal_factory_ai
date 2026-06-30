@@ -120,3 +120,34 @@ def is_template_section(section_code_or_legacy_label: str | None) -> bool:
 
 def is_legal_section(section_code_or_legacy_label: str | None) -> bool:
     return get_section_definition(section_code_or_legacy_label).is_legal_group
+
+
+def build_section_policy_context(section_code_or_legacy_label: str | None, agent_code: str | None = None) -> str:
+    section = get_section_definition(section_code_or_legacy_label)
+    lines = [
+        f"Section code: {section.code}",
+        f"Section group: {section.group}",
+        f"Section label: {section.ui_label}",
+        "Policy:",
+    ]
+    if section.is_template_group:
+        lines.extend(
+            [
+                "- template/document drafting flow;",
+                "- no RAG, legal conclusion, or verdict by default;",
+                "- if legal verification, dispute, or red-topic appears, require legal review and do not present it as simple template work.",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "- legal answer flow;",
+                "- pre-verdict answer must be normal human-readable text;",
+                "- verdict is only for Lawyer 2/3 after explicit user permission.",
+            ]
+        )
+        if agent_code == "lawyer_1":
+            lines.append(
+                "- Lawyer 1 must request/check active official sources or ask focused clarifying questions before any final legal conclusion."
+            )
+    return "\n".join(lines)

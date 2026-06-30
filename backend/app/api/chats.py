@@ -27,6 +27,7 @@ from app.services.generated_documents import save_generated_document_text
 from app.services.legal_retriever import build_trusted_legal_context, legal_retriever
 from app.services.llm_gateway import LLMGatewayError, MissingOpenRouterKeyError, OpenRouterGateway, openrouter_gateway
 from app.services.red_flags import red_flag_service
+from app.services.section_policy import get_section_definition
 from app.services.structured_response import safe_normal_response_text
 from app.services.verdict_response import VerdictResponseError, invoke_verdict_with_repair
 from app.storage.local import local_storage
@@ -320,8 +321,14 @@ async def invoke_agent(
     await budget_service.check_before_call(db, current_user)
 
     agent = await _get_agent_or_404(payload.agent_code, db)
+    section = get_section_definition(chat.section)
     if not agent.is_enabled:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selected lawyer is disabled")
+    if payload.mode == "verdict" and section.is_template_group:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verdict mode is unavailable in template sections. Select a legal section.",
+        )
     if payload.mode == "verdict" and agent.code not in {"lawyer_2", "lawyer_3"}:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lawyer 1 cannot issue verdict.")
 
@@ -376,9 +383,19 @@ async def invoke_agent(
         return clarification
 
     document_context = await _build_document_context(documents)
-    legal_chunks = await legal_retriever.retrieve(db, _last_user_message(messages), top_k=5)
+    legal_chunks = (
+        await legal_retriever.retrieve(db, _last_user_message(messages), top_k=5)
+        if section.is_legal_group
+        else []
+    )
     legal_context = build_trusted_legal_context(legal_chunks)
-    chat_context = build_chat_context(messages, chat=chat, document_context=document_context, legal_context=legal_context)
+    chat_context = build_chat_context(
+        messages,
+        chat=chat,
+        document_context=document_context,
+        legal_context=legal_context,
+        agent_code=agent.code,
+    )
     if payload.mode == "normal":
         try:
             response = await gateway.invoke(agent, chat_context)

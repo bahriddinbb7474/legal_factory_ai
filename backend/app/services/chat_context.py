@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from app.services.section_policy import build_section_policy_context
+
 if TYPE_CHECKING:
     from app.db.base import Chat, Message
 
@@ -105,15 +107,14 @@ def build_chat_context(
     document_context: str = "",
     legal_context: str = "",
     limit: int = HISTORY_LIMIT,
+    agent_code: str | None = None,
 ) -> str:
     parts: list[str] = []
 
     if chat:
-        meta_lines: list[str] = []
-        if getattr(chat, "section", None):
-            meta_lines.append(f"- Раздел: {chat.section}")
-        meta_lines.append(f"- Название: {chat.title}")
+        meta_lines = [f"- Название: {chat.title}"]
         parts.append("Контекст чата:\n" + "\n".join(meta_lines))
+        parts.append(build_section_policy_context(getattr(chat, "section", None), agent_code))
 
     history = build_chat_history_context(messages, limit=limit)
     if history:
