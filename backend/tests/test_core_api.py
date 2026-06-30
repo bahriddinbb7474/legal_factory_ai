@@ -105,7 +105,7 @@ def test_create_chat_with_section(client) -> None:
 
     assert response.status_code == 201
     chat = response.json()
-    assert chat["section"] == "Долги / претензии"
+    assert chat["section"] == "legal_debts"
 
 
 def test_chat_list_non_admin_sees_only_own_chats(client) -> None:

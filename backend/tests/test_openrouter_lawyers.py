@@ -155,7 +155,7 @@ def test_invoke_context_includes_chat_metadata(client) -> None:
     client.post(f"/api/chats/{chat_id}/invoke", json={"agent_code": "lawyer_1"})
 
     context = fake_gateway.calls[0][1]
-    assert "Раздел: Контракты" in context
+    assert "Раздел: legal_contract_review" in context
     assert "Название: Договор поставки" in context
 
 

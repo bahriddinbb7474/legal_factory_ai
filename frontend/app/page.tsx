@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useMemo, useState } from "react";
 
 import Sidebar from "./components/Sidebar";
+import { SECTION_GROUPS, normalizeSectionCode, sectionLabel, type SectionCode } from "./sections";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -308,14 +309,6 @@ const initialDocumentBody =
   "Уважаемые партнеры, просим провести сверку взаиморасчетов и подтвердить срок оплаты задолженности по договору поставки.";
 
 
-const WORKSPACE_SECTIONS = [
-  "Долги / претензии",
-  "Договоры",
-  "Кадры",
-  "Снабжение",
-  "Общий юридический вопрос",
-];
-
 const authorMeta: Record<ChatMessage["author_type"], string> = {
   user: "Пользователь",
   agent1: "Ю1",
@@ -335,7 +328,7 @@ export default function HomePage() {
   const [selectedLawyer, setSelectedLawyer] = useState<Agent["code"]>("lawyer_1");
   const [chatId, setChatId] = useState<number | null>(null);
   const [chatTitle, setChatTitle] = useState("");
-  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState<SectionCode | null>(null);
   const [sectionDropdownOpen, setSectionDropdownOpen] = useState(false);
   const sectionSelectorRef = useRef<HTMLDivElement>(null);
   const [chatApprovalStatus, setChatApprovalStatus] = useState<"draft" | "needs_review" | "approved" | "rejected" | "archived">("draft");
@@ -937,7 +930,7 @@ export default function HomePage() {
     }
   }
 
-  function handleNewChat(section?: string | null) {
+  function handleNewChat(section?: SectionCode | null) {
     setChatId(null);
     setMessages([]);
     setChatTitle("");
@@ -976,7 +969,7 @@ export default function HomePage() {
       setChatTitle(chat.title ?? "");
       setChatApprovalStatus(chat.approval_status ?? "draft");
       setActiveVerdictMessageId(chat.active_verdict_message_id ?? null);
-      if (chat.section) setSelectedSection(chat.section as string);
+      if (chat.section) setSelectedSection(normalizeSectionCode(chat.section));
       setMessages(loadedMessages);
     } catch {
       setApiStatus("Ошибка при загрузке истории чата.");
@@ -1106,7 +1099,7 @@ export default function HomePage() {
 
     let nextChatId: number | null = null;
     try {
-      nextChatId = await ensureChat(`${selectedSection ? `${selectedSection} · ` : ""}${content.slice(0, 60)}`);
+      nextChatId = await ensureChat(`${selectedSection ? `${sectionLabel(selectedSection)} · ` : ""}${content.slice(0, 60)}`);
       setPendingInvokeByChatId((current) => ({ ...current, [nextChatId!]: true }));
       await fetch(`${API_BASE_URL}/api/chats/${nextChatId}/messages`, {
         method: "POST",
@@ -1463,7 +1456,7 @@ export default function HomePage() {
         canWriteWorkspace={canWriteWorkspace}
         onLogout={logout}
         onOpenSettings={isAdmin ? () => setIsSettingsOpen(true) : undefined}
-        sections={WORKSPACE_SECTIONS}
+        sectionGroups={SECTION_GROUPS}
         chatList={chatList}
         chatListLoading={chatListLoading}
         chatListError={chatListError}
@@ -1590,19 +1583,24 @@ export default function HomePage() {
                   className="section-selector-btn"
                   onClick={() => setSectionDropdownOpen((prev) => !prev)}
                 >
-                  {selectedSection ?? "Выбрать раздел"} <span className="section-chevron">▾</span>
+                  {selectedSection ? sectionLabel(selectedSection) : "Выбрать раздел"} <span className="section-chevron">▾</span>
                 </button>
                 {sectionDropdownOpen ? (
                   <div className="section-dropdown">
-                    {WORKSPACE_SECTIONS.map((section) => (
-                      <button
-                        key={section}
-                        type="button"
-                        className={section === selectedSection ? "section-dropdown-item active" : "section-dropdown-item"}
-                        onClick={() => { setSelectedSection(section); setSectionDropdownOpen(false); }}
-                      >
-                        {section}
-                      </button>
+                    {SECTION_GROUPS.map((group) => (
+                      <div className="section-dropdown-group" key={group.code}>
+                        <span className="section-dropdown-group-label">{group.label}</span>
+                        {group.sections.map((section) => (
+                          <button
+                            key={section.code}
+                            type="button"
+                            className={section.code === selectedSection ? "section-dropdown-item active" : "section-dropdown-item"}
+                            onClick={() => { setSelectedSection(section.code); setSectionDropdownOpen(false); }}
+                          >
+                            {section.label}
+                          </button>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 ) : null}

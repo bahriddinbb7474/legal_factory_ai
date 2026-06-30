@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { normalizeSectionCode, type SectionCode, type SectionGroup } from "../sections";
+
 type ChatListItem = {
   id: number;
   title: string;
@@ -15,13 +17,13 @@ type SidebarProps = {
   canWriteWorkspace: boolean;
   onLogout: () => void;
   onOpenSettings?: () => void;
-  sections: readonly string[];
+  sectionGroups: readonly SectionGroup[];
   chatList: ChatListItem[];
   chatListLoading: boolean;
   chatListError: string | null;
   activeChatId: number | null;
-  selectedSection: string | null;
-  onNewChat: (section?: string | null) => void;
+  selectedSection: SectionCode | null;
+  onNewChat: (section?: SectionCode | null) => void;
   onSelectChat: (chatId: number) => void;
   pendingInvokeByChatId: Record<number, boolean>;
 };
@@ -31,7 +33,7 @@ export default function Sidebar({
   canWriteWorkspace,
   onLogout,
   onOpenSettings,
-  sections,
+  sectionGroups,
   chatList,
   chatListLoading,
   chatListError,
@@ -41,7 +43,7 @@ export default function Sidebar({
   onSelectChat,
   pendingInvokeByChatId,
 }: SidebarProps) {
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<SectionCode | null>(null);
   const [searchBySection, setSearchBySection] = useState<Record<string, string>>({});
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -53,24 +55,20 @@ export default function Sidebar({
     .toUpperCase();
 
   const sectionEntries = useMemo(() => {
-    const byTitle = new Map<string, ChatListItem[]>(sections.map((t) => [t, []]));
-    const others: ChatListItem[] = [];
+    const sections = sectionGroups.flatMap((group) => group.sections);
+    const byCode = new Map<SectionCode, ChatListItem[]>(sections.map((section) => [section.code, []]));
     for (const chat of chatList) {
-      const key = (chat.section ?? "").trim();
-      if (byTitle.has(key)) {
-        byTitle.get(key)!.push(chat);
-      } else {
-        others.push(chat);
-      }
+      byCode.get(normalizeSectionCode(chat.section))!.push(chat);
     }
-    const result = sections.map((title) => ({ title, chats: byTitle.get(title)! }));
-    if (others.length > 0) result.push({ title: "Прочие", chats: others });
-    return result;
-  }, [chatList, sections]);
+    return sectionGroups.map((group) => ({
+      ...group,
+      sections: group.sections.map((section) => ({ ...section, chats: byCode.get(section.code)! })),
+    }));
+  }, [chatList, sectionGroups]);
 
-  function handleCompose(sectionTitle: string) {
-    setExpandedSection(sectionTitle);
-    onNewChat(sectionTitle);
+  function handleCompose(sectionCode: SectionCode) {
+    setExpandedSection(sectionCode);
+    onNewChat(sectionCode);
   }
 
   return (
@@ -88,35 +86,38 @@ export default function Sidebar({
 
       <div className="workspace-sections" aria-label="Разделы проекта">
         {chatListError ? <p className="section-chat empty-hint">{chatListError}</p> : null}
-        {sectionEntries.map(({ title: sectionTitle, chats: allChats }) => {
-          const isExpanded = sectionTitle === expandedSection;
-          const query = searchBySection[sectionTitle] ?? "";
-          const visibleChats = allChats
-            .filter((chat) => chat.title.toLowerCase().includes(query.toLowerCase()))
-            .slice(0, isExpanded ? allChats.length : 1);
-          const showNewChatPlaceholder = activeChatId === null && selectedSection === sectionTitle;
+        {sectionEntries.map((group) => (
+          <div className="workspace-section-group" key={group.code}>
+            <h2 className="workspace-section-group-label">{group.label}</h2>
+            {group.sections.map(({ code: sectionCode, label: sectionLabel, chats: allChats }) => {
+              const isExpanded = sectionCode === expandedSection;
+              const query = searchBySection[sectionCode] ?? "";
+              const visibleChats = allChats
+                .filter((chat) => chat.title.toLowerCase().includes(query.toLowerCase()))
+                .slice(0, isExpanded ? allChats.length : 1);
+              const showNewChatPlaceholder = activeChatId === null && selectedSection === sectionCode;
 
-          return (
-            <section
-              className={isExpanded ? "workspace-section expanded" : "workspace-section"}
-              key={sectionTitle}
-            >
+              return (
+                <section
+                  className={isExpanded ? "workspace-section expanded" : "workspace-section"}
+                  key={sectionCode}
+                >
               <div className="section-title-row">
                 <button
                   className="section-title"
-                  onClick={() => setExpandedSection(isExpanded ? null : sectionTitle)}
+                  onClick={() => setExpandedSection(isExpanded ? null : sectionCode)}
                   type="button"
                 >
                   <span className="section-chevron">{isExpanded ? "v" : ">"}</span>
-                  <span>{sectionTitle}</span>
+                  <span>{sectionLabel}</span>
                 </button>
                 {canWriteWorkspace ? (
                   <button
                     className="compose-button"
-                    onClick={() => handleCompose(sectionTitle)}
-                    title={`Новый чат: ${sectionTitle}`}
+                    onClick={() => handleCompose(sectionCode)}
+                    title={`Новый чат: ${sectionLabel}`}
                     type="button"
-                    aria-label={`Новый чат в разделе ${sectionTitle}`}
+                    aria-label={`Новый чат в разделе ${sectionLabel}`}
                   >
                     <span className="compose-glyph">✎</span>
                   </button>
@@ -126,13 +127,13 @@ export default function Sidebar({
               {isExpanded && allChats.length > 3 ? (
                 <input
                   className="section-search"
-                  aria-label={`Поиск в разделе ${sectionTitle}`}
+                  aria-label={`Поиск в разделе ${sectionLabel}`}
                   placeholder="Поиск в разделе"
                   value={query}
                   onChange={(event) =>
                     setSearchBySection((current) => ({
                       ...current,
-                      [sectionTitle]: event.target.value,
+                      [sectionCode]: event.target.value,
                     }))
                   }
                 />
@@ -143,7 +144,7 @@ export default function Sidebar({
                   <button
                     className="section-chat active"
                     type="button"
-                    onClick={() => onNewChat(sectionTitle)}
+                    onClick={() => onNewChat(sectionCode)}
                   >
                     Новый чат
                   </button>
@@ -164,9 +165,11 @@ export default function Sidebar({
                   ))
                 )}
               </div>
-            </section>
-          );
-        })}
+                </section>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       <div className="profile-strip sidebar-profile">
