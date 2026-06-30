@@ -1,8 +1,8 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, and **P1 policy documentation** are complete.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, **P1 policy documentation**, and **P2-B0 through P2-B3** are complete.
 See `CURRENT_STATE.md` for the full status snapshot.
-Next priority: P2 prompt implementation, followed by P3-P6. OpenRouter/model settings is P7 / Phase B.
+Next priority: P3 section groups and policy routing, followed by P4-P6. OpenRouter/model settings is P7 / Phase B.
 
 ## Completed
 
@@ -181,21 +181,21 @@ section-based strictness
 - `VERDICT_AND_DOCUMENT_POLICY_V1.md`
 - `QUALITY_GATE_V1.md`
 
-### P2 — Prompt Implementation (next)
+### P2 — Prompt Flow Foundation (complete)
 
-- Universal Uzbekistan legal prompt.
-- Lawyer 1/2/3 role prompts.
-- Human-readable pre-verdict mode and structured-verdict mode.
-- Approved template/correspondence mode.
-- Missing-source behavior and `UNTRUSTED_DOCUMENT` instruction boundary.
+- P2-B0 protects public message creation and backend-owned fields.
+- P2-B1 keeps pre-verdict lawyer responses as human-readable text.
+- P2-B2 adds explicit Lawyer 2/3 verdict mode with a conservative unconfirmed skeleton.
+- P2-B3 aligns frontend invocation and rendering with normal/verdict modes.
 
-### P3 — Section-Based Behavior
+### P3 — Section Groups and RAG Policy Routing (next)
 
-- Legal section and template section strictness.
-- RAG required by legal section, with clarification first when needed.
-- Lawyer 1 verdict prohibition.
-- Lawyer 2/3 verdict eligibility after explicit permission.
-- Red-topic approval in every section.
+- **P3-A:** define stable internal codes, the `template_documents` and `legal_questions` groups, and safe mapping for existing free-text `Chat.section` values.
+- **P3-B:** show both groups in the frontend while keeping visible labels separate from policy keys.
+- **P3-C:** route Group 1 to approved-template flow and Group 2 to legal/RAG flow; red topics override either group.
+- **P3-D:** test template boundaries, Lawyer 1 RAG behavior, Lawyer 2/3 verdict eligibility, and red-topic handling in both groups.
+
+The approved group names, complete section list, proposed codes, and routing rules are normative in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 ### P4 — Targeted RAG Protocol
 
@@ -217,7 +217,7 @@ section-based strictness
 
 ### P6 — Quality Gate
 
-Implement and pass all 34 checks in `QUALITY_GATE_V1.md`, including prompt behavior, RAG safety,
+Implement and pass all 38 checks in `QUALITY_GATE_V1.md`, including prompt behavior, RAG safety,
 verdict verification, red topics, template boundaries, injection protection, and multilingual triggers.
 
 ---

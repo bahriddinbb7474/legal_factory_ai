@@ -1,6 +1,6 @@
 # Quality Gate v1
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 ## Purpose and Scope
 
@@ -44,12 +44,12 @@ Each check must be implemented at the appropriate prompt, backend, integration, 
 23. A large amount forces approval using the configured currency threshold.
 24. An ambiguous financially significant amount falls back to red-topic and approval-required handling.
 
-## Template Section
+## Template Document Group
 
-25. A bank letter can be created in the template section without RAG when its form is approved.
-26. A document without an approved form is not created as a final template-section document.
+25. A bank letter can be created in `template_documents` without RAG when its form is approved.
+26. A document without an approved form is not created as a final Group 1 document.
 27. An HR dismissal request does not pass as a simple letter.
-28. A contract is created only from an approved template or as a non-final draft with a clear review warning.
+28. A contract in `template_documents` is created only from an approved template; otherwise it routes to `legal_contract_review`.
 
 ## Prompt Injection
 
@@ -63,8 +63,15 @@ Each check must be implemented at the appropriate prompt, backend, integration, 
 33. Uzbek Latin variants `soliq`, `jarima`, and `ishdan bo‘shatish` trigger the relevant red topic.
 34. Uzbek Cyrillic variants `солиқ`, `жарима`, and `ишдан бўшатиш` trigger the relevant red topic.
 
+## Canonical Section Routing
+
+35. An ordinary `template_letters` request uses `template_documents`, does not require RAG by default, and cannot invoke verdict mode.
+36. A Group 1 legal-verification request routes to `legal_questions` and cannot bypass legal policy through its visible label.
+37. In every `legal_questions` section, Lawyer 1 requests RAG or asks necessary clarifying questions first.
+38. Stable internal section codes preserve policy routing when a visible UI name changes; unknown or ambiguous legal sections fall back safely to `legal_other`.
+
 ## Acceptance Rule
 
-P2-P6 cannot be considered complete until these checks pass at the relevant layers. A model-produced success flag is never evidence that a backend gate passed.
+P2-P6 cannot be considered complete until these 38 checks pass at the relevant layers. A model-produced success flag is never evidence that a backend gate passed.
 
 The later P5 implementation and tests must cover the policy-to-model mapping documented in `VERDICT_AND_DOCUMENT_POLICY_V1.md`, including message verification metadata, bound source-package metadata, configurable `RedFlagRule` behavior, backend-computed gates, approval workflow state, and the `GeneratedDocument.status` lifecycle.

@@ -1,6 +1,6 @@
 # RAG Workflow v1
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 ## Purpose and Scope
 
@@ -39,9 +39,13 @@ RAG is controlled and targeted. The system must not inject every available chunk
 
 ## Section-Based Strictness
 
-In legal sections, Lawyer 1 must request RAG by default, unless short clarifying questions are needed first. A verdict always requires the source checks relevant to the legal question.
+The canonical groups and sections are defined in `SECTION_GROUPS_AND_RAG_POLICY.md`. Routing uses stable internal codes rather than visible UI labels.
 
-In the `Templates / Канцелярия` section, RAG may be omitted only for simple correspondence or a document based on an approved form. This path must not be used to bypass legal review, red-topic approval, or source requirements.
+In `legal_questions` (`Юридические вопросы и заключения`), Lawyer 1 must request RAG by default unless short clarifying questions are needed first. A verdict always requires the source checks relevant to the legal question.
+
+In `template_documents` (`Шаблонные документы`, optionally displayed as `Шаблоны / Канцелярия`), RAG is not required by default for an ordinary document based on an approved form. This group has no verdict or legal-conclusion mode. A missing template, legal-verification request, dispute, or other legal issue routes to `legal_questions`.
+
+Red-topic detection overrides both groups. It can force approval and legal handling even when the selected section is a template section.
 
 ## Source Inventory
 

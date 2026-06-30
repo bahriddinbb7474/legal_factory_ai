@@ -1,8 +1,10 @@
 # Current State
 
-Last updated after P1 policy documentation completion on 2026-06-29.
-P1 policy commit: `768484a` (`docs: add prompt rag verdict policy v1`). It has not been pushed.
-Last recorded application verification remains: backend tests **161/161 passed** and frontend build successful. P1 was documentation-only and did not rerun application tests/build.
+Last updated after P2-B3 completion and the P3 section-policy documentation update on 2026-06-30.
+
+P2-B0 through P2-B3 are complete: safe public message fields, normal pre-verdict text, explicit Lawyer 2/3 verdict skeleton, and frontend/API mode integration. Commits: `e095dda`, `2eb5c9f`, `63df947`, `ec99f1f`.
+
+Latest recorded verification: the full backend suite passed **204 tests** after P2-B2; P2-B3 passed **47 focused tests** and the frontend production build.
 
 ## Completed stages
 
@@ -55,6 +57,10 @@ Last recorded application verification remains: backend tests **161/161 passed**
   `UNTRUSTED_DOCUMENT` injection protection.
 - **P1 policy documentation** (complete): `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
   `LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and `QUALITY_GATE_V1.md`.
+- **P2-B0/B1/B2/B3** (complete): backend-owned public message fields, human-readable normal mode,
+  conservative explicit verdict mode for Lawyer 2/3, and matching frontend invocation/rendering.
+- **P3 policy preparation** (complete): the approved two-group section model, canonical-code proposal,
+  routing rules, and P3-A through P3-D plan are documented in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 ## What is intentionally NOT done yet
 
@@ -66,9 +72,8 @@ Last recorded application verification remains: backend tests **161/161 passed**
 - **Advanced department permissions**: current baseline (admin-created users, viewer read-only,
   audit log) is sufficient before the founder presentation. Department-level visibility, approval
   routing, and export rights are deferred to post-presentation.
-- **P0 behavior is not implemented yet**: current Stage 4/5 structured-answer and active-verdict
-  code is the legacy baseline. P2-P6 must implement the new prompt, section, targeted RAG,
-  verified verdict/document gates, and Quality Gate before Phase B.
+- **P3-P6 are not implemented yet**: canonical section routing, targeted RAG protocol,
+  verified verdict/document gates, and the complete Quality Gate remain before Phase B.
 
 ## Active database
 
@@ -101,12 +106,14 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 The approved immediate sequence is:
 
-1. **P2 — Prompt implementation**: universal and role prompts, verdict/template modes, missing-source policy, and untrusted-document boundary.
-2. **P3 — Section-based behavior**: legal/template strictness, Lawyer 1 verdict ban, Lawyer 2/3 eligibility.
-3. **P4 — Targeted RAG protocol**: source inventory, internal request, bound source package, multilingual backend fallback.
-4. **P5 — Verdict/document gate**: structured verdict only, explicit permission, backend verification fields, `source_package_id` / `context_snapshot_hash`, approval and document button gates, DB mapping.
-5. **P6 — Quality tests**: implement and pass all 34 checks from `QUALITY_GATE_V1.md`.
-6. **P7 / Phase B — OpenRouter and model settings**: API key via `.env`, admin settings, user-facing modes, and clean model/cost UX.
+1. **P3-A — Canonical section model**: stable codes, two groups, and safe mapping of existing `Chat.section` values.
+2. **P3-B — Frontend section UI**: grouped display with labels separated from policy keys.
+3. **P3-C — Section policy routing**: template/legal flow selection plus red-topic override.
+4. **P3-D — Safety tests**: group boundaries, RAG defaults, verdict eligibility, and red-topic coverage.
+5. **P4 — Targeted RAG protocol**: source inventory, internal request, bound source package, multilingual backend fallback.
+6. **P5 — Verdict/document gate**: structured verdict only, explicit permission, backend verification fields, `source_package_id` / `context_snapshot_hash`, approval and document button gates, DB mapping.
+7. **P6 — Quality tests**: implement and pass all 38 checks from `QUALITY_GATE_V1.md`.
+8. **P7 / Phase B — OpenRouter and model settings**: API key via `.env`, admin settings, user-facing modes, and clean model/cost UX.
 
 After P7: company details/templates, legal-base and RAG verification, real factory scenarios,
 founder presentation polish, laptop pilot/mini-launch, and only then separately approved deferred work.

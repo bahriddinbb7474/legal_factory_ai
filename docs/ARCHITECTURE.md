@@ -78,23 +78,30 @@ section-based strictness
 + UNTRUSTED_DOCUMENT injection protection
 ```
 
-P1 policy documentation is complete. The required order before Phase B is:
+P1 policy documentation and P2-B0 through P2-B3 are complete. The required order before Phase B is:
 
-1. P2 prompt implementation.
-2. P3 section-based behavior.
-3. P4 targeted RAG request and source-package protocol.
-4. P5 verified verdict/document gates and explicit DB mapping.
-5. P6 implementation of the 34-check Quality Gate.
-6. P7 / Phase B OpenRouter and model settings.
+1. P3 section groups and policy routing.
+2. P4 targeted RAG request and source-package protocol.
+3. P5 verified verdict/document gates and explicit DB mapping.
+4. P6 implementation of the 38-check Quality Gate.
+5. P7 / Phase B OpenRouter and model settings.
 
-The Stage 4/5 sections below describe the currently implemented legacy baseline. They are not the
-final policy contract. P2-P6 must migrate user-facing answers to natural pre-verdict text, restrict
-structured legal payload to verdict, prohibit Lawyer 1 verdicts, require explicit permission,
-bind verdicts through `source_package_id` and `context_snapshot_hash`, and keep verification,
-approval, and document-generation fields under backend control.
+P3 has two backend-owned functional groups:
+
+- `template_documents` / `Шаблонные документы`: AI-Секретарь flow using approved templates, without RAG or verdict by default;
+- `legal_questions` / `Юридические вопросы и заключения`: AI-Юрист flow using legal analysis, targeted RAG, and eligible verdicts.
+
+Stable internal section codes select policy. Visible names are display metadata and may change without changing routing. The complete canonical proposal and P3-A through P3-D plan are in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+
+The Stage 4/5 sections below describe the legacy baseline rather than the final policy contract.
+P2 now provides natural pre-verdict text, verdict-only structured mode, the Lawyer 1 prohibition,
+and explicit-permission integration. P3-P6 must add canonical section routing, targeted RAG,
+`source_package_id` / `context_snapshot_hash` binding, backend verification and approval gates,
+and the complete Quality Gate.
 
 The normative documents are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
-`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and `QUALITY_GATE_V1.md`.
+`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, `QUALITY_GATE_V1.md`,
+and `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 ## Data Flow
 

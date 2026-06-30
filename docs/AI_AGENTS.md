@@ -23,7 +23,7 @@ Role: primary fast practical lawyer.
 - does not present itself as an advocate;
 - does not invent sources;
 - asks short clarifying questions when facts are missing;
-- requests targeted RAG by default in legal sections unless clarification is needed first;
+- requests targeted RAG by default in `legal_questions` unless clarification is needed first;
 - returns natural human-readable text before verdict;
 - cannot issue a verdict or set verdict/document-generation gates;
 - defaults to Russian unless the user requests another language in the chat message.
@@ -73,6 +73,8 @@ receive a source inventory and request the source scope needed for the question.
 - Citation verification uses only that bound package, not every source previously retrieved in the chat.
 - Legal and red-topic fallback triggers must support Russian and Uzbek Latin/Cyrillic roots or patterns.
 
+The `template_documents` group does not require RAG by default and has no verdict or legal-conclusion mode. It permits only approved-template work. A missing template or legal-verification request routes to `legal_questions`; red topics override both groups. Canonical groups and sections are defined in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+
 Version rule:
 
 - Current-law answers may rely only on active current official sources from `<TRUSTED_LEGAL_SOURCE ...>`.
@@ -81,9 +83,10 @@ Version rule:
 
 ## Response and Verdict Modes
 
-Before verdict, lawyer answers are natural human-readable text. Allowed forms include an opinion,
-clarifying question, preliminary analysis, critique, fact/document request, source request, or
-permitted approved-template correspondence draft.
+Before verdict in `legal_questions`, lawyer answers are natural human-readable text. Allowed forms
+include an opinion, clarifying question, preliminary analysis, critique, fact/document request,
+or source request. Approved-template drafting in `template_documents` is a separate non-verdict
+AI-Секретарь flow.
 
 Structured legal payload is reserved for a verdict from Lawyer 2 or Lawyer 3. Explicit user
 permission and required source checks are mandatory.
@@ -121,17 +124,17 @@ Sending a generated document back to the chat is not a lawyer invocation. It cre
 
 ## Planned Company Profile and Templates
 
-CompanyProfile and approved DocumentTemplate records are the normal path for final documents:
+CompanyProfile and approved DocumentTemplate records are the normal path for final documents.
+There are two distinct paths:
 
-- lawyers provide human-readable preliminary analysis;
-- Lawyer 2 or Lawyer 3 produces a verified structured verdict when requested;
-- the system selects an approved template;
-- CompanyProfile fields fill official company data;
-- the result becomes a `GeneratedDocument`.
+- `template_documents`: select an approved form and fill CompanyProfile data without a verdict;
+- `legal_questions`: use human-readable analysis and, when needed, a verified Lawyer 2/3 verdict before document generation;
+- both paths require the applicable backend and approval gates.
 
 Lawyers should not invent company data, bank details, stamp/signature information, document template versions, or approval status. Those values must come from stored project data once the stages are implemented.
 
 There is currently no Telegram workflow. Telegram is postponed and must not be assumed in prompts or agent behavior.
 
 The normative policy documents for P2-P6 are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
-`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and `QUALITY_GATE_V1.md`.
+`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, `QUALITY_GATE_V1.md`, and
+`SECTION_GROUPS_AND_RAG_POLICY.md`.

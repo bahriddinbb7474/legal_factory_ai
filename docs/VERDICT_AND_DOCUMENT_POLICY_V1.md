@@ -1,6 +1,6 @@
 # Verdict and Document Policy v1
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 ## Purpose and Scope
 
@@ -26,6 +26,7 @@ Pre-verdict opinions, including strong opinions from Lawyer 2 or Lawyer 3, remai
 Examples of explicit verdict permission include:
 
 - `оформи вердикт`;
+- `оформи свой вердикт`;
 - `дай финальное заключение`;
 - `готовь итог`;
 - `сделай юридический вывод`;
@@ -113,7 +114,9 @@ The model must not control this button. The button must not appear under a norma
 
 ## Approved Template Path
 
-The `Templates / Канцелярия` path is separate from verdict-based document generation. It may create simple correspondence or a document from an approved form without a verdict when policy permits. It must not bypass red-topic approval or create a final legally consequential document from an unapproved form.
+The `template_documents` group (`Шаблонные документы`, optionally displayed as `Шаблоны / Канцелярия`) is separate from verdict-based document generation. It may create a document only from an approved template or form without a verdict when policy permits. It has no verdict or legal-conclusion mode and must not bypass red-topic approval or create a final document from an unapproved form.
+
+Verdicts belong only to `legal_questions` and remain subject to Lawyer 2/3 eligibility, explicit permission, source checks, backend verification, and approval gates. The canonical groups and section codes are defined in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 ## P5 Implementation Mapping
 

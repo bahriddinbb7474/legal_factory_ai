@@ -52,18 +52,17 @@ Completed:
 6. Stage 6: curated legal RAG with `LegalSource`, `LegalChunk`, ПП/ПКМ support, `TRUSTED_LEGAL_SOURCE`, `source_type=law` verification, freshness warnings, SQLite lexical fallback, and PostgreSQL + pgvector production target.
 
 Also complete: Stages 7-9, local auth/RBAC through Stage 11-B2, Demo-1 UI, Stage A real chat/history,
-approved P0 prompt/RAG/verdict architecture, and P1 policy documentation.
+approved P0 prompt/RAG/verdict architecture, P1 policy documentation, and P2-B0 through P2-B3.
 
 Immediate roadmap:
 
-1. P2: implement universal and role prompts plus verdict/template/source-missing modes.
-2. P3: implement section-based strictness and lawyer verdict eligibility.
-3. P4: implement lawyer-controlled targeted RAG and multilingual backend fallback.
-4. P5: implement verified verdict/document gates, bound source packages, and DB mapping.
-5. P6: pass all 34 checks in `docs/QUALITY_GATE_V1.md`.
-6. P7 / Phase B: finish OpenRouter/model settings UX.
-7. Continue with real templates/data, RAG verification, factory scenarios, presentation polish, laptop pilot, and mini-launch.
-8. Telegram and VPS remain separately approved later work.
+1. P3: implement the approved `template_documents` and `legal_questions` groups, stable section codes, grouped UI, policy routing, and safety tests.
+2. P4: implement lawyer-controlled targeted RAG and multilingual backend fallback.
+3. P5: implement verified verdict/document gates, bound source packages, and DB mapping.
+4. P6: pass all 38 checks in `docs/QUALITY_GATE_V1.md`.
+5. P7 / Phase B: finish OpenRouter/model settings UX.
+6. Continue with real templates/data, RAG verification, factory scenarios, presentation polish, laptop pilot, and mini-launch.
+7. Telegram and VPS remain separately approved later work.
 
 ## Legal Warning
 
@@ -71,7 +70,9 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: P1 policy documentation is complete. The next approved stage is P2 prompt implementation; P3-P6 follow before P7 / Phase B.
+Current status: P2-B0 through P2-B3 are complete. The next approved implementation stage is P3; P4-P6 follow before P7 / Phase B.
+
+P3 uses two functional groups: `Шаблонные документы` for approved-template work without RAG or verdict by default, and `Юридические вопросы и заключения` for legal analysis, targeted RAG, and eligible Lawyer 2/3 verdicts. The complete section list and P3-A through P3-D plan are in `docs/SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 Implemented foundation:
 

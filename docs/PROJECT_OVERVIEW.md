@@ -15,8 +15,11 @@ Main tasks:
 
 The approved target uses natural, human-readable preliminary answers. Structured output is
 reserved for a verified verdict from Lawyer 2 or Lawyer 3; Lawyer 1 cannot issue a verdict.
-Legal sections use targeted RAG over active official Uzbekistan sources, while uploaded documents
-remain untrusted factual material. Backend verification controls verdict, approval, citation, and
-document-generation gates.
+The product has two functional groups. `Шаблонные документы` is the AI-Секретарь path for
+approved templates without RAG or verdict by default. `Юридические вопросы и заключения` is the
+AI-Юрист path for legal analysis, targeted RAG, multi-lawyer review, and eligible verdicts.
+Uploaded documents remain untrusted factual material. Backend verification controls verdict,
+approval, citation, and document-generation gates. The canonical sections are defined in
+`SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 The program does not replace a live lawyer. It helps prepare work materials and flags when a director, chief accountant, external lawyer, or responsible specialist must approve the conclusion.

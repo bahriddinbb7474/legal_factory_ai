@@ -4,7 +4,7 @@ Stage 3 v2 keeps the same practical workspace shape from Stage 1 v2 and adds doc
 
 ## Layout
 
-- Left sidebar: project workspace for `Kabel Tech Energy`, grouped by legal sections.
+- Left sidebar: project workspace for `Kabel Tech Energy`, grouped by the two approved functional groups and their sections.
 - Center: primary chat workspace with a wide reading area and a matching message composer.
 - Right side: document preview/editor panel, closed by default and opened from a generated document card or uploaded document.
 - Top bar: current section plus shortened chat title, and a compact `Расходы: $0.00` button.
@@ -12,15 +12,12 @@ Stage 3 v2 keeps the same practical workspace shape from Stage 1 v2 and adds doc
 
 ## Sidebar
 
-The sidebar is section-based, not a global application menu. It contains:
+The sidebar is section-based, not a global application menu. It contains the approved groups:
 
-- `Договоры`
-- `Долги / претензии`
-- `HR / кадры`
-- `Судебные вопросы`
-- `ГНИ`
-- `Прочие Гос`
-- `Прочие`
+- `Шаблонные документы`: `Письма`, `Договоры по утверждённым шаблонам`, `Справки`, `Доверенности`, `Приказы`, `Прочие шаблонные документы`;
+- `Юридические вопросы и заключения`: `Договоры и экспертиза контрактов`, `Долги (дебиторы / кредиторы)`, `Валютное регулирование`, `Налоговые вопросы`, `Государственные органы`, `Контрагенты и переписка`, `Бухгалтерия`, `HR / Трудовое право`, `Прочие подразделения предприятия`, `Судебные и досудебные дела`, `Прочие юридические вопросы`.
+
+The frontend displays these names but sends stable internal codes. Labels may change without changing routing. The canonical mapping is in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 Each section has a small compose icon for creating a future new chat inside that section. By default each section shows one recent chat so the full workspace and user profile remain visible. Expanded sections can show more chats and a local search field when the list is longer.
 
@@ -68,14 +65,15 @@ Uploaded documents appear as chips above the composer. A chip opens the right do
 
 ## Response Card
 
-The mock legal response card includes:
+The legal response card includes:
 
 - short conclusion;
 - risk badge, for example `Жёлтый риск`;
 - source, revision date, and approval field;
 - document card that opens the right panel;
-- `Пометить как вердикт` placeholder action;
 - Russian service actions such as `Копировать` and `Отправить Юристу 3`.
+
+Normal lawyer replies are labeled `Мнение юриста` and have no manual mark-as-verdict action. A real explicit Lawyer 2/3 verdict is labeled `Юридический вердикт`; an unconfirmed verdict shows no document-generation action.
 
 The response card does not include a document editing button. Editing belongs to the right document panel.
 
@@ -84,7 +82,7 @@ The response card does not include a document editing button. Editing belongs to
 The document panel behaves like a Claude-style artifact area:
 
 - closed by default;
-- opens from the document card, verdict placeholder, or uploaded document chip;
+- opens from a permitted document card or uploaded document chip;
 - takes about half of the workspace when open;
 - narrows the chat automatically;
 - can be closed from the panel header;
@@ -144,17 +142,20 @@ Planned settings sections:
 
 Telegram is not part of the current UI path. It is postponed until the Web UI, legal base, templates, local launch, and real users are stable.
 
-## Stage 5 v2 Verdict Document Workflow
+## P2-B3 Verdict UI Boundary
 
-The current UI adds a practical verdict-to-document flow:
+The current UI follows the policy boundary:
 
-- lawyer messages have `Пометить как вердикт`;
-- only one lawyer message is visually active as the current verdict;
-- the document card creates or opens a generated document from that active verdict;
+- normal Lawyer 1/2/3 messages have no manual mark-as-verdict action;
+- explicit verdict phrases select verdict mode only for Lawyer 2 or Lawyer 3;
+- ambiguous consent stays in normal or clarification flow;
+- a new verdict skeleton remains unconfirmed and cannot expose document generation;
 - the right panel shows the generated document content, status, and editor controls;
 - save/cancel applies to the generated document editor only;
 - download opens Word/PDF actions backed by `/api/generated-documents/...`;
 - reply/send-back has one action: `Отправить в общий чат`.
+
+The existing generated-document editor describes the legacy baseline. P5 must connect it only to a source-verified, backend-approved verdict gate.
 
 The right-panel reply action does not show Lawyer 1/2/3 options and does not invoke an LLM. After the document is returned to the chat, the user must select a lawyer in the bottom composer and send a normal follow-up message.
 

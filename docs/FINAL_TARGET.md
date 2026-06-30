@@ -15,7 +15,10 @@ Expected result:
 
 The final workflow must provide human-readable lawyer answers before verdict and use structured
 payload only for a verified verdict from Lawyer 2 or Lawyer 3. Lawyer 1 cannot issue a verdict.
-Legal sections use lawyer-controlled targeted RAG with a backend safety net. A verdict is bound to
+The final workspace separates `Шаблонные документы` (approved-template AI-Секретарь flow without
+RAG or verdict by default) from `Юридические вопросы и заключения` (AI-Юрист analysis, targeted
+RAG, review, and eligible verdict flow). Stable internal codes control routing; visible labels do
+not. A verdict is bound to
 its concrete source package and context snapshot, and the model cannot control citation,
 approval, or document-generation gate fields.
 

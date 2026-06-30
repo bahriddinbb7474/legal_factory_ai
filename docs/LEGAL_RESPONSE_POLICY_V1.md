@@ -1,6 +1,6 @@
 # Legal Response Policy v1
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 ## Purpose and Scope
 
@@ -48,7 +48,7 @@ An answer with an unconfirmed or missing required source cannot become a verdict
 
 ## Red Topics
 
-Red topics are a backend/programmatic safety layer, not a model preference. Detection forces approval in every section, including `Templates / Канцелярия`.
+Red topics are a backend/programmatic safety layer, not a model preference. Detection forces approval in every section, including `template_documents` (`Шаблонные документы`).
 
 The minimum red-topic set is:
 
@@ -66,7 +66,7 @@ The minimum red-topic set is:
 - inspection;
 - sanctions or compliance risk.
 
-A template or correspondence label must not downgrade a red topic. For example, an HR dismissal notice cannot pass as a simple letter merely because it was requested in the template section.
+A template or correspondence label must not downgrade a red topic. For example, an HR dismissal notice cannot pass as a simple letter merely because it was requested in Group 1.
 
 ## Large Amount Rule
 
@@ -76,12 +76,13 @@ For MVP, amount extraction may use simple number-plus-currency patterns. If the 
 
 ## Template and Correspondence Boundary
 
-The template section may produce a simple correspondence draft without RAG when the form is approved and the request does not require a legal conclusion. A document without an approved form must not be created as a final template-section document.
+The approved groups and complete section list are defined in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
-Contracts are allowed only:
+`template_documents` may produce an ordinary document without RAG when an approved form exists and the request does not require a legal conclusion. This group has no verdict mode, legal conclusion, source-citation requirement, or verdict-based document generation. A document without an approved form must not be created as a final template document.
 
-1. from an approved template; or
-2. as a non-final draft carrying a clear specialist-review warning.
+Contracts in `template_documents` are allowed only from an approved form. A contract without an approved form, or any request to review contractual risks or terms, routes to `legal_contract_review` in `legal_questions`.
+
+`legal_questions` is the legal-analysis path: Lawyer 1 requests RAG by default unless clarification is needed first, pre-verdict responses remain normal text, and only Lawyer 2 or Lawyer 3 may issue an eligible verdict after explicit permission.
 
 Legal claims, legal responses, HR dismissal documents, and other legally consequential documents remain subject to the relevant RAG, verdict, and approval rules.
 
