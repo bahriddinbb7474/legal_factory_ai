@@ -6,6 +6,7 @@ from app.schemas.chats import ChatRead
 from app.services.section_policy import (
     LEGAL_QUESTIONS,
     TEMPLATE_DOCUMENTS,
+    get_section_definition,
     get_section_group,
     is_legal_section,
     is_template_section,
@@ -65,6 +66,32 @@ def test_legal_section_codes_resolve_to_legal_group(section_code: str) -> None:
 )
 def test_legacy_section_values_normalize(legacy_value: str, expected: str) -> None:
     assert normalize_section_code(legacy_value) == expected
+
+
+@pytest.mark.parametrize(
+    ("legacy_value", "expected"),
+    [
+        ("Договоры по утверждённым шаблонам", "template_contracts"),
+        ("Прочие шаблонные документы", "template_other"),
+        ("Договоры и экспертиза контрактов", "legal_contract_review"),
+        ("Прочие подразделения предприятия", "legal_departments"),
+    ],
+)
+def test_previous_long_labels_remain_legacy_aliases(legacy_value: str, expected: str) -> None:
+    assert normalize_section_code(legacy_value) == expected
+
+
+@pytest.mark.parametrize(
+    ("section_code", "expected_label"),
+    [
+        ("template_contracts", "Договоры"),
+        ("template_other", "Прочие документы"),
+        ("legal_contract_review", "Экспертиза контрактов"),
+        ("legal_departments", "Прочие внут.подразделения"),
+    ],
+)
+def test_compact_ui_labels(section_code: str, expected_label: str) -> None:
+    assert get_section_definition(section_code).ui_label == expected_label
 
 
 def test_unknown_section_falls_back_to_legal_other() -> None:

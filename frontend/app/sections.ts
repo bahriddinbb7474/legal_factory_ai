@@ -34,18 +34,18 @@ export const SECTION_GROUPS: readonly SectionGroup[] = [
     label: "Шаблонные документы",
     sections: [
       { code: "template_letters", label: "Письма" },
-      { code: "template_contracts", label: "Договоры по утверждённым шаблонам" },
+      { code: "template_contracts", label: "Договоры" },
       { code: "template_certificates", label: "Справки" },
       { code: "template_powers_of_attorney", label: "Доверенности" },
       { code: "template_orders", label: "Приказы" },
-      { code: "template_other", label: "Прочие шаблонные документы" },
+      { code: "template_other", label: "Прочие документы" },
     ],
   },
   {
     code: "legal_questions",
     label: "Юридические вопросы и заключения",
     sections: [
-      { code: "legal_contract_review", label: "Договоры и экспертиза контрактов" },
+      { code: "legal_contract_review", label: "Экспертиза контрактов" },
       { code: "legal_debts", label: "Долги (дебиторы / кредиторы)" },
       { code: "legal_currency", label: "Валютное регулирование" },
       { code: "legal_tax", label: "Налоговые вопросы" },
@@ -53,7 +53,7 @@ export const SECTION_GROUPS: readonly SectionGroup[] = [
       { code: "legal_counterparties", label: "Контрагенты и переписка" },
       { code: "legal_accounting", label: "Бухгалтерия" },
       { code: "legal_hr", label: "HR / Трудовое право" },
-      { code: "legal_departments", label: "Прочие подразделения предприятия" },
+      { code: "legal_departments", label: "Прочие внут.подразделения" },
       { code: "legal_court", label: "Судебные и досудебные дела" },
       { code: "legal_other", label: "Прочие юридические вопросы" },
     ],
@@ -69,6 +69,9 @@ function aliasKey(value: string): string {
 }
 
 const LEGACY_SECTION_ALIASES = new Map<string, SectionCode>([
+  ...SECTION_GROUPS.flatMap((group) =>
+    group.sections.map((section) => [aliasKey(section.label), section.code] as [string, SectionCode]),
+  ),
   [aliasKey("Долги / претензии"), "legal_debts"],
   [aliasKey("Долги/претензии"), "legal_debts"],
   [aliasKey("Договоры"), "legal_contract_review"],
@@ -82,9 +85,10 @@ const LEGACY_SECTION_ALIASES = new Map<string, SectionCode>([
   [aliasKey("Судебные вопросы"), "legal_court"],
   [aliasKey("ГНИ"), "legal_tax"],
   [aliasKey("Прочие Гос"), "legal_government"],
-  ...SECTION_GROUPS.flatMap((group) =>
-    group.sections.map((section) => [aliasKey(section.label), section.code] as [string, SectionCode]),
-  ),
+  [aliasKey("Договоры по утверждённым шаблонам"), "template_contracts"],
+  [aliasKey("Прочие шаблонные документы"), "template_other"],
+  [aliasKey("Договоры и экспертиза контрактов"), "legal_contract_review"],
+  [aliasKey("Прочие подразделения предприятия"), "legal_departments"],
 ]);
 
 export function normalizeSectionCode(value?: string | null): SectionCode {

@@ -37,12 +37,12 @@ SECTION_GROUPS = (
 
 SECTIONS = (
     SectionDefinition("template_letters", TEMPLATE_DOCUMENTS, "Письма", "Ordinary approved-template business letters."),
-    SectionDefinition("template_contracts", TEMPLATE_DOCUMENTS, "Договоры по утверждённым шаблонам", "Contracts based on approved company forms."),
+    SectionDefinition("template_contracts", TEMPLATE_DOCUMENTS, "Договоры", "Contracts based on approved company forms."),
     SectionDefinition("template_certificates", TEMPLATE_DOCUMENTS, "Справки", "Approved certificate forms."),
     SectionDefinition("template_powers_of_attorney", TEMPLATE_DOCUMENTS, "Доверенности", "Approved power-of-attorney forms."),
     SectionDefinition("template_orders", TEMPLATE_DOCUMENTS, "Приказы", "Approved or simple internal order forms."),
-    SectionDefinition("template_other", TEMPLATE_DOCUMENTS, "Прочие шаблонные документы", "Other documents covered by an approved template."),
-    SectionDefinition("legal_contract_review", LEGAL_QUESTIONS, "Договоры и экспертиза контрактов", "Contract review, risks, amendments, and unapproved forms."),
+    SectionDefinition("template_other", TEMPLATE_DOCUMENTS, "Прочие документы", "Other documents covered by an approved template."),
+    SectionDefinition("legal_contract_review", LEGAL_QUESTIONS, "Экспертиза контрактов", "Contract review, risks, amendments, and unapproved forms."),
     SectionDefinition("legal_debts", LEGAL_QUESTIONS, "Долги (дебиторы / кредиторы)", "Receivables, payables, claims, and collection."),
     SectionDefinition("legal_currency", LEGAL_QUESTIONS, "Валютное регулирование", "Currency operations and international settlements."),
     SectionDefinition("legal_tax", LEGAL_QUESTIONS, "Налоговые вопросы", "Taxes, audits, and tax consequences."),
@@ -50,7 +50,7 @@ SECTIONS = (
     SectionDefinition("legal_counterparties", LEGAL_QUESTIONS, "Контрагенты и переписка", "Counterparty claims, disputes, and legal correspondence."),
     SectionDefinition("legal_accounting", LEGAL_QUESTIONS, "Бухгалтерия", "Legal issues involving accounting documents and settlements."),
     SectionDefinition("legal_hr", LEGAL_QUESTIONS, "HR / Трудовое право", "Labor, discipline, liability, and risky HR documents."),
-    SectionDefinition("legal_departments", LEGAL_QUESTIONS, "Прочие подразделения предприятия", "Legal questions from factory departments."),
+    SectionDefinition("legal_departments", LEGAL_QUESTIONS, "Прочие внут.подразделения", "Legal questions from factory departments."),
     SectionDefinition("legal_court", LEGAL_QUESTIONS, "Судебные и досудебные дела", "Court, pre-trial, enforcement, and settlement matters."),
     SectionDefinition("legal_other", LEGAL_QUESTIONS, "Прочие юридические вопросы", "Fallback for other legal questions."),
 )
@@ -78,6 +78,10 @@ _ALIASES.update(
         _alias_key("Судебные вопросы"): "legal_court",
         _alias_key("ГНИ"): "legal_tax",
         _alias_key("Прочие Гос"): "legal_government",
+        _alias_key("Договоры по утверждённым шаблонам"): "template_contracts",
+        _alias_key("Прочие шаблонные документы"): "template_other",
+        _alias_key("Договоры и экспертиза контрактов"): "legal_contract_review",
+        _alias_key("Прочие подразделения предприятия"): "legal_departments",
     }
 )
 

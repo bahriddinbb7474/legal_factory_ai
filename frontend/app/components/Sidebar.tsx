@@ -67,7 +67,6 @@ export default function Sidebar({
   }, [chatList, sectionGroups]);
 
   function handleCompose(sectionCode: SectionCode) {
-    setExpandedSection(sectionCode);
     onNewChat(sectionCode);
   }
 
@@ -92,9 +91,9 @@ export default function Sidebar({
             {group.sections.map(({ code: sectionCode, label: sectionLabel, chats: allChats }) => {
               const isExpanded = sectionCode === expandedSection;
               const query = searchBySection[sectionCode] ?? "";
-              const visibleChats = allChats
-                .filter((chat) => chat.title.toLowerCase().includes(query.toLowerCase()))
-                .slice(0, isExpanded ? allChats.length : 1);
+              const visibleChats = allChats.filter((chat) =>
+                chat.title.toLowerCase().includes(query.toLowerCase()),
+              );
               const showNewChatPlaceholder = activeChatId === null && selectedSection === sectionCode;
 
               return (
@@ -102,69 +101,72 @@ export default function Sidebar({
                   className={isExpanded ? "workspace-section expanded" : "workspace-section"}
                   key={sectionCode}
                 >
-              <div className="section-title-row">
-                <button
-                  className="section-title"
-                  onClick={() => setExpandedSection(isExpanded ? null : sectionCode)}
-                  type="button"
-                >
-                  <span className="section-chevron">{isExpanded ? "v" : ">"}</span>
-                  <span>{sectionLabel}</span>
-                </button>
-                {canWriteWorkspace ? (
-                  <button
-                    className="compose-button"
-                    onClick={() => handleCompose(sectionCode)}
-                    title={`Новый чат: ${sectionLabel}`}
-                    type="button"
-                    aria-label={`Новый чат в разделе ${sectionLabel}`}
-                  >
-                    <span className="compose-glyph">✎</span>
-                  </button>
-                ) : null}
-              </div>
-
-              {isExpanded && allChats.length > 3 ? (
-                <input
-                  className="section-search"
-                  aria-label={`Поиск в разделе ${sectionLabel}`}
-                  placeholder="Поиск в разделе"
-                  value={query}
-                  onChange={(event) =>
-                    setSearchBySection((current) => ({
-                      ...current,
-                      [sectionCode]: event.target.value,
-                    }))
-                  }
-                />
-              ) : null}
-
-              <div className="section-chat-list">
-                {showNewChatPlaceholder ? (
-                  <button
-                    className="section-chat active"
-                    type="button"
-                    onClick={() => onNewChat(sectionCode)}
-                  >
-                    Новый чат
-                  </button>
-                ) : null}
-                {chatListLoading && isExpanded ? (
-                  <span className="section-chat empty-hint">Загрузка…</span>
-                ) : (
-                  visibleChats.map((chat) => (
+                  <div className="section-title-row">
                     <button
-                      className={chat.id === activeChatId ? "section-chat active" : "section-chat"}
-                      key={chat.id}
-                      onClick={() => onSelectChat(chat.id)}
+                      aria-expanded={isExpanded}
+                      className="section-title"
+                      onClick={() => setExpandedSection(isExpanded ? null : sectionCode)}
                       type="button"
                     >
-                      {chat.title}
-                      {pendingInvokeByChatId[chat.id] ? <span className="chat-pending-dot" aria-label="юрист отвечает"> ●</span> : null}
+                      <span className="section-chevron">{isExpanded ? "v" : ">"}</span>
+                      <span>{sectionLabel}</span>
                     </button>
-                  ))
-                )}
-              </div>
+                    {canWriteWorkspace ? (
+                      <button
+                        className="compose-button"
+                        onClick={() => handleCompose(sectionCode)}
+                        title={`Новый чат: ${sectionLabel}`}
+                        type="button"
+                        aria-label={`Новый чат в разделе ${sectionLabel}`}
+                      >
+                        <span className="compose-glyph">✎</span>
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {isExpanded && allChats.length > 3 ? (
+                    <input
+                      className="section-search"
+                      aria-label={`Поиск в разделе ${sectionLabel}`}
+                      placeholder="Поиск в разделе"
+                      value={query}
+                      onChange={(event) =>
+                        setSearchBySection((current) => ({
+                          ...current,
+                          [sectionCode]: event.target.value,
+                        }))
+                      }
+                    />
+                  ) : null}
+
+                  {isExpanded ? (
+                    <div className="section-chat-list">
+                      {showNewChatPlaceholder ? (
+                        <button
+                          className="section-chat active"
+                          type="button"
+                          onClick={() => onNewChat(sectionCode)}
+                        >
+                          Новый чат
+                        </button>
+                      ) : null}
+                      {chatListLoading ? (
+                        <span className="section-chat empty-hint">Загрузка…</span>
+                      ) : (
+                        visibleChats.map((chat) => (
+                          <button
+                            className={chat.id === activeChatId ? "section-chat active" : "section-chat"}
+                            key={chat.id}
+                            onClick={() => onSelectChat(chat.id)}
+                            type="button"
+                          >
+                            {chat.title}
+                            {pendingInvokeByChatId[chat.id] ? <span className="chat-pending-dot" aria-label="юрист отвечает"> ●</span> : null}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  ) : null}
                 </section>
               );
             })}

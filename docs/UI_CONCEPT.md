@@ -14,12 +14,12 @@ Stage 3 v2 keeps the same practical workspace shape from Stage 1 v2 and adds doc
 
 The sidebar is section-based, not a global application menu. It contains the approved groups:
 
-- `Шаблонные документы`: `Письма`, `Договоры по утверждённым шаблонам`, `Справки`, `Доверенности`, `Приказы`, `Прочие шаблонные документы`;
-- `Юридические вопросы и заключения`: `Договоры и экспертиза контрактов`, `Долги (дебиторы / кредиторы)`, `Валютное регулирование`, `Налоговые вопросы`, `Государственные органы`, `Контрагенты и переписка`, `Бухгалтерия`, `HR / Трудовое право`, `Прочие подразделения предприятия`, `Судебные и досудебные дела`, `Прочие юридические вопросы`.
+- `Шаблонные документы`: `Письма`, `Договоры`, `Справки`, `Доверенности`, `Приказы`, `Прочие документы`;
+- `Юридические вопросы и заключения`: `Экспертиза контрактов`, `Долги (дебиторы / кредиторы)`, `Валютное регулирование`, `Налоговые вопросы`, `Государственные органы`, `Контрагенты и переписка`, `Бухгалтерия`, `HR / Трудовое право`, `Прочие внут.подразделения`, `Судебные и досудебные дела`, `Прочие юридические вопросы`.
 
 The frontend displays these names but sends stable internal codes. Labels may change without changing routing. The canonical mapping is in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
-Each section has a small compose icon for creating a future new chat inside that section. By default each section shows one recent chat so the full workspace and user profile remain visible. Expanded sections can show more chats and a local search field when the list is longer.
+Each section has a small compose icon for creating a new chat inside that section. Section rows are collapsed by default, and chat titles remain hidden until the user expands a section. Expanded sections show their chats and may show a local search field when the list is longer.
 
 There is no separate large `Новый чат` button.
 

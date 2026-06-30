@@ -26,13 +26,15 @@ This group is for ordinary document drafting from approved company templates and
 | Internal section code | UI section name | Scope |
 | --- | --- | --- |
 | `template_letters` | `Письма` | Ordinary bank, supplier, buyer, cover, details-request, and other business letters that do not require legal verification |
-| `template_contracts` | `Договоры по утверждённым шаблонам` | Only approved forms, including cable, raw-material, inventory, fixed-asset, vehicle-sale, and approved loan agreements |
+| `template_contracts` | `Договоры` | Only approved forms, including cable, raw-material, inventory, fixed-asset, vehicle-sale, and approved loan agreements |
 | `template_certificates` | `Справки` | Approved employee, notary, place-of-demand, residual-value, and similar certificates |
 | `template_powers_of_attorney` | `Доверенности` | Approved annual, one-time, vehicle, goods-receipt, customs, and representation powers of attorney |
 | `template_orders` | `Приказы` | Approved or simple internal order forms, including approved HR and organizational forms |
-| `template_other` | `Прочие шаблонные документы` | Other documents strictly covered by an approved template |
+| `template_other` | `Прочие документы` | Other documents strictly covered by an approved template |
 
 The codes above are the recommended P3-A canonical codes. P3-A must confirm them in one backend-owned mapping before runtime use.
+
+Earlier long UI labels remain accepted as legacy aliases. They are not policy keys.
 
 ### Group 1 policy
 
@@ -54,7 +56,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 
 | Internal section code | UI section name | Scope |
 | --- | --- | --- |
-| `legal_contract_review` | `Договоры и экспертиза контрактов` | Contract review, risks, amendments, disputed clauses, legal opinions, and contracts without an approved form |
+| `legal_contract_review` | `Экспертиза контрактов` | Contract review, risks, amendments, disputed clauses, legal opinions, and contracts without an approved form |
 | `legal_debts` | `Долги (дебиторы / кредиторы)` | Receivables, payables, overdue payment, claims, collection, and acknowledgement of debt |
 | `legal_currency` | `Валютное регулирование` | Currency operations, foreign-trade payments, repatriation periods, currency control, and international settlements |
 | `legal_tax` | `Налоговые вопросы` | Taxes, audits, tax consequences, VAT, profit tax, withholding, and tax authorities |
@@ -62,7 +64,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 | `legal_counterparties` | `Контрагенты и переписка` | Counterparty demands and claims, disputed correspondence, legal replies, and negotiation positions |
 | `legal_accounting` | `Бухгалтерия` | Legal issues involving primary documents, acts, invoices, settlements, write-offs, and financial-legal consequences |
 | `legal_hr` | `HR / Трудовое право` | Dismissal, discipline, financial liability, explanations, labor disputes, and risky HR documents |
-| `legal_departments` | `Прочие подразделения предприятия` | Legal questions from production, warehouse, supply, sales, or technical teams that fit no narrower section |
+| `legal_departments` | `Прочие внут.подразделения` | Legal questions from production, warehouse, supply, sales, or technical teams that fit no narrower section |
 | `legal_court` | `Судебные и досудебные дела` | Court, pre-trial claims, enforcement, settlement agreements, court documents, and post-judgment actions |
 | `legal_other` | `Прочие юридические вопросы` | Safe fallback for legal questions that fit no other legal section |
 
