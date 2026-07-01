@@ -169,4 +169,4 @@ P4 должен добавить компактный source inventory, внут
 - [RAG_WORKFLOW_V1.md](RAG_WORKFLOW_V1.md) — целевой RAG workflow.
 - [LEGAL_RESPONSE_POLICY_V1.md](LEGAL_RESPONSE_POLICY_V1.md) — policy юридических ответов.
 - [VERDICT_AND_DOCUMENT_POLICY_V1.md](VERDICT_AND_DOCUMENT_POLICY_V1.md) — verdict/document gates.
-- [QUALITY_GATE_V1.md](QUALITY_GATE_V1.md) — обязательные проверки качества.
+- [TESTS_AND_RISKS.md](TESTS_AND_RISKS.md) — verification baseline, P4/P5/P6 required tests, риски и safety limits.

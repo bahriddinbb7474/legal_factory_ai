@@ -98,9 +98,10 @@ and explicit-permission integration. P3 now adds canonical section routing. P4-P
 `source_package_id` / `context_snapshot_hash` binding, backend verification and approval gates,
 and the complete Quality Gate.
 
-The normative documents are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
-`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, `QUALITY_GATE_V1.md`,
-and `SECTION_GROUPS_AND_RAG_POLICY.md`.
+The normative policy documents are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
+`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
+`SECTION_GROUPS_AND_RAG_POLICY.md`. The active verification, quality, and risk baseline is
+`TESTS_AND_RISKS.md`.
 
 ## Data Flow
 

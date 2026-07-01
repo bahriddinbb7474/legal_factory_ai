@@ -136,5 +136,6 @@ Lawyers should not invent company data, bank details, stamp/signature informatio
 There is currently no Telegram workflow. Telegram is postponed and must not be assumed in prompts or agent behavior.
 
 The normative policy documents for P2-P6 are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
-`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, `QUALITY_GATE_V1.md`, and
-`SECTION_GROUPS_AND_RAG_POLICY.md`.
+`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
+`SECTION_GROUPS_AND_RAG_POLICY.md`. The active verification, quality, and risk baseline is
+`TESTS_AND_RISKS.md`.

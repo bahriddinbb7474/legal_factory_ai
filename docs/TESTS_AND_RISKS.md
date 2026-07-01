@@ -10,7 +10,7 @@
 - какие риски остаются открытыми;
 - какие ограничения нельзя ослаблять.
 
-Документ заменяет практическую роль старых `QUALITY_GATE_V1.md`, `TESTING_STRATEGY.md` и `RISKS_AND_LIMITS.md`, но в этой задаче они сохраняются без изменений.
+Документ консолидирует ранее раздельные quality gate, testing strategy и risks/limits материалы и является единой активной точкой контроля.
 
 ## 2. Текущий verification snapshot
 
@@ -226,7 +226,7 @@ npm.cmd run build
 - frontend visibility warnings, source state и backend gates;
 - отсутствие raw JSON и необработанных technical errors в normal UI.
 
-Все 38 checks из `QUALITY_GATE_V1.md` должны быть рассмотрены и представлены автоматическими тестами либо явным manual acceptance checklist до серьёзной founder demo. Наличие отдельных P2/P3 regressions не означает, что P6 завершён.
+Все P6 quality checks, перечисленные в этом разделе и в текущем acceptance checklist проекта, должны быть покрыты автоматическими тестами либо явным manual acceptance checklist до серьёзной founder demo. Наличие отдельных P2/P3 regressions не означает, что P6 завершён.
 
 ## 10. Current open risks
 
@@ -267,13 +267,9 @@ npm.cmd run build
 - Automated tests не вызывают real paid provider APIs и не раскрывают secrets.
 - OpenRouter/model settings нельзя менять без отдельной явной задачи.
 
-## 12. What this file replaces
+## 12. История консолидации
 
-- `QUALITY_GATE_V1.md` предоставил детальные quality/acceptance checks P2–P6.
-- `TESTING_STRATEGY.md` предоставил ранние engineering test guidelines, часть которых относится к legacy strict-JSON flow.
-- `RISKS_AND_LIMITS.md` предоставил ранние risk/limit notes, включая уже заменённые auth/RAG/verdict assumptions.
-
-После одобрения владельцем эти три файла могут быть отдельно архивированы или удалены. До такого решения они остаются в repository.
+Этот документ заменил прежние отдельные документы по quality gate, testing strategy и risks/limits. Их актуальное содержание перенесено сюда; устаревшие strict-JSON, legacy auth и legacy verdict assumptions удалены или исправлены.
 
 ## 13. Related docs
 

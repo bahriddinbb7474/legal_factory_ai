@@ -59,7 +59,7 @@ Immediate roadmap:
 
 1. P4: implement lawyer-controlled targeted RAG, source inventory/package, and multilingual backend fallback.
 2. P5: implement verified verdict/document gates, bound source packages, and DB mapping.
-3. P6: pass all 38 checks in `docs/QUALITY_GATE_V1.md`.
+3. P6: pass the complete quality and acceptance baseline in `docs/TESTS_AND_RISKS.md`.
 4. P7 / Phase B: finish production model selection and OpenRouter/model settings UX.
 5. Continue with real templates/data, RAG verification, factory scenarios, presentation polish, laptop pilot, and mini-launch.
 6. Telegram and VPS remain separately approved later work.
