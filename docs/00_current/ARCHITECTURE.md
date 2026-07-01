@@ -6,11 +6,21 @@ Legal Factory AI should start with a simple, expandable architecture.
 
 - Frontend: React / Next.js.
 - Backend: FastAPI.
-- Database: PostgreSQL.
-- Vector search: pgvector.
+- Database: SQLite for current dev/test and configured minimal local use; PostgreSQL remains the production target.
+- Vector search: SQLite lexical fallback now; pgvector/embeddings are deferred to an approved production/search stage.
 - LLM provider: OpenRouter API.
 - File storage: local server storage first.
 - Telegram bot: postponed. It is not in the current core path and should return only after the legal base, templates, local launch, and real users are stable.
+
+## Project/code structure
+
+- `backend/` — FastAPI application, SQLAlchemy models, APIs/services, Alembic migrations, and backend tests.
+- `frontend/` — Next.js, React, and TypeScript user interface.
+- `docs/` — documentation grouped into current truth, policies, sources, guides, and historical reports.
+- `data/uploads/` or another configured storage path — runtime uploaded files, not Git content.
+- Local SQLite database files — runtime/dev/pilot data, not Git content.
+
+Never commit `.env`, secrets, API keys, local databases, raw uploads, stored legal source texts, or real stamp/signature assets.
 
 ## Backend Data Foundation
 
@@ -28,7 +38,7 @@ Core entities:
 - `CostRecord`
 - `AuditLog`
 
-The runtime database target is PostgreSQL through `asyncpg`. Tests use SQLite in-memory through the same SQLAlchemy model metadata, so PostgreSQL is not required for automated backend checks.
+DB status: SQLite is used for dev/test/minimal local pilot where the current app is configured that way. The code also supports PostgreSQL through `asyncpg`, and PostgreSQL remains the production target. pgvector/embeddings are not required for current local MVP checks and remain deferred until an approved production/search stage.
 
 Initial API surface:
 
@@ -54,8 +64,10 @@ The core path is no longer Telegram-first. The originally approved sequence afte
 5. Stage 11 local authentication and baseline role-based access — complete through Stage 11-B2.
 6. Stage 12-13 final factory scenarios and mini-launch — pending.
 
-The immediate approved work is now P2-P6 below, then P7 / Phase B. VPS, full production
-deployment, and Telegram remain deferred until the core path is stable.
+P2 and P3 are complete. The remaining approved order before Phase B is P4 → P5 → P6 → P7.
+P4 targeted RAG/source inventory/source package is next; P5 must not start before P4 is approved
+and complete. VPS, full production deployment, crawler work, and Telegram remain deferred until
+the core path is stable.
 
 ## First Foundation
 
@@ -82,8 +94,12 @@ P1 policy documentation, P2-B0 through P2-B3, and P3-A/B/B1/C are complete. The 
 
 1. P4 targeted RAG request and source-package protocol.
 2. P5 verified verdict/document gates and explicit DB mapping.
-3. P6 implementation of the 38-check Quality Gate.
+3. P6 quality/verification baseline from `TESTS_AND_RISKS.md`.
 4. P7 / Phase B OpenRouter and model settings.
+
+P4, P5, and P6 are not complete. P7 follows only after the P4-P6 safety path. Backend code owns
+`confirmed_in_context`, `source_check_status`, `document_generation_allowed`, and
+`approval_required`; model output cannot set or approve these gates.
 
 P3 has two backend-owned functional groups:
 
@@ -96,7 +112,7 @@ The Stage 4/5 sections below describe the legacy baseline rather than the final 
 P2 now provides natural pre-verdict text, verdict-only structured mode, the Lawyer 1 prohibition,
 and explicit-permission integration. P3 now adds canonical section routing. P4-P6 must add targeted RAG,
 `source_package_id` / `context_snapshot_hash` binding, backend verification and approval gates,
-and the complete Quality Gate.
+and the complete P6 quality/verification baseline in `TESTS_AND_RISKS.md`.
 
 The normative policy documents are `../10_policies/PROMPT_SYSTEM_V1.md`, `../10_policies/RAG_WORKFLOW_V1.md`,
 `../10_policies/LEGAL_RESPONSE_POLICY_V1.md`, `../10_policies/VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
@@ -115,6 +131,13 @@ The normative policy documents are `../10_policies/PROMPT_SYSTEM_V1.md`, `../10_
 8. Before verdict, the user receives human-readable lawyer text.
 9. After explicit permission, Lawyer 2 or Lawyer 3 may produce a structured verdict for backend verification.
 10. P5 will enable document generation only after backend-computed source, citation, red-topic, and approval gates pass; it remains blocked for the current unconfirmed verdict skeleton.
+
+## Historical implementation baseline
+
+The Stage 2-11 sections below preserve implementation history and existing entities/APIs. They do
+not override the active P2/P3 behavior or the P4/P5/P6 target policy. In particular, Stage 4/5
+strict-JSON and manual active-verdict behavior is legacy foundation, not the current normal-answer
+or verified-document contract.
 
 ## Stage 2 v2 OpenRouter Lawyer Flow
 
@@ -206,7 +229,7 @@ Sensitivity values:
 
 If a chat contains a `sensitive` document, the selected provider must be enabled, allowlisted, and trusted for sensitive documents. This check is enforced on the backend before any OpenRouter request.
 
-SQLite remains for local development and tests only. PostgreSQL remains the production database target.
+SQLite remains valid for current dev/test and configured minimal local pilot use. PostgreSQL remains the production database target; migration and pgvector work require their own approved stage.
 
 ## Stage 4 v2 Structured Legal Safeguards (Legacy Baseline)
 
@@ -344,7 +367,7 @@ Stage 8 added `CompanyProfile` for company details. Stamp/signature upload and r
 
 Stage 9 added the basic `DocumentTemplate` path and one debt/claim template. The approved P0 target requires future real templates to follow the verified-verdict path or the separately approved template/correspondence path.
 
-Stage 10 keeps the laptop pilot as an operational check: backend, frontend, local IP, LAN access, backups, restore, restart script, logs, database size, uploads size, and stability under 3-4 local users. SQLite is acceptable only for tests or minimal local launch; PostgreSQL remains the production target and should be prepared locally if practical.
+Stage 10 keeps the laptop pilot as an operational check: backend, frontend, local IP, LAN access, backups, restore, restart script, logs, database size, uploads size, and stability under 3-4 local users. SQLite remains acceptable for tests or a configured minimal local pilot. The PostgreSQL transition remains a separate approved pilot/production decision rather than an immediate prerequisite.
 
 Stage 11-A through 11-B2 removed the development current-user stub, added login/password users,
 admin-only user creation, disabled users, backend-enforced role access, viewer read-only behavior,

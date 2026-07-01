@@ -16,14 +16,24 @@ The system should help factory teams prepare legal drafts and preliminary analys
 
 Legal Factory AI is an assistant only. It does not replace a live lawyer, director, chief accountant, or other responsible specialist.
 
-## Documentation
+## Documentation reading order
 
 New contributors and AI coding agents should read:
 
-1. [`docs/README.md`](docs/README.md) — documentation map.
-2. [`docs/00_current/CONTEXT.md`](docs/00_current/CONTEXT.md) — project passport and current snapshot.
-3. [`docs/00_current/SPEC_AND_ROADMAP.md`](docs/00_current/SPEC_AND_ROADMAP.md) — MVP, roadmap, and priorities.
-4. [`docs/00_current/TESTS_AND_RISKS.md`](docs/00_current/TESTS_AND_RISKS.md) — verification baseline, required tests, risks, and safety limits.
+1. [`docs/00_current/CONTEXT.md`](docs/00_current/CONTEXT.md) — project passport and current snapshot.
+2. [`docs/00_current/SPEC_AND_ROADMAP.md`](docs/00_current/SPEC_AND_ROADMAP.md) — MVP, roadmap, and priorities.
+3. [`docs/00_current/TESTS_AND_RISKS.md`](docs/00_current/TESTS_AND_RISKS.md) — verification baseline, required tests, risks, and safety limits.
+4. [`docs/00_current/ARCHITECTURE.md`](docs/00_current/ARCHITECTURE.md) — technical architecture and current/legacy boundaries.
+5. [`docs/00_current/DECISIONS_LOG.md`](docs/00_current/DECISIONS_LOG.md) — accepted and pending decisions.
+6. Relevant files under [`docs/10_policies/`](docs/10_policies/) for the active task.
+
+Documentation structure:
+
+- `docs/00_current/` — current source of truth.
+- `docs/10_policies/` — active legal AI policy rules.
+- `docs/20_sources/` — legal source registry and admin workflow.
+- `docs/30_guides/` — development, user, UI, and agent guides.
+- `docs/40_stage_reports/` — historical reports and acceptance evidence, not current policy.
 
 ## Planned Features
 
@@ -43,8 +53,8 @@ New contributors and AI coding agents should read:
 
 - Frontend: React / Next.js.
 - Backend: FastAPI.
-- Database: PostgreSQL.
-- Vector search: pgvector.
+- Database: SQLite for current dev/test and configured minimal local pilot; PostgreSQL is the production target.
+- Vector search: SQLite lexical fallback now; pgvector/embeddings are deferred to an approved production/search stage.
 - LLM provider: OpenRouter API.
 - Files: local server storage first.
 - Telegram: postponed until after the factory legal base, templates, local launch, and real users are stable.
@@ -168,7 +178,7 @@ cd backend
 Health check:
 
 ```bash
-GET http://127.0.0.1:8000/health
+GET http://localhost:8000/health
 ```
 
 ## Run Backend Tests
