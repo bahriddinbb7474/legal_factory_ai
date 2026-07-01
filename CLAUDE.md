@@ -23,6 +23,19 @@ Main stack:
 - CompanyProfile
 - auth / roles
 
+## Read first
+
+Use repository docs rather than memory:
+
+1. `docs/README.md`
+2. `docs/00_current/CONTEXT.md`
+3. `docs/00_current/SPEC_AND_ROADMAP.md`
+4. `docs/00_current/TESTS_AND_RISKS.md`
+5. `docs/00_current/ARCHITECTURE.md`
+6. Relevant `docs/10_policies/*`
+
+Use `docs/20_sources/*` only for source/RAG tasks, `docs/30_guides/*` when needed, and `docs/40_stage_reports/*` only as historical evidence. Old flat docs paths are obsolete.
+
 ## Mandatory workflow
 
 Always work step by step:
@@ -62,6 +75,8 @@ Do not enable these unless a separate approved stage explicitly requires it:
 - mass historical legal text import
 - stamp/signature upload or rendering
 
+Do not change OpenRouter/provider/model settings unless explicitly requested. Automated tests must use mocks/fake providers and must never call real paid OpenRouter, vision, or embedding APIs.
+
 ## Dev URL rule
 
 Always use `localhost` for both frontend and backend in development.
@@ -93,9 +108,13 @@ Future/draft/outdated/historical sources must not be mixed into ordinary active-
 
 Do not mix trusted legal sources with untrusted uploaded documents without clear separation.
 
+Normal pre-verdict answers are human-readable prose; structured payload is reserved for verdict workflow. Lawyer 1 cannot issue a verdict. Lawyer 2/3 verdict requires explicit permission and backend checks. `template_documents` has no default legal RAG or verdict flow.
+
 ## Stage discipline
 
 Implement only the requested stage or substage.
+
+P3-C is complete. P4 targeted RAG/source inventory/source package is next. P4/P5/P6 are not complete, and P5 must not start before P4 is approved and complete.
 
 Keep changes minimal.
 

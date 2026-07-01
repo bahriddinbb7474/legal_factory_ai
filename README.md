@@ -16,6 +16,15 @@ The system should help factory teams prepare legal drafts and preliminary analys
 
 Legal Factory AI is an assistant only. It does not replace a live lawyer, director, chief accountant, or other responsible specialist.
 
+## Documentation
+
+New contributors and AI coding agents should read:
+
+1. [`docs/README.md`](docs/README.md) — documentation map.
+2. [`docs/00_current/CONTEXT.md`](docs/00_current/CONTEXT.md) — project passport and current snapshot.
+3. [`docs/00_current/SPEC_AND_ROADMAP.md`](docs/00_current/SPEC_AND_ROADMAP.md) — MVP, roadmap, and priorities.
+4. [`docs/00_current/TESTS_AND_RISKS.md`](docs/00_current/TESTS_AND_RISKS.md) — verification baseline, required tests, risks, and safety limits.
+
 ## Planned Features
 
 - Web UI with login, roles, chat history, and document editor.
