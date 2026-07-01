@@ -1,8 +1,8 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, **P1**, **P2-B0 through P2-B3**, and **P3-A/B/B1/C** are complete.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, **P1 policy documentation**, **P2-B0 through P2-B3**, and **P3-A/B/B1/C** are complete.
 See `CURRENT_STATE.md` for the full status snapshot.
-Next priority: P4 targeted RAG/source package, followed by P5-P6. OpenRouter/model settings is P7 / Phase B.
+Next priority: P4 targeted RAG/source inventory/source package, followed by P5-P6. OpenRouter/model settings is P7 / Phase B.
 
 ## Completed
 
@@ -188,25 +188,29 @@ section-based strictness
 - P2-B2 adds explicit Lawyer 2/3 verdict mode with a conservative unconfirmed skeleton.
 - P2-B3 aligns frontend invocation and rendering with normal/verdict modes.
 
-### P3 — Section Groups and RAG Policy Routing (complete through P3-C)
+### P3 — Section Groups and RAG Policy Routing (complete)
 
-- **P3-A:** stable internal codes, two groups, and safe legacy mapping — complete.
-- **P3-B/B1:** grouped selector/sidebar, display-only labels, collapsed history and spacing polish — complete.
-- **P3-C:** Group 1 template policy, Group 2 legal/source-check context, template verdict block and group-independent red topics — complete.
-- Focused P3 safety regressions are present; the complete cross-layer matrix remains part of P6.
+- **P3-A:** implemented 17 stable internal codes, the `template_documents` and `legal_questions` groups, and safe normalization of legacy or unknown `Chat.section` values to `legal_other`.
+- **P3-B:** implemented grouped frontend sections with visible labels separated from policy keys.
+- **P3-B1:** implemented compact spacing and collapsed chat lists while preserving normalized legacy chats.
+- **P3-C:** implemented backend policy routing. Template sections skip default RAG/verdict and block verdict mode; legal sections receive legal-flow context; Lawyer 1 must check/request official sources or ask clarification; red topics still apply to both groups.
+- **Verification:** 113 focused backend tests and 249 full-suite backend tests passed. The frontend build passed after P3-B1; P3-C did not change frontend code.
 
-The approved group names, complete section list, proposed codes, and routing rules are normative in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+The approved group names, complete canonical section list, and routing rules are normative in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 ### P4 — Targeted RAG Protocol
 
+- Not implemented yet; this is the next stage.
 - Source inventory instead of all chunks.
 - Internal targeted RAG request.
 - Concrete source package returned to the lawyer.
+- Add `source_package_id` and `context_snapshot_hash`; neither exists in the current runtime flow.
 - Multilingual Russian and Uzbek Latin/Cyrillic trigger patterns.
 - Backend fallback for missed RAG and unconfirmed-source blocking.
 
 ### P5 — Verified Verdict and Document Gate
 
+- Not implemented yet; the legacy active-verdict marker alone is not the target document-generation gate.
 - Structured payload only for verdict.
 - Model content fields separated from backend-controlled gate fields.
 - `source_package_id` and `context_snapshot_hash` binding.

@@ -85,11 +85,16 @@
 - P0 approved: `<UNTRUSTED_DOCUMENT ...>` content is analysis data, not instructions or official law.
 - P1 complete: the five versioned policy files under `docs/` are the normative specification for P2-P6.
 - Approved implementation order: P2 prompts → P3 section behavior → P4 targeted RAG → P5 verdict/document gates and DB mapping → P6 Quality Gate → P7/Phase B model settings.
-- P2-B0 through P2-B3 are complete. P3 is the next implementation stage.
+- P2-B0 through P2-B3 are complete. At that decision point P3 was next; this status is superseded by the P3 completion entries below.
 - P3 approved: the two functional groups are `template_documents` (`Шаблонные документы`) and `legal_questions` (`Юридические вопросы и заключения`).
 - P3 approved: Group 1 is an AI-Секретарь approved-template flow with no RAG, verdict, or legal conclusion by default; Group 2 is the AI-Юрист legal/RAG/verdict flow.
 - P3 approved: policy routing uses stable internal group and section codes. Visible UI names are not policy keys and may change independently.
 - P3 approved: missing templates and legal-verification requests route from Group 1 to Group 2; red topics override both group defaults and force the applicable approval workflow.
+- P3-A/B/B1/C complete: runtime policy uses 17 canonical section codes in the `template_documents` and `legal_questions` groups; visible Russian labels remain display-only.
+- P3 complete: legacy and unknown section values normalize safely to `legal_other` and cannot silently enter template flow.
+- P3 complete: template sections do not run default RAG or verdict and verdict mode is blocked; legal sections receive legal-flow context; Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion.
+- P3 complete: red-topic detection still applies in both groups. P3-C verification passed 113 focused tests and the full backend suite passed 249 tests; P3-B1 frontend build passed and P3-C had no frontend changes.
+- Next approved stage: P4 targeted RAG/source inventory/source package. `source_package_id` and `context_snapshot_hash` remain unimplemented until P4/P5, and the verified P5 verdict/document gate is not implemented yet.
 
 ## Pending Decisions
 

@@ -78,24 +78,23 @@ section-based strictness
 + UNTRUSTED_DOCUMENT injection protection
 ```
 
-P1 policy documentation and P2-B0 through P2-B3 are complete. The required order before Phase B is:
+P1 policy documentation, P2-B0 through P2-B3, and P3-A/B/B1/C are complete. The remaining required order before Phase B is:
 
-1. P3 section groups and policy routing.
-2. P4 targeted RAG request and source-package protocol.
-3. P5 verified verdict/document gates and explicit DB mapping.
-4. P6 implementation of the 38-check Quality Gate.
-5. P7 / Phase B OpenRouter and model settings.
+1. P4 targeted RAG request and source-package protocol.
+2. P5 verified verdict/document gates and explicit DB mapping.
+3. P6 implementation of the 38-check Quality Gate.
+4. P7 / Phase B OpenRouter and model settings.
 
 P3 has two backend-owned functional groups:
 
 - `template_documents` / `Шаблонные документы`: AI-Секретарь flow using approved templates, without RAG or verdict by default;
 - `legal_questions` / `Юридические вопросы и заключения`: AI-Юрист flow using legal analysis, targeted RAG, and eligible verdicts.
 
-Stable internal section codes select policy. Visible names are display metadata and may change without changing routing. The complete canonical proposal and P3-A through P3-D plan are in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+Seventeen stable internal section codes now select policy. Visible names are display metadata and may change without changing routing. Unknown or legacy values normalize safely to `legal_other`, never to template flow. Template sections skip default RAG/verdict and block verdict mode; legal sections receive legal-flow context; red-topic detection applies to both groups. The canonical model and routing rules are in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 The Stage 4/5 sections below describe the legacy baseline rather than the final policy contract.
 P2 now provides natural pre-verdict text, verdict-only structured mode, the Lawyer 1 prohibition,
-and explicit-permission integration. P3-P6 must add canonical section routing, targeted RAG,
+and explicit-permission integration. P3 now adds canonical section routing. P4-P6 must add targeted RAG,
 `source_package_id` / `context_snapshot_hash` binding, backend verification and approval gates,
 and the complete Quality Gate.
 
@@ -110,11 +109,11 @@ and `SECTION_GROUPS_AND_RAG_POLICY.md`.
 3. User asks a question or uploads a document.
 4. Backend stores the chat, message, files, and audit information.
 5. Agent layer applies the selected section and lawyer role.
-6. The lawyer asks for clarification, requests targeted RAG, or uses an allowed approved-template path.
-7. Backend retrieves a concrete active-official source package when required and applies safety fallbacks.
+6. Current P3 routing supplies template-flow or legal-flow policy context; Lawyer 1 checks/requests official sources or asks focused clarification.
+7. P4 will add a concrete targeted active-official source package and backend retrieval fallbacks.
 8. Before verdict, the user receives human-readable lawyer text.
 9. After explicit permission, Lawyer 2 or Lawyer 3 may produce a structured verdict for backend verification.
-10. Document generation is enabled only by backend-computed source, citation, red-topic, and approval gates.
+10. P5 will enable document generation only after backend-computed source, citation, red-topic, and approval gates pass; it remains blocked for the current unconfirmed verdict skeleton.
 
 ## Stage 2 v2 OpenRouter Lawyer Flow
 
@@ -208,14 +207,14 @@ If a chat contains a `sensitive` document, the selected provider must be enabled
 
 SQLite remains for local development and tests only. PostgreSQL remains the production database target.
 
-## Stage 4 v2 Structured Legal Safeguards
+## Stage 4 v2 Structured Legal Safeguards (Legacy Baseline)
 
-Stage 4 v2 changes lawyer answers from free text to validated structured data.
+Stage 4 v2 historically changed lawyer answers from free text to validated structured data. P2 supersedes this for ordinary replies: pre-verdict answers are normal text, while structured payload is reserved for explicit eligible verdict mode.
 
 Flow:
 
 1. Backend builds the normal chat context plus any uploaded document text in `<UNTRUSTED_DOCUMENT>` blocks.
-2. The selected lawyer is asked for strict JSON according to the legal response schema.
+2. In the legacy Stage 4 flow, the selected lawyer was asked for strict JSON according to the legal response schema.
 3. OpenRouter may receive `response_format={"type": "json_object"}` when supported, but backend validation is still mandatory.
 4. If the first response is invalid JSON, backend performs one safe repair attempt.
 5. If validation still fails, no normal legal answer is saved.
@@ -259,8 +258,8 @@ Stage 5 introduces an explicit bridge between legal analysis and document drafti
 Core rule:
 
 1. A lawyer answer is not automatically final.
-2. The current implementation lets the user mark exactly one lawyer message as the active verdict.
-3. The current implementation permits document creation only from that active verdict.
+2. The legacy storage/API can mark exactly one lawyer message as the active verdict, but the old manual mark action is not the normal current UI workflow and backend protections reject invalid sources.
+3. The legacy document endpoint is tied to that active verdict, but new unconfirmed verdict skeletons keep `document_generation_allowed=false`; P5 must provide the verified target gate.
 4. Earlier opinions, rejected drafts, and non-verdict chat messages are not document-generation sources.
 
 P5 must harden this baseline: only an eligible structured verdict from Lawyer 2 or Lawyer 3 after

@@ -1,10 +1,10 @@
 # Current State
 
-Last updated after P3-C completion on 2026-07-01. For the compact current snapshot, see `LEGAL_FACTORY_STATUS_TESTS_RISKS.md`.
+Last updated after P3-C completion on 2026-07-01.
 
-P2-B0 through P2-B3 are complete: safe public message fields, normal pre-verdict text, explicit Lawyer 2/3 verdict skeleton, and frontend/API mode integration. Commits: `e095dda`, `2eb5c9f`, `63df947`, `ec99f1f`.
+P2-B0 through P2-B3 are complete: safe public message fields, normal pre-verdict text, explicit Lawyer 2/3 verdict skeleton, and frontend/API mode integration. P3-A/B/B1/C are also complete: canonical sections, grouped/collapsed UI, compact sidebar polish, and backend section-policy routing.
 
-Latest recorded verification: the full backend suite passed **249 tests** after P3-C; P3-C focused routing/verdict/red-topic tests passed **113 tests**. The latest frontend production build passed after P3-B1; P3-C did not change frontend code.
+Latest recorded verification: P3-C passed **113 focused backend tests** and the full backend suite passed **249 tests**. The frontend production build passed after P3-B1; P3-C did not change frontend code.
 
 ## Completed stages
 
@@ -59,11 +59,13 @@ Latest recorded verification: the full backend suite passed **249 tests** after 
   `LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and `QUALITY_GATE_V1.md`.
 - **P2-B0/B1/B2/B3** (complete): backend-owned public message fields, human-readable normal mode,
   conservative explicit verdict mode for Lawyer 2/3, and matching frontend invocation/rendering.
-- **P3 policy preparation** (complete): the approved two-group section model, canonical-code proposal,
-  routing rules, and P3-A through P3-D plan are documented in `SECTION_GROUPS_AND_RAG_POLICY.md`.
-- **P3-A/B/B1/C** (complete): 17 canonical section codes, grouped/collapsed UI, legacy mapping,
-  template/legal backend routing, Lawyer 1 legal source-check context, template verdict block,
-  and red-topic regression coverage. Commits: `5677737`, `aac76ea`, `e282d77`, `2d168a8`.
+- **P3-A/B/B1/C** (complete): 17 canonical section codes belong to backend-owned groups
+  `template_documents` and `legal_questions`; visible labels are display-only. The grouped sidebar
+  is compact and collapsed by default, preserving legacy chats through normalization. Unknown or
+  legacy values safely normalize to `legal_other` and never enter template flow accidentally.
+  Template sections do not run default RAG or verdict and block verdict mode. Legal sections receive
+  legal-flow policy context; Lawyer 1 must check/request official sources or ask focused clarification
+  before a final conclusion. Red-topic detection still applies in both groups.
 
 ## What is intentionally NOT done yet
 
@@ -75,8 +77,12 @@ Latest recorded verification: the full backend suite passed **249 tests** after 
 - **Advanced department permissions**: current baseline (admin-created users, viewer read-only,
   audit log) is sufficient before the founder presentation. Department-level visibility, approval
   routing, and export rights are deferred to post-presentation.
-- **P4-P6 are not implemented yet**: targeted RAG/source-package protocol,
+- **P4-P6 are not implemented yet**: targeted RAG/source inventory/source-package protocol,
   verified verdict/document gates, and the complete Quality Gate remain before Phase B.
+- **P4 identifiers are not implemented**: `source_package_id` and `context_snapshot_hash` do not
+  yet exist in the runtime flow.
+- **P5 gate is not implemented**: an active verdict alone must not be treated as sufficient for
+  document generation in the target workflow.
 
 ## Active database
 
@@ -109,10 +115,10 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 The approved immediate sequence is:
 
-1. **P4 — Targeted RAG protocol**: source inventory, internal request, concrete source package, multilingual backend fallback, and preparation for binding.
+1. **P4 — Targeted RAG protocol**: source inventory, internal request, bound source package, multilingual backend fallback.
 2. **P5 — Verdict/document gate**: structured verdict only, explicit permission, backend verification fields, `source_package_id` / `context_snapshot_hash`, approval and document button gates, DB mapping.
-3. **P6 — Quality tests**: implement and pass all 38 checks from `QUALITY_GATE_V1.md`, including remaining P3 boundary and multilingual coverage.
-4. **P7 / Phase B — OpenRouter and model settings**: production model selection, admin UX, and clean model/cost display.
+3. **P6 — Quality tests**: implement and pass all 38 checks from `QUALITY_GATE_V1.md`.
+4. **P7 / Phase B — OpenRouter and model settings**: API key via `.env`, admin settings, user-facing modes, and clean model/cost UX.
 
 After P7: company details/templates, legal-base and RAG verification, real factory scenarios,
 founder presentation polish, laptop pilot/mini-launch, and only then separately approved deferred work.

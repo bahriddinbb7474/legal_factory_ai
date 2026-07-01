@@ -4,7 +4,7 @@ Date: 2026-06-30
 
 ## Purpose and Status
 
-This document fixes the approved section structure for Legal Factory AI and is the normative section-routing specification for P3. It documents policy only; it does not describe already implemented runtime behavior.
+This document fixes the approved section structure for Legal Factory AI and is the normative section-routing specification. P3-A/B/B1/C are implemented; P4 targeted RAG and P5 verified verdict/document gates remain pending.
 
 Visible names may be adjusted later without changing policy. Runtime routing must use stable internal group and section codes, never raw UI labels.
 
@@ -21,7 +21,7 @@ The alternative visible label `Шаблоны / Канцелярия` is accepta
 
 This group is for ordinary document drafting from approved company templates and forms.
 
-### Approved sections and proposed stable codes
+### Approved canonical sections and stable codes
 
 | Internal section code | UI section name | Scope |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ This group is for ordinary document drafting from approved company templates and
 | `template_orders` | `Приказы` | Approved or simple internal order forms, including approved HR and organizational forms |
 | `template_other` | `Прочие документы` | Other documents strictly covered by an approved template |
 
-The codes above are the recommended P3-A canonical codes. P3-A must confirm them in one backend-owned mapping before runtime use.
+The codes above are the implemented P3-A canonical codes in the backend-owned mapping.
 
 Earlier long UI labels remain accepted as legacy aliases. They are not policy keys.
 
@@ -52,7 +52,7 @@ Earlier long UI labels remain accepted as legacy aliases. They are not policy ke
 
 This group is for legal analysis, legal opinions, targeted RAG, criticism or review by multiple lawyers, and eligible verdicts.
 
-### Approved sections and proposed stable codes
+### Approved canonical sections and stable codes
 
 | Internal section code | UI section name | Scope |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 
 ### Group 2 policy
 
-- Lawyer 1 requests targeted RAG by default unless focused clarification is needed first.
+- Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion. The targeted RAG request protocol itself is P4 and is not implemented yet.
 - Pre-verdict answers are normal human-readable text.
 - Only Lawyer 2 or Lawyer 3 may issue a verdict, after explicit user permission and required checks.
 - Structured legal payload is reserved for verdict mode.
@@ -78,6 +78,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 - Red topics force approval in every legal section.
 - If a required official source is missing, no final proven legal conclusion may be presented.
 - Document generation from verdict remains blocked until source verification and the P5 gate are implemented and pass.
+- `source_package_id` and `context_snapshot_hash` are not implemented yet.
 
 ## Routing and Override Rules
 
@@ -88,30 +89,31 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 5. Red-topic detection overrides both group defaults and forces the applicable approval workflow.
 6. Group routing must not weaken user-role, source-trust, verdict, or document-generation gates.
 
-## P3 Implementation Plan — Section Groups and RAG Policy Routing
+## P3 Implementation Status — Section Groups and RAG Policy Routing
 
-### P3-A — Canonical section model
+### P3-A — Canonical section model (complete)
 
 - Define stable internal section codes and a backend-owned mapping to `template_documents` or `legal_questions`.
 - Keep visible UI names separate from internal codes.
 - Map existing free-text `Chat.section` values safely through explicit aliases or migration logic.
 - Define a safe fallback for unknown values and preserve existing chat history.
 
-### P3-B — Frontend section UI
+### P3-B / P3-B1 — Frontend section UI and sidebar polish (complete)
 
 - Show sections under the two approved visible groups.
 - Send stable section codes to the backend rather than using labels as policy keys.
 - Allow future visible-name changes without breaking routing or stored history.
+- Keep chat titles collapsed by default and preserve old chats under normalized canonical sections.
 
-### P3-C — Section policy routing
+### P3-C — Section policy routing (complete)
 
 - Route `template_documents` to the approved-template/document flow.
 - Route `legal_questions` to the legal-answer flow.
 - Do not require RAG by default for ordinary Group 1 work.
-- Require Lawyer 1 to request RAG by default for Group 2 unless clarification is needed first.
+- Require Lawyer 1 in Group 2 to check/request official sources or ask necessary clarification before a final conclusion; P4 will implement the targeted request/package protocol.
 - Let red-topic detection override either group and force approval.
 
-### P3-D — Safety tests
+### P3 safety verification (complete for implemented routing scope)
 
 - An ordinary Group 1 letter does not require RAG.
 - Group 1 cannot create a final document without an approved template.
@@ -120,3 +122,5 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 - A Group 2 verdict requires Lawyer 2 or Lawyer 3 and explicit permission.
 - Red-topic handling works in both groups.
 - UI-label changes do not change policy routing for a stable section code.
+
+P3-C verification passed 113 focused backend tests and the full backend suite passed 249 tests. The frontend production build passed after P3-B1; P3-C did not change frontend code. The next stage is P4 targeted RAG/source inventory/source package.

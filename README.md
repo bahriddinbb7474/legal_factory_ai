@@ -52,7 +52,8 @@ Completed:
 6. Stage 6: curated legal RAG with `LegalSource`, `LegalChunk`, ПП/ПКМ support, `TRUSTED_LEGAL_SOURCE`, `source_type=law` verification, freshness warnings, SQLite lexical fallback, and PostgreSQL + pgvector production target.
 
 Also complete: Stages 7-9, local auth/RBAC through Stage 11-B2, Demo-1 UI, Stage A real chat/history,
-approved P0/P1 policy architecture, P2-B0 through P2-B3, and P3-A/B/B1/C.
+approved P0 prompt/RAG/verdict architecture, P1 policy documentation, P2-B0 through P2-B3,
+and P3-A/B/B1/C section modeling, grouped UI, sidebar polish, and policy routing.
 
 Immediate roadmap:
 
@@ -69,9 +70,11 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: P3-C is complete. The next approved implementation stage is P4 targeted RAG/source package; P5-P6 follow before P7 / Phase B.
+Current status: P3-C is complete. The next approved implementation stage is P4 targeted RAG/source inventory/source package; P5-P6 follow before P7 / Phase B.
 
-P3 uses two functional groups: `Шаблонные документы` for approved-template work without RAG or verdict by default, and `Юридические вопросы и заключения` for legal analysis, targeted RAG, and eligible Lawyer 2/3 verdicts. The complete section list and P3-A through P3-D plan are in `docs/SECTION_GROUPS_AND_RAG_POLICY.md`.
+P3 provides 17 canonical section codes in two backend-owned groups: `template_documents` for approved-template work without default RAG or verdict, and `legal_questions` for legal-flow policy context. Unknown or legacy values normalize safely to `legal_other`; visible Russian labels are display-only. Verdict mode is blocked in template sections, while red-topic detection still applies in both groups. In legal sections Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion. P4 targeted retrieval and `source_package_id` / `context_snapshot_hash` are not implemented yet; the verified P5 verdict/document gate is also pending. See `docs/SECTION_GROUPS_AND_RAG_POLICY.md`.
+
+P3 verification: 113 focused backend tests passed; the full backend suite passed 249 tests. The frontend production build passed after P3-B1; P3-C did not change frontend code.
 
 Implemented foundation:
 
@@ -99,7 +102,7 @@ Implemented foundation:
 - sensitive-document provider enforcement;
 - audit logs for upload/open/download/link/use/denial events;
 - upload UI from the chat composer plus right-side extracted-text preview.
-- strict structured JSON response schema for lawyer answers (implemented legacy baseline; P2-P6 will reserve structured payload for verdict only);
+- legacy Stage 4 strict structured JSON schema (superseded for ordinary replies: P2 uses normal text and reserves structured payload for verdict mode);
 - backend validation and one safe JSON repair attempt;
 - deterministic citation verification against uploaded document text;
 - unconfirmed-source safeguards that prevent green/high-confidence answers;
@@ -108,8 +111,8 @@ Implemented foundation:
 - approval API where `Chat.approval_status` is the single source of truth;
 - monthly budget warning/block guard based on stored `CostRecord` rows;
 - frontend structured legal answer card, red-flag banner, and approval controls.
-- active verdict workflow: only one lawyer message can be marked as the current verdict per chat;
-- `GeneratedDocument` backend entity for drafts created strictly from the active verdict;
+- legacy Stage 5 active-verdict storage and endpoints (manual marking is not the normal current workflow and is backend-protected);
+- `GeneratedDocument` backend entity from the legacy active-verdict baseline; P5 verification gates are still required before the new verdict flow may generate documents;
 - generated document editor flow with save/cancel, DOCX/PDF export endpoints, and send-back-to-chat action;
 - generated document approval status with an `Approval` event journal;
 - audit logs for verdict, generated document, export, send-back, and approval events.
