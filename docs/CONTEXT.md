@@ -162,7 +162,6 @@ P4 должен добавить компактный source inventory, внут
 ## 13. Связанные документы
 
 - [SPEC_AND_ROADMAP.md](SPEC_AND_ROADMAP.md) — спецификация, MVP, детальный roadmap и приоритеты.
-- [CURRENT_STATE.md](CURRENT_STATE.md) — подробный текущий статус.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — техническая архитектура.
 - [DECISIONS_LOG.md](DECISIONS_LOG.md) — принятые решения.
 - [SECTION_GROUPS_AND_RAG_POLICY.md](SECTION_GROUPS_AND_RAG_POLICY.md) — canonical sections и routing policy.
@@ -171,5 +170,3 @@ P4 должен добавить компактный source inventory, внут
 - [LEGAL_RESPONSE_POLICY_V1.md](LEGAL_RESPONSE_POLICY_V1.md) — policy юридических ответов.
 - [VERDICT_AND_DOCUMENT_POLICY_V1.md](VERDICT_AND_DOCUMENT_POLICY_V1.md) — verdict/document gates.
 - [QUALITY_GATE_V1.md](QUALITY_GATE_V1.md) — обязательные проверки качества.
-
-`PROJECT_OVERVIEW.md`, `FINAL_TARGET.md` и `CURRENT_STATE.md` использованы как источники этого паспорта и сохраняются без изменений. Их возможное архивирование или удаление требует отдельного решения владельца.
