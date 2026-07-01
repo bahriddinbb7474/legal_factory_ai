@@ -27,7 +27,7 @@ Main stack:
 
 Use repository docs rather than memory:
 
-1. `docs/README.md`
+1. Root `README.md`
 2. `docs/00_current/CONTEXT.md`
 3. `docs/00_current/SPEC_AND_ROADMAP.md`
 4. `docs/00_current/TESTS_AND_RISKS.md`
