@@ -1,10 +1,10 @@
 # Current State
 
-Last updated after P2-B3 completion and the P3 section-policy documentation update on 2026-06-30.
+Last updated after P3-C completion on 2026-07-01. For the compact current snapshot, see `LEGAL_FACTORY_STATUS_TESTS_RISKS.md`.
 
 P2-B0 through P2-B3 are complete: safe public message fields, normal pre-verdict text, explicit Lawyer 2/3 verdict skeleton, and frontend/API mode integration. Commits: `e095dda`, `2eb5c9f`, `63df947`, `ec99f1f`.
 
-Latest recorded verification: the full backend suite passed **204 tests** after P2-B2; P2-B3 passed **47 focused tests** and the frontend production build.
+Latest recorded verification: the full backend suite passed **249 tests** after P3-C; P3-C focused routing/verdict/red-topic tests passed **113 tests**. The latest frontend production build passed after P3-B1; P3-C did not change frontend code.
 
 ## Completed stages
 
@@ -61,6 +61,9 @@ Latest recorded verification: the full backend suite passed **204 tests** after 
   conservative explicit verdict mode for Lawyer 2/3, and matching frontend invocation/rendering.
 - **P3 policy preparation** (complete): the approved two-group section model, canonical-code proposal,
   routing rules, and P3-A through P3-D plan are documented in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+- **P3-A/B/B1/C** (complete): 17 canonical section codes, grouped/collapsed UI, legacy mapping,
+  template/legal backend routing, Lawyer 1 legal source-check context, template verdict block,
+  and red-topic regression coverage. Commits: `5677737`, `aac76ea`, `e282d77`, `2d168a8`.
 
 ## What is intentionally NOT done yet
 
@@ -72,7 +75,7 @@ Latest recorded verification: the full backend suite passed **204 tests** after 
 - **Advanced department permissions**: current baseline (admin-created users, viewer read-only,
   audit log) is sufficient before the founder presentation. Department-level visibility, approval
   routing, and export rights are deferred to post-presentation.
-- **P3-P6 are not implemented yet**: canonical section routing, targeted RAG protocol,
+- **P4-P6 are not implemented yet**: targeted RAG/source-package protocol,
   verified verdict/document gates, and the complete Quality Gate remain before Phase B.
 
 ## Active database
@@ -106,14 +109,10 @@ cross-site and the cookie is suppressed on POST/PATCH/DELETE requests.
 
 The approved immediate sequence is:
 
-1. **P3-A — Canonical section model**: stable codes, two groups, and safe mapping of existing `Chat.section` values.
-2. **P3-B — Frontend section UI**: grouped display with labels separated from policy keys.
-3. **P3-C — Section policy routing**: template/legal flow selection plus red-topic override.
-4. **P3-D — Safety tests**: group boundaries, RAG defaults, verdict eligibility, and red-topic coverage.
-5. **P4 — Targeted RAG protocol**: source inventory, internal request, bound source package, multilingual backend fallback.
-6. **P5 — Verdict/document gate**: structured verdict only, explicit permission, backend verification fields, `source_package_id` / `context_snapshot_hash`, approval and document button gates, DB mapping.
-7. **P6 — Quality tests**: implement and pass all 38 checks from `QUALITY_GATE_V1.md`.
-8. **P7 / Phase B — OpenRouter and model settings**: API key via `.env`, admin settings, user-facing modes, and clean model/cost UX.
+1. **P4 — Targeted RAG protocol**: source inventory, internal request, concrete source package, multilingual backend fallback, and preparation for binding.
+2. **P5 — Verdict/document gate**: structured verdict only, explicit permission, backend verification fields, `source_package_id` / `context_snapshot_hash`, approval and document button gates, DB mapping.
+3. **P6 — Quality tests**: implement and pass all 38 checks from `QUALITY_GATE_V1.md`, including remaining P3 boundary and multilingual coverage.
+4. **P7 / Phase B — OpenRouter and model settings**: production model selection, admin UX, and clean model/cost display.
 
 After P7: company details/templates, legal-base and RAG verification, real factory scenarios,
 founder presentation polish, laptop pilot/mini-launch, and only then separately approved deferred work.

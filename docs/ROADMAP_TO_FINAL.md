@@ -1,8 +1,8 @@
 # Roadmap to Final
 
-Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, **P1 policy documentation**, and **P2-B0 through P2-B3** are complete.
+Current status: Stages 1–6, 7, 8, 9, 11-A, 11-B1, 11-B2, Demo-1 UI, **Stage A real chat/sidebar/history**, **P1**, **P2-B0 through P2-B3**, and **P3-A/B/B1/C** are complete.
 See `CURRENT_STATE.md` for the full status snapshot.
-Next priority: P3 section groups and policy routing, followed by P4-P6. OpenRouter/model settings is P7 / Phase B.
+Next priority: P4 targeted RAG/source package, followed by P5-P6. OpenRouter/model settings is P7 / Phase B.
 
 ## Completed
 
@@ -188,12 +188,12 @@ section-based strictness
 - P2-B2 adds explicit Lawyer 2/3 verdict mode with a conservative unconfirmed skeleton.
 - P2-B3 aligns frontend invocation and rendering with normal/verdict modes.
 
-### P3 — Section Groups and RAG Policy Routing (next)
+### P3 — Section Groups and RAG Policy Routing (complete through P3-C)
 
-- **P3-A:** define stable internal codes, the `template_documents` and `legal_questions` groups, and safe mapping for existing free-text `Chat.section` values.
-- **P3-B:** show both groups in the frontend while keeping visible labels separate from policy keys.
-- **P3-C:** route Group 1 to approved-template flow and Group 2 to legal/RAG flow; red topics override either group.
-- **P3-D:** test template boundaries, Lawyer 1 RAG behavior, Lawyer 2/3 verdict eligibility, and red-topic handling in both groups.
+- **P3-A:** stable internal codes, two groups, and safe legacy mapping — complete.
+- **P3-B/B1:** grouped selector/sidebar, display-only labels, collapsed history and spacing polish — complete.
+- **P3-C:** Group 1 template policy, Group 2 legal/source-check context, template verdict block and group-independent red topics — complete.
+- Focused P3 safety regressions are present; the complete cross-layer matrix remains part of P6.
 
 The approved group names, complete section list, proposed codes, and routing rules are normative in `SECTION_GROUPS_AND_RAG_POLICY.md`.
 
