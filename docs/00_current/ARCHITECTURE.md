@@ -90,7 +90,7 @@ P3 has two backend-owned functional groups:
 - `template_documents` / `Шаблонные документы`: AI-Секретарь flow using approved templates, without RAG or verdict by default;
 - `legal_questions` / `Юридические вопросы и заключения`: AI-Юрист flow using legal analysis, targeted RAG, and eligible verdicts.
 
-Seventeen stable internal section codes now select policy. Visible names are display metadata and may change without changing routing. Unknown or legacy values normalize safely to `legal_other`, never to template flow. Template sections skip default RAG/verdict and block verdict mode; legal sections receive legal-flow context; red-topic detection applies to both groups. The canonical model and routing rules are in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+Seventeen stable internal section codes now select policy. Visible names are display metadata and may change without changing routing. Unknown or legacy values normalize safely to `legal_other`, never to template flow. Template sections skip default RAG/verdict and block verdict mode; legal sections receive legal-flow context; red-topic detection applies to both groups. The canonical model and routing rules are in `../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 The Stage 4/5 sections below describe the legacy baseline rather than the final policy contract.
 P2 now provides natural pre-verdict text, verdict-only structured mode, the Lawyer 1 prohibition,
@@ -98,9 +98,9 @@ and explicit-permission integration. P3 now adds canonical section routing. P4-P
 `source_package_id` / `context_snapshot_hash` binding, backend verification and approval gates,
 and the complete Quality Gate.
 
-The normative policy documents are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
-`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
-`SECTION_GROUPS_AND_RAG_POLICY.md`. The active verification, quality, and risk baseline is
+The normative policy documents are `../10_policies/PROMPT_SYSTEM_V1.md`, `../10_policies/RAG_WORKFLOW_V1.md`,
+`../10_policies/LEGAL_RESPONSE_POLICY_V1.md`, `../10_policies/VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
+`../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md`. The active verification, quality, and risk baseline is
 `TESTS_AND_RISKS.md`.
 
 ## Data Flow

@@ -164,9 +164,9 @@ P4 должен добавить компактный source inventory, внут
 - [SPEC_AND_ROADMAP.md](SPEC_AND_ROADMAP.md) — спецификация, MVP, детальный roadmap и приоритеты.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — техническая архитектура.
 - [DECISIONS_LOG.md](DECISIONS_LOG.md) — принятые решения.
-- [SECTION_GROUPS_AND_RAG_POLICY.md](SECTION_GROUPS_AND_RAG_POLICY.md) — canonical sections и routing policy.
-- [PROMPT_SYSTEM_V1.md](PROMPT_SYSTEM_V1.md) — prompt и поведение юристов.
-- [RAG_WORKFLOW_V1.md](RAG_WORKFLOW_V1.md) — целевой RAG workflow.
-- [LEGAL_RESPONSE_POLICY_V1.md](LEGAL_RESPONSE_POLICY_V1.md) — policy юридических ответов.
-- [VERDICT_AND_DOCUMENT_POLICY_V1.md](VERDICT_AND_DOCUMENT_POLICY_V1.md) — verdict/document gates.
+- [SECTION_GROUPS_AND_RAG_POLICY.md](../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md) — canonical sections и routing policy.
+- [PROMPT_SYSTEM_V1.md](../10_policies/PROMPT_SYSTEM_V1.md) — prompt и поведение юристов.
+- [RAG_WORKFLOW_V1.md](../10_policies/RAG_WORKFLOW_V1.md) — целевой RAG workflow.
+- [LEGAL_RESPONSE_POLICY_V1.md](../10_policies/LEGAL_RESPONSE_POLICY_V1.md) — policy юридических ответов.
+- [VERDICT_AND_DOCUMENT_POLICY_V1.md](../10_policies/VERDICT_AND_DOCUMENT_POLICY_V1.md) — verdict/document gates.
 - [TESTS_AND_RISKS.md](TESTS_AND_RISKS.md) — verification baseline, P4/P5/P6 required tests, риски и safety limits.

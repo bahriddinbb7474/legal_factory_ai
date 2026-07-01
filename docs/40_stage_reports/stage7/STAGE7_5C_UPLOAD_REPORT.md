@@ -36,7 +36,7 @@ ZRU-354, adopted 2013-10-04
 LEX.UZ: https://lex.uz/ru/docs/2248099
 ```
 
-LEX.UZ marks ZRU-354 as no longer in force from `2023-08-29`. It was imported locally for exact first-batch coverage and smoke-checked, but it must not be used as active current law in ordinary RAG under `docs/LEGAL_SOURCE_VERSION_POLICY.md`.
+LEX.UZ marks ZRU-354 as no longer in force from `2023-08-29`. It was imported locally for exact first-batch coverage and smoke-checked, but it must not be used as active current law in ordinary RAG under `../../10_policies/LEGAL_SOURCE_VERSION_POLICY.md`.
 
 ZRU-820 remains a related additional source/candidate. It is not a replacement for first-batch source No. 15.
 

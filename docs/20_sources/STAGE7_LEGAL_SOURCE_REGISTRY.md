@@ -21,13 +21,13 @@ LEX.UZ crawler work is explicitly forbidden at this stage.
 Version handling policy is defined in:
 
 ```text
-docs/LEGAL_SOURCE_VERSION_POLICY.md
+../10_policies/LEGAL_SOURCE_VERSION_POLICY.md
 ```
 
 The final administrator workflow and activation checklist are defined in:
 
 ```text
-docs/STAGE7_6_LEGAL_SOURCE_ADMIN_INSTRUCTION.md
+STAGE7_6_LEGAL_SOURCE_ADMIN_INSTRUCTION.md
 ```
 
 Ordinary legal answers use only active current official revisions. Draft/future revisions are preparation-only until their effective date and must not be used as active law. Outdated/archived revisions remain metadata/history records and must not participate in ordinary RAG. Codex must not automatically download or import all historical LEX.UZ versions.
@@ -124,7 +124,7 @@ Registry decision:
 - `ordinary_rag`: excluded.
 - `role`: historical/reference only.
 
-Original approved source No. 15 was checked and found expired; keep metadata/history, do not use it as active RAG. See `docs/STAGE7_5C_CONFORMITY_FIX_REPORT.md`.
+Original approved source No. 15 was checked and found expired; keep metadata/history, do not use it as active RAG. See `../40_stage_reports/stage7/STAGE7_5C_CONFORMITY_FIX_REPORT.md`.
 
 ZRU-819, `Law of Uzbekistan on Technical Regulation`, is already in the first batch as a current active source. After ZRU-354 expiry, current regulation for technical regulation and related conformity-framework questions should be checked through ZRU-819 and other current related acts. Do not state that ZRU-819 fully replaces every ZRU-354 norm unless that is confirmed by the text.
 

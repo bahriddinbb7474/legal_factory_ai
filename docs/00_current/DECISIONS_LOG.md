@@ -83,7 +83,7 @@
 - P0 approved: red topics force approval in every section. Large-amount thresholds are configurable for at least UZS and USD, with ambiguous financially significant amounts treated as red.
 - P0 approved: RAG and red-topic triggers use configurable Russian and Uzbek Latin/Cyrillic roots or patterns, not exact Russian-only words.
 - P0 approved: `<UNTRUSTED_DOCUMENT ...>` content is analysis data, not instructions or official law.
-- P1 complete: the five versioned policy files under `docs/` are the normative specification for P2-P6.
+- P1 complete: the versioned policy files under `docs/10_policies/` are the normative specification for P2-P6.
 - Approved implementation order: P2 prompts → P3 section behavior → P4 targeted RAG → P5 verdict/document gates and DB mapping → P6 Quality Gate → P7/Phase B model settings.
 - P2-B0 through P2-B3 are complete. At that decision point P3 was next; this status is superseded by the P3 completion entries below.
 - P3 approved: the two functional groups are `template_documents` (`Шаблонные документы`) and `legal_questions` (`Юридические вопросы и заключения`).

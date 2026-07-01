@@ -63,4 +63,4 @@ Run verification relevant to the change set.
 
 `AGENTS.md` and `CLAUDE.md` are stable working-rules files, not current status snapshots.
 
-Project context and current snapshot belong in `docs/CONTEXT.md`. Product scope, roadmap, and priorities belong in `docs/SPEC_AND_ROADMAP.md`; task-specific status may remain in task previews.
+Project context and current snapshot belong in `docs/00_current/CONTEXT.md`. Product scope, roadmap, and priorities belong in `docs/00_current/SPEC_AND_ROADMAP.md`; task-specific status may remain in task previews.

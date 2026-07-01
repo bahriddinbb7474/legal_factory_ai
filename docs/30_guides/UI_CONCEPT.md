@@ -17,7 +17,7 @@ The sidebar is section-based, not a global application menu. It contains the app
 - `Шаблонные документы`: `Письма`, `Договоры`, `Справки`, `Доверенности`, `Приказы`, `Прочие документы`;
 - `Юридические вопросы и заключения`: `Экспертиза контрактов`, `Долги (дебиторы / кредиторы)`, `Валютное регулирование`, `Налоговые вопросы`, `Государственные органы`, `Контрагенты и переписка`, `Бухгалтерия`, `HR / Трудовое право`, `Прочие внут.подразделения`, `Судебные и досудебные дела`, `Прочие юридические вопросы`.
 
-The frontend displays these names but sends stable internal codes. Labels may change without changing routing. The canonical mapping is in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+The frontend displays these names but sends stable internal codes. Labels may change without changing routing. The canonical mapping is in `../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 Each section has a small compose icon for creating a new chat inside that section. Section rows are collapsed by default, and chat titles remain hidden until the user expands a section. Expanded sections show their chats and may show a local search field when the list is longer.
 

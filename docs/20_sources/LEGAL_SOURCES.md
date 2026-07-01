@@ -78,7 +78,7 @@ Law citations are confirmed only when the model quotes text from a chunk returne
 Version handling policy is defined in:
 
 ```text
-docs/LEGAL_SOURCE_VERSION_POLICY.md
+../10_policies/LEGAL_SOURCE_VERSION_POLICY.md
 ```
 
 Ordinary current-law answers use only active current official revisions. Draft/future revisions are preparation-only and must not be treated as active law before their effective dates. Outdated/archived revisions stay out of ordinary RAG. Codex must not automatically download or import all historical LEX.UZ versions.
@@ -90,7 +90,7 @@ Stage 7 is the next main stage after curated legal RAG. The goal is to fill the 
 Approved first-batch registry and revision/update policy are maintained in:
 
 ```text
-docs/STAGE7_LEGAL_SOURCE_REGISTRY.md
+STAGE7_LEGAL_SOURCE_REGISTRY.md
 ```
 
 Primary source:

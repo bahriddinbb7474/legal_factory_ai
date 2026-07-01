@@ -276,7 +276,7 @@ npm.cmd run build
 - [CONTEXT.md](CONTEXT.md) — паспорт проекта и current snapshot.
 - [SPEC_AND_ROADMAP.md](SPEC_AND_ROADMAP.md) — MVP, roadmap и приоритеты.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — техническая архитектура и legacy/current boundaries.
-- [SECTION_GROUPS_AND_RAG_POLICY.md](SECTION_GROUPS_AND_RAG_POLICY.md) — canonical sections и routing policy.
-- [RAG_WORKFLOW_V1.md](RAG_WORKFLOW_V1.md) — целевой P4 targeted RAG workflow.
-- [VERDICT_AND_DOCUMENT_POLICY_V1.md](VERDICT_AND_DOCUMENT_POLICY_V1.md) — целевой P5 verdict/document gate.
-- [LEGAL_RESPONSE_POLICY_V1.md](LEGAL_RESPONSE_POLICY_V1.md) — response types, missing-source и red-topic policy.
+- [SECTION_GROUPS_AND_RAG_POLICY.md](../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md) — canonical sections и routing policy.
+- [RAG_WORKFLOW_V1.md](../10_policies/RAG_WORKFLOW_V1.md) — целевой P4 targeted RAG workflow.
+- [VERDICT_AND_DOCUMENT_POLICY_V1.md](../10_policies/VERDICT_AND_DOCUMENT_POLICY_V1.md) — целевой P5 verdict/document gate.
+- [LEGAL_RESPONSE_POLICY_V1.md](../10_policies/LEGAL_RESPONSE_POLICY_V1.md) — response types, missing-source и red-topic policy.

@@ -198,4 +198,4 @@ Regression results:
 
 No raw legal text, SQLite database, upload storage, external provider, crawler, or source status was changed.
 
-The operational handoff for maintaining this accepted legal source foundation is documented in `docs/STAGE7_6_LEGAL_SOURCE_ADMIN_INSTRUCTION.md`.
+The operational handoff for maintaining this accepted legal source foundation is documented in `../../20_sources/STAGE7_6_LEGAL_SOURCE_ADMIN_INSTRUCTION.md`.

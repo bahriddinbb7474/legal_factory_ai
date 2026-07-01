@@ -73,7 +73,7 @@ receive a source inventory and request the source scope needed for the question.
 - Citation verification uses only that bound package, not every source previously retrieved in the chat.
 - Legal and red-topic fallback triggers must support Russian and Uzbek Latin/Cyrillic roots or patterns.
 
-The `template_documents` group does not require RAG by default and has no verdict or legal-conclusion mode. It permits only approved-template work. A missing template or legal-verification request routes to `legal_questions`; red topics override both groups. Canonical groups and sections are defined in `SECTION_GROUPS_AND_RAG_POLICY.md`.
+The `template_documents` group does not require RAG by default and has no verdict or legal-conclusion mode. It permits only approved-template work. A missing template or legal-verification request routes to `legal_questions`; red topics override both groups. Canonical groups and sections are defined in `../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md`.
 
 Version rule:
 
@@ -135,7 +135,8 @@ Lawyers should not invent company data, bank details, stamp/signature informatio
 
 There is currently no Telegram workflow. Telegram is postponed and must not be assumed in prompts or agent behavior.
 
-The normative policy documents for P2-P6 are `PROMPT_SYSTEM_V1.md`, `RAG_WORKFLOW_V1.md`,
-`LEGAL_RESPONSE_POLICY_V1.md`, `VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
-`SECTION_GROUPS_AND_RAG_POLICY.md`. The active verification, quality, and risk baseline is
-`TESTS_AND_RISKS.md`.
+The normative policy documents for P2-P6 are `../10_policies/PROMPT_SYSTEM_V1.md`,
+`../10_policies/RAG_WORKFLOW_V1.md`, `../10_policies/LEGAL_RESPONSE_POLICY_V1.md`,
+`../10_policies/VERDICT_AND_DOCUMENT_POLICY_V1.md`, and
+`../10_policies/SECTION_GROUPS_AND_RAG_POLICY.md`. The active verification, quality, and risk baseline is
+`../00_current/TESTS_AND_RISKS.md`.
