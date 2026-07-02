@@ -96,14 +96,33 @@ def test_inventory_order_limit_and_freshness_are_deterministic() -> None:
                 _source("first", next_check_due_at=as_of + timedelta(seconds=1)),
                 _source("second", next_check_due_at=as_of),
                 _source("third", next_check_due_at=None),
+                _source("fourth", next_check_due_at=as_of - timedelta(seconds=1)),
             ],
-            limit=2,
+            limit=4,
             as_of=as_of,
         )
     )
 
-    assert [item.title for item in items] == ["first", "second"]
-    assert [item.freshness_warning for item in items] == [False, True]
+    assert [item.title for item in items] == ["first", "second", "third", "fourth"]
+    assert [item.freshness_warning for item in items] == [False, False, False, True]
+
+
+def test_inventory_clamps_explicit_limit_to_200() -> None:
+    as_of = datetime(2026, 7, 2)
+    items = asyncio.run(
+        _inventory_for(
+            [
+                _source(f"source-{index:03d}", next_check_due_at=as_of + timedelta(days=1))
+                for index in range(201)
+            ],
+            limit=500,
+            as_of=as_of,
+        )
+    )
+
+    assert len(items) == 200
+    assert items[0].legal_source_id == 1
+    assert items[-1].legal_source_id == 200
 
 
 def test_inventory_uses_configured_default_limit(monkeypatch) -> None:

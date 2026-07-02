@@ -8,6 +8,9 @@ from app.db.base import LegalSource
 from app.schemas.legal_sources import LegalSourceInventoryItem
 
 
+MAX_LEGAL_SOURCE_INVENTORY_LIMIT = 200
+
+
 async def build_legal_source_inventory(
     db: AsyncSession,
     *,
@@ -18,6 +21,7 @@ async def build_legal_source_inventory(
     effective_limit = settings.legal_source_inventory_limit if limit is None else limit
     if effective_limit < 1:
         raise ValueError("legal source inventory limit must be positive")
+    effective_limit = min(effective_limit, MAX_LEGAL_SOURCE_INVENTORY_LIMIT)
 
     inventory_time = as_of or datetime.utcnow()
     result = await db.execute(
@@ -46,5 +50,5 @@ def _to_inventory_item(source: LegalSource, as_of: datetime) -> LegalSourceInven
         source_url=source.source_url,
         last_checked_at=source.last_checked_at,
         next_check_due_at=source.next_check_due_at,
-        freshness_warning=source.next_check_due_at is None or source.next_check_due_at <= as_of,
+        freshness_warning=source.next_check_due_at is not None and source.next_check_due_at < as_of,
     )
