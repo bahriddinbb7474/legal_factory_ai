@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     embedding_model: str = ""
     embedding_provider: str = ""
     embedding_dimensions: int = 0
+    legal_source_inventory_limit: int = 100
     auth_session_days: int = 7
     auth_cookie_secure: bool = False
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"

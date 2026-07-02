@@ -115,3 +115,21 @@ class LegalSourceRead(BaseModel):
 
 class LegalSourceDetailRead(LegalSourceRead):
     chunks: list[LegalChunkRead] = Field(default_factory=list)
+
+
+class LegalSourceInventoryItem(BaseModel):
+    legal_source_id: int
+    title: str
+    document_type: str
+    document_number: str | None = None
+    adoption_date: str | None = None
+    revision_date: str | None = None
+    language: str
+    status: str
+    official_status: str
+    source_url: str | None = None
+    last_checked_at: datetime | None = None
+    next_check_due_at: datetime | None = None
+    freshness_warning: bool
+
+    model_config = ConfigDict(frozen=True)
