@@ -1,7 +1,18 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    JSON,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -101,6 +112,10 @@ class Chat(Base, TimestampMixin):
     approvals: Mapped[list["Approval"]] = relationship(back_populates="chat")
     cost_records: Mapped[list["CostRecord"]] = relationship(back_populates="chat")
     generated_documents: Mapped[list["GeneratedDocument"]] = relationship(back_populates="chat")
+    legal_source_packages: Mapped[list["LegalSourcePackage"]] = relationship(
+        back_populates="chat",
+        cascade="all, delete-orphan",
+    )
 
 
 class Message(Base, TimestampMixin):
@@ -130,6 +145,10 @@ class Message(Base, TimestampMixin):
     chat: Mapped["Chat"] = relationship(back_populates="messages", foreign_keys=[chat_id])
     agent: Mapped[Optional["Agent"]] = relationship(back_populates="messages")
     message_documents: Mapped[list["MessageDocument"]] = relationship(back_populates="message", cascade="all, delete-orphan")
+    triggered_source_packages: Mapped[list["LegalSourcePackage"]] = relationship(
+        back_populates="trigger_message",
+        foreign_keys="LegalSourcePackage.trigger_message_id",
+    )
 
 
 class GeneratedDocument(Base, TimestampMixin):
@@ -369,6 +388,83 @@ class LegalChunk(Base, TimestampMixin):
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     legal_source: Mapped["LegalSource"] = relationship(back_populates="chunks")
+
+
+class LegalSourcePackage(Base):
+    __tablename__ = "legal_source_packages"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('ready','empty','insufficient','planner_failed','retrieval_failed','blocked_by_policy')",
+            name="ck_legal_source_packages_status",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    protocol_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), index=True, nullable=False)
+    trigger_message_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("messages.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
+    section_code: Mapped[str] = mapped_column(String(128), nullable=False)
+    group_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    lawyer_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    rag_request_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    retrieval_query: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    error_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    hash_ready_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    chat: Mapped["Chat"] = relationship(back_populates="legal_source_packages")
+    trigger_message: Mapped[Optional["Message"]] = relationship(
+        back_populates="triggered_source_packages",
+        foreign_keys=[trigger_message_id],
+    )
+    items: Mapped[list["LegalSourcePackageItem"]] = relationship(
+        back_populates="package",
+        cascade="all, delete-orphan",
+        order_by=lambda: (LegalSourcePackageItem.rank, LegalSourcePackageItem.id),
+    )
+
+
+class LegalSourcePackageItem(Base):
+    __tablename__ = "legal_source_package_items"
+    __table_args__ = (
+        UniqueConstraint("package_id", "rank", name="uq_legal_source_package_items_package_rank"),
+        UniqueConstraint("package_id", "legal_chunk_id", name="uq_legal_source_package_items_package_chunk"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    package_id: Mapped[int] = mapped_column(
+        ForeignKey("legal_source_packages.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    legal_source_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("legal_sources.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
+    legal_chunk_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("legal_chunks.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
+    rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    score: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False)
+    source_title_snapshot: Mapped[str] = mapped_column(String(500), nullable=False)
+    document_number_snapshot: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    revision_date_snapshot: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    source_url_snapshot: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    chunk_label_snapshot: Mapped[str] = mapped_column(String(500), nullable=False)
+    chunk_text_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
+    chunk_content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    package: Mapped["LegalSourcePackage"] = relationship(back_populates="items")
+    legal_source: Mapped[Optional["LegalSource"]] = relationship()
+    legal_chunk: Mapped[Optional["LegalChunk"]] = relationship()
 
 
 class AppSetting(Base):
