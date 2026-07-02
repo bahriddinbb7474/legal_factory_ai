@@ -4,7 +4,7 @@ Date: 2026-06-30
 
 ## Purpose and Status
 
-This document fixes the approved section structure for Legal Factory AI and is the normative section-routing specification. P3-A/B/B1/C are implemented; P4 targeted RAG and P5 verified verdict/document gates remain pending.
+This document fixes the approved section structure for Legal Factory AI and is the normative section-routing specification. P3-A/B/B1/C are implemented; the P4 RFC is approved but implementation and P5 verified verdict/document gates remain pending.
 
 Visible names may be adjusted later without changing policy. Runtime routing must use stable internal group and section codes, never raw UI labels.
 
@@ -43,8 +43,8 @@ Earlier long UI labels remain accepted as legacy aliases. They are not policy ke
 - Source citations are not required for an ordinary approved-template operation.
 - Documents are not generated from a verdict; they are created only from approved templates or forms.
 - If no approved template exists, the system must not create a final document.
-- A contract without an approved template routes to `legal_contract_review`.
-- A request for legal or normative verification routes to `legal_questions`.
+- A contract without an approved template requires controlled handling through `legal_contract_review`.
+- A request for legal or normative verification requires an explicit legal-review path in `legal_questions`; backend must not silently mutate the selected section.
 - A risky order involving dismissal, disciplinary action, financial liability, a dispute, or another red topic cannot remain a simple template operation.
 - Red-topic detection and approval policy apply in every section and override the group default.
 
@@ -70,7 +70,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 
 ### Group 2 policy
 
-- Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion. The targeted RAG request protocol itself is P4 and is not implemented yet.
+- Deterministic backend policy must require official-source retrieval when applicable; Lawyer 1 may ask focused clarification before a final conclusion. The approved P4 request/package protocol is not implemented yet.
 - Pre-verdict answers are normal human-readable text.
 - Only Lawyer 2 or Lawyer 3 may issue a verdict, after explicit user permission and required checks.
 - Structured legal payload is reserved for verdict mode.
@@ -85,7 +85,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 1. The backend resolves `section_code` to `section_group`; the frontend label is display-only.
 2. Existing free-text `Chat.section` values must be mapped through an explicit alias/migration table. Unknown or ambiguous legal values must fall back safely to `legal_other`; they must not silently enter the template path.
 3. An ordinary approved-template request stays in `template_documents`.
-4. A missing template, legal-verification request, legal dispute, or unapproved contract routes to `legal_questions`.
+4. A missing template, legal-verification request, legal dispute, or unapproved contract must leave the simple template path through controlled legal handling. The backend must not silently mutate the selected section; UI/API must require an explicit legal section or legal-review action.
 5. Red-topic detection overrides both group defaults and forces the applicable approval workflow.
 6. Group routing must not weaken user-role, source-trust, verdict, or document-generation gates.
 
@@ -118,7 +118,7 @@ This group is for legal analysis, legal opinions, targeted RAG, criticism or rev
 - An ordinary Group 1 letter does not require RAG.
 - Group 1 cannot create a final document without an approved template.
 - A Group 1 HR dismissal request cannot bypass legal policy.
-- In Group 2, Lawyer 1 requests RAG or asks necessary clarifying questions.
+- In Group 2, backend policy requires RAG when applicable and Lawyer 1 may ask necessary clarifying questions first.
 - A Group 2 verdict requires Lawyer 2 or Lawyer 3 and explicit permission.
 - Red-topic handling works in both groups.
 - UI-label changes do not change policy routing for a stable section code.

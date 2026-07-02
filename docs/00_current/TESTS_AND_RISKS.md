@@ -168,20 +168,42 @@ npm.cmd run build
 
 **Статус: NOT DONE. P4 ещё не реализован.**
 
-После реализации P4 тесты должны подтвердить:
+После реализации P4 blocking tests должны подтвердить:
 
-- юрист получает compact source inventory, а не dump всех chunks;
-- legal section может сформировать внутренний targeted RAG request;
-- template section не запускает legal RAG по умолчанию;
-- current-law source package содержит только `active + official` sources;
-- `outdated`, `future`, `draft`, `archived` и неподтверждённые источники исключены из ordinary RAG;
-- отсутствие источника вызывает uncertainty/missing-source behavior, а не fake certainty;
-- user upload не становится official source;
-- backend fallback ловит legal answer, пропустивший обязательный RAG;
-- source package metadata достаточно для будущей P5 binding;
-- RU/UZ trigger patterns добавлены либо подготовлены для полного P6 coverage;
-- prompt injection в uploaded document не может выбрать юрисдикцию или legal source;
-- trusted и untrusted context остаются раздельными на всех шагах.
+1. Legal trigger в `legal_questions` создаёт canonical targeted RAG request.
+2. `needs_rag=false` разрешён только для focused clarification или approved template path.
+3. Простой `template_documents` request не запускает default RAG.
+4. Red-topic в template section не меняет section молча и требует controlled legal handling.
+5. Inventory и current-law package содержат только `active + official` sources.
+6. `draft`, `outdated`, `archived` и unofficial sources исключены; отдельный `future` status не предполагается текущей моделью.
+7. Uploaded documents никогда не входят в official inventory/package.
+8. Prompt injection в upload не выбирает source или foreign jurisdiction.
+9. Backend invariants не позволяют удалить `active`/`official` из `must_have` или ослабить `exclude`.
+10. Foreign law блокируется без явного поддержанного comparative request.
+11. `source_scope` вне текущего inventory отклоняется.
+12. Missed mandatory RAG перехватывается backend fallback.
+13. Deterministic fallback срабатывает, если planner не может построить valid request.
+14. Deterministic planner/fallback не требует LLM planning call.
+15. Empty retrieval отличается от retrieval/planner failure.
+16. `empty` вызывает missing-source path.
+17. `insufficient` разрешает только cautious preliminary answer.
+18. Immutable package snapshot содержит точные chunks и source metadata, переданные модели.
+19. Package не меняется после source edit/reindex.
+20. Relevant bounded chat history влияет на retrieval question.
+21. Concurrent invokes не смешивают packages.
+22. Verdict mode использует package, но остаётся unconfirmed.
+23. `document_generation_allowed=false` сохраняется для P4 verdict skeleton.
+24. Normal answer остаётся human-readable и не хранит planner/package protocol в `structured_payload`.
+25. Sensitive planner data не попадает в ordinary logs.
+26. Inventory имеет stable sorting и limit.
+27. Hash-ready snapshot data детерминированы.
+28. Exact chunks in model context равны persisted package snapshot.
+29. UI/API не называют retrieval citation verification или confirmed source check.
+30. Russian trigger foundation покрыт тестами.
+31. Uzbek Latin trigger foundation покрыт тестами.
+32. Uzbek Cyrillic trigger foundation покрыт тестами.
+
+Дополнительно должны сохраняться trusted/untrusted separation, chat ownership/access controls, provider sensitivity gates и отсутствие реальных paid API calls в automated tests.
 
 ## 8. P5 required tests — verified verdict/document gate
 
@@ -231,7 +253,7 @@ npm.cmd run build
 ## 10. Current open risks
 
 - P4 targeted RAG/source inventory/source package не реализован.
-- `source_package_id` и `context_snapshot_hash` отсутствуют.
+- persisted `source_package_id`, hash-ready snapshot fields и финальный P5 `context_snapshot_hash` отсутствуют.
 - P5 verified verdict/document gate отсутствует.
 - Текущий retrieval foundation совместим с legal RAG, но не является финальным P4 protocol.
 - Модель может звучать слишком уверенно до проверки official sources; backend и UI должны явно сохранять uncertainty.
@@ -255,7 +277,7 @@ npm.cmd run build
 - Extraction/OCR failure должен быть виден; нельзя утверждать, что нечитаемый документ проанализирован.
 - Unsupported, path-traversal и oversized files должны отклоняться.
 - Ordinary current-law answers используют только active official sources.
-- Outdated, future, draft и archived sources исключаются из ordinary RAG.
+- Outdated, draft и archived sources исключаются из ordinary RAG; future revisions остаются `draft` в текущей модели.
 - Model-generated citations остаются unconfirmed до deterministic checks.
 - `TRUSTED_LEGAL_SOURCE` нельзя смешивать с `UNTRUSTED_DOCUMENT`.
 - Normal answer — human-readable text; structured payload зарезервирован для verdict workflow.

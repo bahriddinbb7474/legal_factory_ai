@@ -60,9 +60,9 @@
 - Demo-1 decided: fake initial chat messages are permanently removed. The new-chat state defaults
   to an empty message list. Any initial content must come from the real backend, not hardcoded
   frontend state.
-- Demo-1 decided: `Chat` has no `section` field in v1. The selected section is encoded as a
-  prefix in the chat title (`"{section} · {first 60 chars}"`). A dedicated `section` field may be
-  added in a later migration if grouping logic requires it.
+- Demo-1 historical decision, **superseded by P3-A**: `Chat` originally had no dedicated `section`
+  field and encoded the selected section in the title. Current code has `Chat.section` and uses
+  canonical backend-owned section codes; the title prefix is not a current routing contract.
 - Demo-1 decided: `selectedSection` defaults to `null` on page load (no auto-selection). The
   section selector shows "Выбрать раздел" until the user picks a section. If no section is
   selected when the first message is sent, the chat title is just the first 60 chars of the
@@ -75,7 +75,7 @@
   export rights) are deferred until after the founder presentation. The current baseline of
   admin-created users, viewer read-only, and basic audit log is sufficient.
 - P0 approved: pre-verdict lawyer answers are natural human-readable text. Structured legal payload is reserved for verdict only.
-- P0 approved: Lawyer 1 provides preliminary analysis and targeted RAG requests but cannot issue a verdict or control verdict/document gates.
+- P0 approved, refined by P4-RFC: Lawyer 1 provides preliminary analysis, identifies source needs and may ask clarification, but cannot issue a verdict or control retrieval/verdict/document gates. P4 creates the internal RAG request deterministically in backend.
 - P0 approved: only Lawyer 2 or Lawyer 3 may issue a verdict, after explicit user permission and required source checks.
 - P0 approved: legal sections require targeted RAG by default; approved template/correspondence work may use a separate path that cannot bypass legal or red-topic controls.
 - P0 approved: RAG receives source inventory first, retrieves a targeted source package, and binds verdict verification to `source_package_id` and `context_snapshot_hash`.
@@ -94,7 +94,17 @@
 - P3 complete: legacy and unknown section values normalize safely to `legal_other` and cannot silently enter template flow.
 - P3 complete: template sections do not run default RAG or verdict and verdict mode is blocked; legal sections receive legal-flow context; Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion.
 - P3 complete: red-topic detection still applies in both groups. P3-C verification passed 113 focused tests and the full backend suite passed 249 tests; P3-B1 frontend build passed and P3-C had no frontend changes.
-- Next approved stage: P4 targeted RAG/source inventory/source package. `source_package_id` and `context_snapshot_hash` remain unimplemented until P4/P5, and the verified P5 verdict/document gate is not implemented yet.
+- P4-RFC approved: P4 uses a deterministic backend planner; an LLM planner and extra planning call are not part of P4.
+- P4-RFC approved: P4 persists immutable SourcePackage records with exact source metadata and chunk-text snapshots used in model context.
+- P4-RFC approved: P4 prepares hash-ready snapshot fields; final `context_snapshot_hash`, verdict binding and package-bound citation verification belong to P5.
+- P4-RFC approved: P4 is UZ-only MVP. No jurisdiction column or full topic taxonomy is added without a separate approval; section/trigger mapping is sufficient.
+- P4-RFC approved: P4 begins configurable Russian, Uzbek Latin and Uzbek Cyrillic trigger patterns.
+- P4-RFC approved: package statuses are backend-owned: `ready`, `empty`, `insufficient`, `planner_failed`, `retrieval_failed`, and `blocked_by_policy`.
+- P4-RFC approved: retrieval/package readiness must not be labelled citation verification, confirmed source check, or `source_check_status=confirmed`.
+- P4-RFC approved: template legal/red-topic handling is controlled and must not silently mutate the selected section.
+- P4-RFC approved: the current source model has no separate `future` status; future revisions remain `draft` until verified and activated.
+- P4-RFC approved: P5 must align or close legacy Stage 4/5 active-verdict, `citation_verifier`, and `structured_response` shortcut paths.
+- Next implementation stage: P4-A source inventory, followed by P4-B triggers/planner, P4-C persistent package, P4-D invoke integration, P4-E missing-source behavior, P4-F minimal visibility and P4-G final verification. The verified P5 verdict/document gate is not implemented yet.
 
 ## Pending Decisions
 

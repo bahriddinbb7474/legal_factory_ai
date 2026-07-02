@@ -80,9 +80,9 @@ The approved groups and complete section list are defined in `SECTION_GROUPS_AND
 
 `template_documents` may produce an ordinary document without RAG when an approved form exists and the request does not require a legal conclusion. This group has no verdict mode, legal conclusion, source-citation requirement, or verdict-based document generation. A document without an approved form must not be created as a final template document.
 
-Contracts in `template_documents` are allowed only from an approved form. A contract without an approved form, or any request to review contractual risks or terms, routes to `legal_contract_review` in `legal_questions`.
+Contracts in `template_documents` are allowed only from an approved form. A contract without an approved form, or any request to review contractual risks or terms, requires controlled handling through `legal_contract_review` in `legal_questions`. The backend must not silently mutate the selected section; the user/API must explicitly enter the legal-review path.
 
-`legal_questions` is the legal-analysis path: Lawyer 1 requests RAG by default unless clarification is needed first, pre-verdict responses remain normal text, and only Lawyer 2 or Lawyer 3 may issue an eligible verdict after explicit permission.
+`legal_questions` is the legal-analysis path: deterministic backend policy requires RAG by default unless focused clarification is needed first, pre-verdict responses remain normal text, and only Lawyer 2 or Lawyer 3 may issue an eligible verdict after explicit permission.
 
 Legal claims, legal responses, HR dismissal documents, and other legally consequential documents remain subject to the relevant RAG, verdict, and approval rules.
 

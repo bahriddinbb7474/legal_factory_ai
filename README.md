@@ -25,7 +25,8 @@ New contributors and AI coding agents should read:
 3. [`docs/00_current/TESTS_AND_RISKS.md`](docs/00_current/TESTS_AND_RISKS.md) — verification baseline, required tests, risks, and safety limits.
 4. [`docs/00_current/ARCHITECTURE.md`](docs/00_current/ARCHITECTURE.md) — technical architecture and current/legacy boundaries.
 5. [`docs/00_current/DECISIONS_LOG.md`](docs/00_current/DECISIONS_LOG.md) — accepted and pending decisions.
-6. Relevant files under [`docs/10_policies/`](docs/10_policies/) for the active task.
+6. [`docs/00_current/P4_TARGETED_RAG_RFC.md`](docs/00_current/P4_TARGETED_RAG_RFC.md) for P4 implementation work.
+7. Relevant files under [`docs/10_policies/`](docs/10_policies/) for the active task.
 
 Documentation structure:
 
@@ -76,7 +77,7 @@ and P3-A/B/B1/C section modeling, grouped UI, sidebar polish, and policy routing
 
 Immediate roadmap:
 
-1. P4: implement lawyer-controlled targeted RAG, source inventory/package, and multilingual backend fallback.
+1. P4: implement the approved deterministic targeted-RAG RFC through source inventory, RU/UZ triggers, persistent immutable packages, invoke integration and missing-source handling.
 2. P5: implement verified verdict/document gates, bound source packages, and DB mapping.
 3. P6: pass the complete quality and acceptance baseline in `docs/00_current/TESTS_AND_RISKS.md`.
 4. P7 / Phase B: finish production model selection and OpenRouter/model settings UX.
@@ -89,9 +90,9 @@ The system must not provide final legal conclusions without reliable sources. If
 
 ## Project Status
 
-Current status: P3-C is complete. The next approved implementation stage is P4 targeted RAG/source inventory/source package; P5-P6 follow before P7 / Phase B.
+Current status: P3-C is complete and the docs-level P4 RFC is approved. The next implementation stage is P4-A source inventory; P5-P6 follow before P7 / Phase B.
 
-P3 provides 17 canonical section codes in two backend-owned groups: `template_documents` for approved-template work without default RAG or verdict, and `legal_questions` for legal-flow policy context. Unknown or legacy values normalize safely to `legal_other`; visible Russian labels are display-only. Verdict mode is blocked in template sections, while red-topic detection still applies in both groups. In legal sections Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion. P4 targeted retrieval and `source_package_id` / `context_snapshot_hash` are not implemented yet; the verified P5 verdict/document gate is also pending. See `docs/10_policies/SECTION_GROUPS_AND_RAG_POLICY.md`.
+P3 provides 17 canonical section codes in two backend-owned groups: `template_documents` for approved-template work without default RAG or verdict, and `legal_questions` for legal-flow policy context. Unknown or legacy values normalize safely to `legal_other`; visible Russian labels are display-only. Verdict mode is blocked in template sections, while red-topic detection still applies in both groups. In legal sections Lawyer 1 must check/request official sources or ask focused clarification before a final conclusion. P4 implementation, persisted source packages and hash-ready metadata are not implemented yet; final `context_snapshot_hash` and the verified verdict/document gate belong to P5. See `docs/00_current/P4_TARGETED_RAG_RFC.md`.
 
 P3 verification: 113 focused backend tests passed; the full backend suite passed 249 tests. The frontend production build passed after P3-B1; P3-C did not change frontend code.
 

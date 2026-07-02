@@ -65,8 +65,8 @@ The core path is no longer Telegram-first. The originally approved sequence afte
 6. Stage 12-13 final factory scenarios and mini-launch — pending.
 
 P2 and P3 are complete. The remaining approved order before Phase B is P4 → P5 → P6 → P7.
-P4 targeted RAG/source inventory/source package is next; P5 must not start before P4 is approved
-and complete. VPS, full production deployment, crawler work, and Telegram remain deferred until
+The P4 docs-level RFC is approved; P4-A source inventory is next. P5 must not start before P4 is
+complete. VPS, full production deployment, crawler work, and Telegram remain deferred until
 the core path is stable.
 
 ## First Foundation
@@ -79,7 +79,7 @@ The approved target for the next implementation sequence is:
 
 ```text
 section-based strictness
-+ lawyer-controlled targeted RAG
++ deterministic backend-planned targeted RAG
 + backend safety net
 + human-readable pre-verdict answers
 + structured verdict only
@@ -92,7 +92,7 @@ section-based strictness
 
 P1 policy documentation, P2-B0 through P2-B3, and P3-A/B/B1/C are complete. The remaining required order before Phase B is:
 
-1. P4 targeted RAG request and source-package protocol.
+1. P4 deterministic targeted RAG request and persistent immutable source-package protocol.
 2. P5 verified verdict/document gates and explicit DB mapping.
 3. P6 quality/verification baseline from `TESTS_AND_RISKS.md`.
 4. P7 / Phase B OpenRouter and model settings.
@@ -111,7 +111,7 @@ Seventeen stable internal section codes now select policy. Visible names are dis
 The Stage 4/5 sections below describe the legacy baseline rather than the final policy contract.
 P2 now provides natural pre-verdict text, verdict-only structured mode, the Lawyer 1 prohibition,
 and explicit-permission integration. P3 now adds canonical section routing. P4-P6 must add targeted RAG,
-`source_package_id` / `context_snapshot_hash` binding, backend verification and approval gates,
+persistent source packages, final P5 `context_snapshot_hash` binding, backend verification and approval gates,
 and the complete P6 quality/verification baseline in `TESTS_AND_RISKS.md`.
 
 The normative policy documents are `../10_policies/PROMPT_SYSTEM_V1.md`, `../10_policies/RAG_WORKFLOW_V1.md`,
@@ -127,10 +127,31 @@ The normative policy documents are `../10_policies/PROMPT_SYSTEM_V1.md`, `../10_
 4. Backend stores the chat, message, files, and audit information.
 5. Agent layer applies the selected section and lawyer role.
 6. Current P3 routing supplies template-flow or legal-flow policy context; Lawyer 1 checks/requests official sources or asks focused clarification.
-7. P4 will add a concrete targeted active-official source package and backend retrieval fallbacks.
+7. P4 uses a deterministic backend planner to create the canonical RAG request and persist an immutable active-official source package.
 8. Before verdict, the user receives human-readable lawyer text.
 9. After explicit permission, Lawyer 2 or Lawyer 3 may produce a structured verdict for backend verification.
 10. P5 will enable document generation only after backend-computed source, citation, red-topic, and approval gates pass; it remains blocked for the current unconfirmed verdict skeleton.
+
+## P4 Targeted RAG Architecture
+
+The approved contract is [P4_TARGETED_RAG_RFC.md](P4_TARGETED_RAG_RFC.md). P4 remains UZ-only and uses the current lexical retriever; it does not add an LLM planner, jurisdiction column, full topic taxonomy, embeddings, or crawler.
+
+```text
+section/group policy
+→ compact active+official inventory
+→ deterministic backend request + validation
+→ retrieval
+→ immutable persisted SourcePackage snapshot
+→ normal answer or unconfirmed verdict skeleton
+```
+
+Inventory ordering/limits, request invariants and package status are deterministic. SourcePackage stores exact source metadata and chunk text supplied to the model so later source edits or reindexing cannot change the historical context. Allowed backend-owned package statuses are `ready`, `empty`, `insufficient`, `planner_failed`, `retrieval_failed`, and `blocked_by_policy`.
+
+`ready` means relevant official context was retrieved; it does not mean citations are verified. Empty/failed/blocked packages use a missing-source path, while `insufficient` permits only cautious preliminary output. Normal mode remains human-readable with no structured payload. Existing Lawyer 2/3 verdict mode receives the package but remains unconfirmed with document generation blocked.
+
+P4 starts configurable Russian, Uzbek Latin and Uzbek Cyrillic trigger patterns. Simple template requests still skip default RAG. Legal/risky template requests require controlled legal handling without silently mutating the selected section.
+
+P4 stores hash-ready inputs only. P5 defines canonical serialization, computes final `context_snapshot_hash`, binds verdict to the persisted package, verifies citations only against that package, and aligns/closes legacy Stage 4/5 shortcut paths.
 
 ## Historical implementation baseline
 
@@ -336,7 +357,7 @@ Source lifecycle:
 - `active` sources are eligible for RAG.
 - `outdated`, `archived`, and `draft` sources remain visible in admin UI but are excluded from normal retrieval.
 - Old revisions are archived or marked outdated instead of deleted.
-- Future revisions remain draft/future before their effective date and are excluded from ordinary current-law retrieval.
+- Future revisions remain `draft` before their effective date and are excluded from ordinary current-law retrieval; the current model has no separate `future` status.
 - `last_checked_at` and `next_check_due_at` support manual monthly freshness review.
 
 Retrieval:
@@ -361,7 +382,7 @@ Citation validation:
 
 ## Stage 7-11 Architecture Status
 
-Stage 7 completed the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Draft/future sources are preparation-only unless a later approved task adds separate future-context retrieval. Outdated/historical sources, including an approved source later found expired, remain metadata/history records and are excluded from ordinary current-law RAG.
+Stage 7 completed the existing `LegalSource` and `LegalChunk` flow through data completion rather than a new crawler. Every source should include document type, title, number, adoption date, revision date, source name, source URL, official status, status, language, last check date, and next check date. Normal RAG must keep using only `active` official sources. Future revisions remain `draft` preparation-only records unless a later approved task adds separate future-context retrieval. Outdated/historical sources, including an approved source later found expired, remain metadata/history records and are excluded from ordinary current-law RAG.
 
 Stage 8 added `CompanyProfile` for company details. Stamp/signature upload and rendering remain intentionally unimplemented; these files are sensitive and require a separate approved secure stage with director/admin access and audit logging.
 

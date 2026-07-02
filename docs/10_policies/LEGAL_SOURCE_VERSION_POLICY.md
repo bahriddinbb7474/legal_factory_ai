@@ -13,7 +13,7 @@ It is a Stage 7.5-A2 policy update only. It does not authorize crawlers, histori
 One `LegalSource` record represents one concrete revision or ONDATE state of one official source.
 
 - `active`: current official revision that passed metadata, chunk, retrieval, and citation smoke checks. Ordinary legal answers may use it.
-- `draft`: not trusted for ordinary legal answers yet. Future versions must stay draft/future before their effective date.
+- `draft`: not trusted for ordinary legal answers yet. Future versions stay `draft` before their effective date; the current model has no separate `future` status.
 - `outdated`: no longer current. It remains visible for metadata/history but must not enter ordinary RAG.
 - `archived`: retained for audit/history only. It must not enter ordinary RAG.
 
